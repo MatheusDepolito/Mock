@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "files": [],
+  "include": [],
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "outDir": "../../dist/out-tsc/apps/api",
+    "tsBuildInfoFile": "../../dist/out-tsc/apps/api/api.tsbuildinfo"
+  },
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.spec.json" }
+  ]
+}

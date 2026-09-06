@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+
+# Nx
+.nx/cache/
+.nx/workspace-data/
+
+# Build output
+dist/
+coverage/
+tmp/
+
+# Logs
+*.log
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Yarn caches / transient files (nodeLinker: node-modules, no zero-installs)
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+
+vitest.config.*.timestamp*
