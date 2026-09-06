@@ -115,16 +115,27 @@ pareça sugerir implicitamente.
   Details, correlation ID, CORS, Helmet, rate limiting) e `libs/config`
   com o entrypoint server-only (`@mockp/config/server`) já estão
   implementados e com revisão técnica aprovada.
-- Nenhuma fase está `In Progress` no momento. A Fase 3 continua
-  `Pending` e só inicia com autorização explícita do responsável pelo
-  projeto.
+- **Fase 3 — Docker, PostGIS, Redis e Prisma**: `In Progress`. A
+  Tarefa 3.0 (abertura documental e especificação técnica) está
+  concluída e aprovada — [ADR 006](docs/adr/006-persistence-and-local-infrastructure.md)
+  está `Accepted`. A **Tarefa 3.1** (Docker Compose com PostGIS e
+  Redis) é agora a tarefa autorizada. **As Tarefas 3.2 a 3.6** (Prisma/
+  schema/migration/seed, `PrismaModule`/`RedisModule`/repositories,
+  readiness real, Dockerfile da API, validação integrada) **ainda não
+  estão autorizadas** — cada uma só começa depois que a anterior
+  atender seus critérios de aceite (ver
+  [docs/IMPLEMENTATION_ROADMAP.md](docs/IMPLEMENTATION_ROADMAP.md),
+  Fase 3). Nenhuma dependência foi instalada, nenhum código,
+  `docker-compose.yml`, `schema.prisma` ou `prisma.config.ts` foi
+  criado ainda.
 - Ainda não existem Prisma, Docker/Docker Compose, PostGIS, Redis,
   `apps/worker` ou `apps/web`/frontend neste repositório.
 - Não crie `apps/web`, `apps/worker`, outras `libs/*` de produto,
-  Next.js, Prisma, Docker, autenticação, domínio de negócio ou qualquer
-  outra peça de fases posteriores, e não antecipe entregáveis de fases
-  futuras, mesmo que solicitado de forma implícita por uma tarefa, a
-  menos que essa tarefa autorize explicitamente o avanço de fase.
+  Next.js, Docker, autenticação, domínio de negócio ou qualquer outra
+  peça de fases posteriores a Fase 3, e não antecipe entregáveis de
+  fases futuras, mesmo que solicitado de forma implícita por uma
+  tarefa, a menos que essa tarefa autorize explicitamente o avanço de
+  fase.
 - Não crie commits, branches, remotes ou publique nada, a menos que a
   tarefa autorize explicitamente essa ação.
 

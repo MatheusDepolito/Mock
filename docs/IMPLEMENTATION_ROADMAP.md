@@ -38,10 +38,16 @@ Regras de controle:
 
 ## Fase corrente
 
-Nenhuma fase está `In Progress` no momento. A Fase 2 — API NestJS
-(skeleton da API) é a última `Completed` (revisão técnica aprovada). As
-Fases 0 e 1 também estão `Completed`. A Fase 3 continua `Pending` e só
-inicia com autorização explícita do responsável pelo projeto.
+**Fase 3 — Docker, PostGIS, Redis e Prisma**: `In Progress`. A
+Tarefa 3.0 (abertura documental e especificação técnica) está
+concluída e aprovada —
+[ADR 006](adr/006-persistence-and-local-infrastructure.md) está
+`Accepted`. A **Tarefa 3.1** (Docker Compose com PostGIS e Redis) é a
+tarefa autorizada agora; **as Tarefas 3.2 a 3.6 ainda não estão
+autorizadas** — cada uma só inicia depois que a anterior atender seus
+critérios de aceite. Nenhuma dependência foi instalada e nenhum
+`docker-compose.yml`/`schema.prisma` foi criado ainda. As Fases 0, 1 e 2
+estão `Completed`.
 
 ---
 
@@ -187,10 +193,48 @@ obrigatórias, sem endpoints de negócio.
 
 ## Fase 3 — Docker, PostGIS, Redis e Prisma
 
-**Status**: Pending
+**Status**: In Progress — Tarefa 3.0 (abertura documental e
+especificação técnica) concluída e aprovada via
+[ADR 006](adr/006-persistence-and-local-infrastructure.md)
+(`Accepted`). A **Tarefa 3.1** abaixo é a tarefa autorizada agora.
+**As Tarefas 3.2 a 3.6 ainda não estão autorizadas** — cada uma só
+inicia depois que a anterior atender seus critérios de aceite. Nenhuma
+dependência instalada, nenhum código, `docker-compose.yml`,
+`schema.prisma` ou `prisma.config.ts` criado ainda.
 
 **Objetivo**: provisionar a infraestrutura local (profile padrão) e
 modelar o núcleo de dados inicial.
+
+**Subtarefas**:
+
+- **3.1 — Docker Compose com PostGIS e Redis**: criar
+  `docker-compose.yml` (profile padrão) com os serviços PostgreSQL/
+  PostGIS e Redis conforme a ADR 006 (imagens fixadas, sem
+  `container_name`, sem `profiles`, health checks, volumes nomeados
+  separados); adicionar `DATABASE_URL`/`REDIS_URL` ao `.env.example`
+  (valores locais não secretos) e ao schema Zod server-only.
+- **3.2 — Prisma, schema, migration inicial e seed**: instalar Prisma
+  na versão fixada pela ADR 006, criar `prisma.config.ts` e
+  `schema.prisma` com as 11 entidades do núcleo, gerar e customizar a
+  migration inicial (extensão PostGIS + índice GiST), implementar o
+  seed determinístico dos 4 papéis globais.
+- **3.3 — `PrismaModule`, `RedisModule` e repositories por agregado**:
+  `PrismaService`/`PrismaModule` (via `PrismaPg`), módulo de conexão
+  Redis, e `UserRepository`/`BrokerageRepository`/`PropertyRepository`
+  conforme os agregados definidos na ADR 006.
+- **3.4 — Readiness real e testes de falha das dependências**:
+  atualizar `GET /api/v1/health/ready` para checar PostgreSQL/PostGIS e
+  Redis; testes de integração cobrindo o caminho feliz e a falha de
+  cada dependência (`503` + `code: SERVICE_UNAVAILABLE`).
+- **3.5 — Dockerfile da API**: criado **depois** de Prisma estar
+  integrado (3.2/3.3), incluindo geração do Prisma Client e migrations
+  dentro da imagem, sem depender de `node_modules` do host; builda com
+  sucesso e a API inicia a partir da imagem gerada.
+- **3.6 — Validação integrada e fechamento documental**: checklist de
+  ponta a ponta desta fase (Compose sobe, migration aplica, seed roda,
+  readiness reflete falha real, Dockerfile builda e inicia), ADR 006
+  permanece `Accepted` (nunca reaberta como `Proposed` sem motivo), e
+  atualização de README/roadmap para `Completed` na mesma alteração.
 
 **Entregáveis**:
 
@@ -205,7 +249,8 @@ modelar o núcleo de dados inicial.
   `AuthIdentity`, `Role`, `UserRole`, `CustomerProfile`, `AgentProfile`,
   `Brokerage`, `BrokerageMembership`, `Property`, `Address`, com os
   relacionamentos descritos em
-  [docs/TARGET_ARCHITECTURE.md](TARGET_ARCHITECTURE.md), seção 10.
+  [docs/TARGET_ARCHITECTURE.md](TARGET_ARCHITECTURE.md), seção 10, e
+  detalhados campo a campo na [ADR 006](adr/006-persistence-and-local-infrastructure.md).
 - Repository por agregado (ex.: `Property` + `Address` no mesmo
   repository), não um repository por tabela.
 - Migration inicial e seed mínimo determinístico.
@@ -229,8 +274,9 @@ modelar o núcleo de dados inicial.
 **Critérios de aceite**:
 
 - Modelo de dados conforme seção 10 de
-  [docs/TARGET_ARCHITECTURE.md](TARGET_ARCHITECTURE.md), sem nenhuma
-  entidade de negócio fora do núcleo revisado.
+  [docs/TARGET_ARCHITECTURE.md](TARGET_ARCHITECTURE.md) e a
+  [ADR 006](adr/006-persistence-and-local-infrastructure.md), sem
+  nenhuma entidade de negócio fora do núcleo revisado.
 - Readiness da API passa a refletir a saúde real das dependências
   (PostgreSQL/PostGIS e Redis).
 
