@@ -52,6 +52,8 @@ export function loadServerConfig(
       corsAllowedOrigins.length > 0
         ? corsAllowedOrigins
         : DEFAULT_CORS_ALLOWED_ORIGINS,
+    databaseUrl: data.DATABASE_URL,
+    redisUrl: data.REDIS_URL,
     rateLimit: {
       ttlMs: data.RATE_LIMIT_TTL_MS,
       limit: data.RATE_LIMIT_LIMIT,

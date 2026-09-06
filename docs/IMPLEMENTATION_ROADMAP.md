@@ -39,15 +39,20 @@ Regras de controle:
 ## Fase corrente
 
 **Fase 3 — Docker, PostGIS, Redis e Prisma**: `In Progress`. A
-Tarefa 3.0 (abertura documental e especificação técnica) está
-concluída e aprovada —
-[ADR 006](adr/006-persistence-and-local-infrastructure.md) está
-`Accepted`. A **Tarefa 3.1** (Docker Compose com PostGIS e Redis) é a
-tarefa autorizada agora; **as Tarefas 3.2 a 3.6 ainda não estão
-autorizadas** — cada uma só inicia depois que a anterior atender seus
-critérios de aceite. Nenhuma dependência foi instalada e nenhum
-`docker-compose.yml`/`schema.prisma` foi criado ainda. As Fases 0, 1 e 2
-estão `Completed`.
+Tarefa 3.0 (abertura documental e especificação técnica) e a
+Tarefa 3.1 (Docker Compose com PostGIS e Redis) estão `Completed` e
+aprovadas — [ADR 006](adr/006-persistence-and-local-infrastructure.md)
+está `Accepted`. `docker-compose.yml` sobe `postgres`
+(`postgis/postgis:18-3.6`) e `redis` (`redis:8.8.2-alpine`), com os
+bancos `mockp` e `mockp_test`, healthchecks e volumes nomeados
+separados; `DATABASE_URL`/`REDIS_URL` são obrigatórias no
+`ServerConfig`, e `TEST_DATABASE_URL` é exclusiva de testes/scripts.
+Nenhum Prisma, `PrismaModule`, repository, readiness real ou Dockerfile
+da API existe ainda. A **Tarefa 3.2** (Prisma, schema, migration
+inicial e seed) é agora a única tarefa autorizada; **as Tarefas 3.3 a
+3.6 ainda não estão autorizadas** — cada uma só inicia depois que a
+anterior atender seus critérios de aceite. As Fases 0, 1 e 2 estão
+`Completed`.
 
 ---
 
@@ -194,13 +199,21 @@ obrigatórias, sem endpoints de negócio.
 ## Fase 3 — Docker, PostGIS, Redis e Prisma
 
 **Status**: In Progress — Tarefa 3.0 (abertura documental e
-especificação técnica) concluída e aprovada via
+especificação técnica) e Tarefa 3.1 (Docker Compose com PostGIS e
+Redis) concluídas e aprovadas via
 [ADR 006](adr/006-persistence-and-local-infrastructure.md)
-(`Accepted`). A **Tarefa 3.1** abaixo é a tarefa autorizada agora.
-**As Tarefas 3.2 a 3.6 ainda não estão autorizadas** — cada uma só
-inicia depois que a anterior atender seus critérios de aceite. Nenhuma
-dependência instalada, nenhum código, `docker-compose.yml`,
-`schema.prisma` ou `prisma.config.ts` criado ainda.
+(`Accepted`). A infraestrutura local já existe: `docker-compose.yml`
+com os serviços `postgres` (`postgis/postgis:18-3.6`) e `redis`
+(`redis:8.8.2-alpine`), sem `container_name`/`profiles`, healthchecks,
+volumes nomeados separados, bancos `mockp` e `mockp_test` criados
+deterministicamente; `DATABASE_URL`/`REDIS_URL` obrigatórias no
+`ServerConfig`, `TEST_DATABASE_URL` exclusiva de testes/scripts. Nenhum
+Prisma, `PrismaModule`, repository, readiness real (a API ainda checa
+apenas sua própria inicialização) ou Dockerfile da API foi criado. A
+**Tarefa 3.2** abaixo (Prisma, schema, migration inicial e seed) é
+agora a única tarefa autorizada. **As Tarefas 3.3 a 3.6 ainda não
+estão autorizadas** — cada uma só inicia depois que a anterior atender
+seus critérios de aceite.
 
 **Objetivo**: provisionar a infraestrutura local (profile padrão) e
 modelar o núcleo de dados inicial.

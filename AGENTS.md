@@ -116,20 +116,28 @@ pareça sugerir implicitamente.
   com o entrypoint server-only (`@mockp/config/server`) já estão
   implementados e com revisão técnica aprovada.
 - **Fase 3 — Docker, PostGIS, Redis e Prisma**: `In Progress`. A
-  Tarefa 3.0 (abertura documental e especificação técnica) está
-  concluída e aprovada — [ADR 006](docs/adr/006-persistence-and-local-infrastructure.md)
-  está `Accepted`. A **Tarefa 3.1** (Docker Compose com PostGIS e
-  Redis) é agora a tarefa autorizada. **As Tarefas 3.2 a 3.6** (Prisma/
-  schema/migration/seed, `PrismaModule`/`RedisModule`/repositories,
+  Tarefa 3.0 (abertura documental e especificação técnica) e a
+  Tarefa 3.1 (Docker Compose com PostGIS e Redis) estão `Completed` e
+  aprovadas — [ADR 006](docs/adr/006-persistence-and-local-infrastructure.md)
+  está `Accepted`. A infraestrutura local já existe: `docker-compose.yml`
+  com `postgres` (`postgis/postgis:18-3.6`) e `redis`
+  (`redis:8.8.2-alpine`), sem `container_name`/`profiles`, healthchecks,
+  volumes nomeados separados, bancos `mockp` e `mockp_test` criados
+  deterministicamente; `DATABASE_URL`/`REDIS_URL` são obrigatórias no
+  `ServerConfig`, e `TEST_DATABASE_URL` é exclusiva de testes/scripts.
+  **Nenhum Prisma, `PrismaModule`, repository, readiness real ou
+  Dockerfile da API existe ainda.** A **Tarefa 3.2** (Prisma, schema,
+  migration inicial e seed) é agora a **única** tarefa autorizada.
+  **As Tarefas 3.3 a 3.6** (`PrismaModule`/`RedisModule`/repositories,
   readiness real, Dockerfile da API, validação integrada) **ainda não
   estão autorizadas** — cada uma só começa depois que a anterior
   atender seus critérios de aceite (ver
   [docs/IMPLEMENTATION_ROADMAP.md](docs/IMPLEMENTATION_ROADMAP.md),
-  Fase 3). Nenhuma dependência foi instalada, nenhum código,
-  `docker-compose.yml`, `schema.prisma` ou `prisma.config.ts` foi
-  criado ainda.
-- Ainda não existem Prisma, Docker/Docker Compose, PostGIS, Redis,
-  `apps/worker` ou `apps/web`/frontend neste repositório.
+  Fase 3).
+- Ainda não existem Prisma, Dockerfile da API, `apps/worker` ou
+  `apps/web`/frontend neste repositório. PostgreSQL/PostGIS e Redis já
+  existem como containers locais (Docker Compose), mas nenhum código da
+  API os acessa ainda.
 - Não crie `apps/web`, `apps/worker`, outras `libs/*` de produto,
   Next.js, Docker, autenticação, domínio de negócio ou qualquer outra
   peça de fases posteriores a Fase 3, e não antecipe entregáveis de

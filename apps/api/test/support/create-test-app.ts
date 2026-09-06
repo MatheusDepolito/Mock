@@ -16,6 +16,12 @@ export const TEST_SERVER_CONFIG: ServerConfig = {
   host: '127.0.0.1',
   logLevel: 'silent',
   corsAllowedOrigins: [ALLOWED_TEST_ORIGIN],
+  // Syntactically valid but never dialed: no PrismaModule/RedisModule or
+  // real client consumes these yet (Tarefa 3.3/3.4). Every test in this
+  // suite proves the API boots and answers health checks with no
+  // PostgreSQL/Redis process reachable from these values.
+  databaseUrl: 'postgresql://mockp:mockp@localhost:5432/mockp_test',
+  redisUrl: 'redis://localhost:6379',
   rateLimit: { ttlMs: 60000, limit: 1000 },
 };
 
