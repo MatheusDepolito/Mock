@@ -402,9 +402,25 @@ frontend:
   (`.env.example`) contêm apenas nomes de variáveis, nunca valores
   reais.
 
-## 10. Modelo de dados inicial (núcleo revisado)
+## 10. Modelo de dados (núcleo multi-tenant)
 
-Entidades do baseline inicial:
+A modelagem de dados vigente — arquitetura-alvo desta seção — é a
+fundação multi-tenant definida pela
+[ADR 007](adr/007-multi-tenant-workspace-foundation.md) (`Accepted`),
+que supersede exclusivamente a modelagem de dados da ADR 006 (as
+decisões de infraestrutura local, Prisma/configuração e pipeline da
+ADR 006 continuam válidas e não são afetadas). A ADR 007 é a
+**especificação campo a campo** (tipos, defaults, unicidades,
+`onDelete`, `CHECK`s, índices) — esta seção resume o modelo, não o
+substitui.
+
+> **Estado de implementação**: `apps/api/prisma/schema.prisma`, a
+> migration inicial e o seed implementam as 15 entidades multi-tenant
+> desta seção (conforme a ADR 007) — Tarefa 3.2 `Completed`, validada
+> offline e em banco limpo (ver
+> [docs/IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md), Fase 3).
+
+Entidades do núcleo (15):
 
 - `User`
 - `Credential`
@@ -413,57 +429,99 @@ Entidades do baseline inicial:
 - `UserRole`
 - `CustomerProfile`
 - `AgentProfile`
+- `AgentLicense`
+- `Workspace`
+- `WorkspaceMembership`
+- `WorkspaceMembershipRole`
+- `WorkspaceAgent`
 - `Brokerage`
-- `BrokerageMembership`
 - `Property`
 - `Address`
 
 Nenhuma entidade fora desta lista faz parte do núcleo aprovado; qualquer
-adição exige revisão desta seção antes da implementação.
+adição exige revisão desta seção (e da ADR 007) antes da implementação.
 
 ### Relacionamentos e responsabilidades de cada entidade
 
-- **`User`** contém o e-mail canônico: normalizado (lowercase/trim) e
-  único.
+- **`User`** é global e **multi-workspace**: contém o e-mail canônico
+  (`citext`, normalizado e único) e pode participar de vários
+  `Workspace` simultaneamente, cada participação com seu próprio
+  `WorkspaceMembership`.
 - **`Credential`** referencia `User` em relação um-para-um e contém
   somente `passwordHash` e metadados de credencial (nunca a senha em
   texto plano, nunca exposta em DTOs de saída).
 - **`AuthIdentity`** representa provedores externos de identidade (ex.:
   Google) e possui unicidade composta por `provider` +
   `providerAccountId`.
-- **`Role`** e **`UserRole`** permitem múltiplos papéis por usuário —
-  `UserRole` é a tabela associativa entre `User` e `Role`.
-- **`BrokerageMembership`** liga `User` e `Brokerage` e registra o papel
-  do usuário dentro daquela corretora especificamente (distinto do papel
-  global em `UserRole`).
-- **`AgentProfile`** contém os atributos profissionais do corretor
-  (dados específicos de quem atua como `agent`, além dos dados básicos
-  de `User`).
-- **`Property`** pode se vincular a uma `Brokerage` e **deve** possuir
-  um agente responsável (`agent`).
-- **`Address`** pertence a um `Property` e contém a localização
-  geoespacial (PostGIS, SRID 4326).
+- **`Role`**/**`UserRole`**: catálogo **global**, reduzido a
+  `CUSTOMER` e `ADMIN` — `AGENT`/`MANAGER` deixaram de ser papéis
+  globais e passaram a ser **contextuais a um workspace**, via
+  `WorkspaceMembershipRole`.
+- **`CustomerProfile`**/**`AgentProfile`** são perfis globais 1:1 com
+  `User` (materializadores do papel, sem atributos de jornada além do
+  necessário). `AgentProfile` não guarda mais dados de licença
+  diretamente.
+- **`AgentLicense`** é 1:N a partir de `AgentProfile` — permite um
+  agente ter múltiplas licenças por país/jurisdição.
+- **`Workspace`** é a **fronteira de tenant**: `type`
+  `INDIVIDUAL` (agente independente, sem `Brokerage`) ou `BROKERAGE`
+  (corretora, com `Brokerage` associado). O dono (`ownerUserId`) tem
+  requisitos de papel específicos por tipo (ver ADR 007, seção
+  "Ownership") — `ownerUserId` concede só permissões de titularidade,
+  nunca substitui `WorkspaceMembership`/`WorkspaceMembershipRole`.
+- **`WorkspaceMembership`**/**`WorkspaceMembershipRole`** substituem
+  `BrokerageMembership` da ADR 006: ligam `User` a um `Workspace`,
+  com papéis cumulativos (`MANAGER`+`AGENT` no mesmo membership).
+- **`WorkspaceAgent`** representa a elegibilidade operacional de um
+  agente **dentro de um workspace específico** — identidade garantida
+  por FK composta a `WorkspaceMembership` e FK simples a
+  `AgentProfile`.
+- **`Brokerage`** é o **perfil exclusivo** do agregado `Workspace`
+  quando `type = BROKERAGE` (1:1, `workspaceId` único) — não é um
+  agregado próprio.
+- **`Property`** exige `workspaceId` e um `responsibleAgentUserId`
+  (FK composta para `WorkspaceAgent` do mesmo workspace) — nenhum
+  imóvel pode referenciar um agente de outro tenant.
+- **`Address`** pertence ao agregado `Property` (1:1, FK composta
+  garantindo o mesmo `workspaceId`), com estrutura internacional
+  (`addressLine1` obrigatório, `addressLine2`/`district` opcionais,
+  além de `countryCode`/`regionCode`/`locality`/`postalCode`) e contém
+  a localização geoespacial (PostGIS, SRID 4326).
 
 ### Repositories e agregados
 
 - Repositories são **orientados a agregado**, não um repository por
-  tabela Prisma (ver também seção 3). Exemplo de agregado: `Property` e
-  `Address` são manipulados por um único repository de `Property`.
+  tabela Prisma (ver também seção 3). Agregados do núcleo:
+  `UserRepository` (`User`+`Credential`+`AuthIdentity`+`UserRole`+
+  `CustomerProfile`+`AgentProfile`+`AgentLicense`), `WorkspaceRepository`
+  (`Workspace`+`WorkspaceMembership`+`WorkspaceMembershipRole`+
+  `WorkspaceAgent`+`Brokerage`, já que `Brokerage` é perfil exclusivo
+  do agregado `Workspace`) e `PropertyRepository` (`Property`+
+  `Address`, já que `Address` pertence ao agregado `Property`).
+- Toda operação **tenant-scoped** (que lê/escreve `Property`,
+  `Address` ou `WorkspaceAgent`) exige `workspaceId` explícito no
+  método do repository — nenhum método os lê/escreve sem esse
+  contexto.
 - Operações atômicas sobre tabelas relacionadas de um mesmo agregado
-  (ex.: criar `Property` já com seu `Address`) pertencem ao repository
-  desse agregado, garantindas dentro da mesma transação Prisma.
+  pertencem ao repository desse agregado, garantidas dentro da mesma
+  transação Prisma.
 
 ### Decisões de modelagem
 
-- Identificadores primários: UUID.
+- Identificadores primários: UUIDv7 (`dbgenerated("uuidv7()")`, nativo
+  do PostgreSQL 18) em toda entidade com ID não determinístico — exceto
+  `Role.id`, catálogo versionado e determinístico, sem default, sempre
+  explícito (ver seed).
+- `citext` (extensão PostgreSQL) para `email`, `slug`, `licenseNumber`
+  e `jurisdictionCode` — comparação case-insensitive no banco.
 - Valores monetários: `Decimal` (nunca `float`/`double`).
 - Timestamps consistentes (`createdAt`/`updatedAt`) em todas as
-  entidades.
-- Localização geográfica via PostGIS, SRID 4326.
-- Índice GiST nas colunas geoespaciais.
-- E-mail normalizado (lowercase/trim) e único em `User`.
-- Seed mínimo e determinístico (mesma execução produz sempre o mesmo
-  estado inicial).
+  entidades, mais lifecycle explícito (`status` + timestamp de
+  transição + `version` para concorrência otimista) em `User`,
+  `Workspace`, `WorkspaceMembership`, `WorkspaceAgent` e `Property`.
+- Localização geográfica via PostGIS, SRID 4326, com índice GiST.
+- Seed mínimo e determinístico, reduzido ao catálogo `Role`
+  (`CUSTOMER`/`ADMIN`).
 
 ### Explicitamente fora do modelo inicial
 

@@ -6,6 +6,10 @@
     "targets": {
       "build": {
         "executor": "@nx/js:tsc",
+        "dependsOn": [
+          "^build",
+          "db:generate"
+        ],
         "outputs": [
           "{options.outputPath}"
         ],
@@ -26,9 +30,17 @@
           "runBuildTargetDependencies": false
         }
       },
+      "test": {
+        "dependsOn": [
+          "db:generate"
+        ]
+      },
       "test:integration": {
         "executor": "nx:run-commands",
         "cache": true,
+        "dependsOn": [
+          "db:generate"
+        ],
         "inputs": [
           "default",
           "^production"
@@ -43,14 +55,107 @@
       },
       "typecheck": {
         "executor": "nx:run-commands",
+        "dependsOn": [
+          "^typecheck",
+          "db:generate"
+        ],
         "options": {
           "command": "tsc -b tsconfig.json",
+          "cwd": "apps/api"
+        }
+      },
+      "db:validate": {
+        "executor": "nx:run-commands",
+        "cache": true,
+        "inputs": [
+          "{projectRoot}/prisma/schema.prisma",
+          "{projectRoot}/prisma/prisma-config.shared.ts",
+          "{projectRoot}/prisma.config.ts",
+          "{projectRoot}/package.json",
+          "{workspaceRoot}/yarn.lock"
+        ],
+        "options": {
+          "command": "prisma validate --config prisma.config.ts",
+          "cwd": "apps/api"
+        }
+      },
+      "db:generate": {
+        "executor": "nx:run-commands",
+        "cache": true,
+        "inputs": [
+          "{projectRoot}/prisma/schema.prisma",
+          "{projectRoot}/prisma/prisma-config.shared.ts",
+          "{projectRoot}/prisma.config.ts",
+          "{projectRoot}/package.json",
+          "{workspaceRoot}/yarn.lock"
+        ],
+        "outputs": [
+          "{projectRoot}/src/generated/prisma-client"
+        ],
+        "options": {
+          "command": "prisma generate --config prisma.config.ts",
+          "cwd": "apps/api"
+        }
+      },
+      "db:migrate:dev": {
+        "executor": "nx:run-commands",
+        "cache": false,
+        "options": {
+          "command": "prisma migrate dev --config prisma.migrate.config.ts",
+          "cwd": "apps/api"
+        }
+      },
+      "db:migrate:deploy": {
+        "executor": "nx:run-commands",
+        "cache": false,
+        "options": {
+          "command": "prisma migrate deploy --config prisma.migrate.config.ts",
+          "cwd": "apps/api"
+        }
+      },
+      "db:migrate:deploy:test": {
+        "executor": "nx:run-commands",
+        "cache": false,
+        "options": {
+          "command": "prisma migrate deploy --config prisma.test.config.ts",
+          "cwd": "apps/api"
+        }
+      },
+      "db:seed": {
+        "executor": "nx:run-commands",
+        "cache": false,
+        "options": {
+          "command": "prisma db seed --config prisma.migrate.config.ts",
+          "cwd": "apps/api"
+        }
+      },
+      "db:seed:test": {
+        "executor": "nx:run-commands",
+        "cache": false,
+        "options": {
+          "command": "prisma db seed --config prisma.test.config.ts",
+          "cwd": "apps/api"
+        }
+      },
+      "db:reset": {
+        "executor": "nx:run-commands",
+        "cache": false,
+        "options": {
+          "command": "prisma migrate reset --config prisma.migrate.config.ts",
           "cwd": "apps/api"
         }
       }
     }
   },
   "dependencies": {
-    "@mockp/config": "workspace:*"
+    "@mockp/config": "workspace:*",
+    "@prisma/adapter-pg": "7.10.0",
+    "@prisma/client": "7.10.0",
+    "pg": "8.23.0",
+    "prisma": "7.10.0"
+  },
+  "devDependencies": {
+    "@types/pg": "8.23.1",
+    "tsx": "4.23.13"
   }
 }

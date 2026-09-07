@@ -17,7 +17,7 @@
     "lint": "eslint .",
     "typecheck": "tsc -b",
     "nx:report": "nx report",
-    "validate:nx": "nx run-many -t lint typecheck test build && nx run api:test:integration",
+    "validate:nx": "nx run-many -t db:validate db:generate lint typecheck test build && nx run api:test:integration",
     "validate": "yarn format:check && yarn lint && yarn validate:nx"
   },
   "dependencies": {

@@ -15,20 +15,35 @@ em etapas posteriores.
 
 ## Personas
 
-- **customer** — pessoa que busca, avalia e manifesta interesse em
-  imóveis.
-- **agent** — corretor(a) individual responsável por anunciar e
-  atender imóveis.
-- **manager** — responsável pela gestão de uma corretora (`Brokerage`),
-  incluindo seus corretores e imóveis.
-- **admin** — responsável pela operação e governança da plataforma como
-  um todo.
+Uma mesma conta (`User`) é **global** e pode participar de vários
+workspaces ao mesmo tempo (ver
+[ADR 007](adr/007-multi-tenant-workspace-foundation.md) para o modelo
+de dados correspondente). Os papéis se dividem em dois níveis:
 
-Uma mesma conta (`User`) pode acumular mais de um papel simultaneamente
-(por exemplo, um `agent` que também é `customer` em outra transação).
-Papéis são cumulativos, não mutuamente exclusivos. Ver
-[ADR 004](adr/004-auth-ownership.md) para o modelo de autorização
-correspondente.
+- **Globais** (papel do catálogo `Role`, independente de workspace):
+  - **customer** — pessoa que busca, avalia e manifesta interesse em
+    imóveis.
+  - **admin** — responsável pela operação e governança da plataforma
+    como um todo.
+- **Contextuais a um workspace** (papel do `WorkspaceMembership`
+  daquele workspace especificamente, via `WorkspaceMembershipRole`):
+  - **agent** — corretor(a) autorizado(a) a anunciar e atender imóveis
+    **naquele workspace**. Um corretor independente atua em seu
+    próprio `Workspace.INDIVIDUAL`; um corretor vinculado a uma
+    corretora atua no `Workspace.BROKERAGE` dela.
+  - **manager** — responsável pela gestão de um workspace (seus
+    membros e imóveis) — de uma corretora (`Workspace.BROKERAGE`,
+    ligada a um `Brokerage`) ou do próprio `Workspace.INDIVIDUAL` de
+    um corretor independente.
+
+O mesmo usuário pode acumular `manager` **e** `agent` no mesmo
+workspace (ex.: o dono de um `Workspace.INDIVIDUAL` acumula os dois
+papéis nesse workspace) e pode ter papéis diferentes em workspaces
+diferentes. Papéis são cumulativos, não mutuamente exclusivos. Ver
+[ADR 004](adr/004-auth-ownership.md) para o modelo de autorização e a
+[ADR 007](adr/007-multi-tenant-workspace-foundation.md) para o modelo
+de dados de `Workspace`/`WorkspaceMembership`/`WorkspaceMembershipRole`/
+`WorkspaceAgent` (que substituem o antigo `BrokerageMembership`).
 
 ## Jornadas futuras (visão de produto)
 
@@ -38,9 +53,11 @@ delas é implementada no skeleton inicial.**
 - **Autenticação com credenciais e Google** — login por e-mail/senha e
   via Google OAuth, com sessão gerida pelo frontend e tokens emitidos
   pela API. Ver [ADR 004](adr/004-auth-ownership.md).
-- **Cadastro e gestão de corretoras e corretores** — criação de
-  `Brokerage`, vínculo de `agent` a uma ou mais corretoras via
-  `BrokerageMembership`, e gestão de equipe pelo `manager`.
+- **Cadastro e gestão de corretoras e corretores** — onboarding de um
+  `Workspace.BROKERAGE` com seu `Brokerage` associado, vínculo de
+  `agent` a uma ou mais corretoras via `WorkspaceMembership`/
+  `WorkspaceMembershipRole`/`WorkspaceAgent`, e gestão de equipe pelo
+  `manager`.
 - **Cadastro e busca geoespacial de imóveis** — publicação de `Property`
   com `Address` geolocalizado e busca por proximidade/região usando
   PostGIS.

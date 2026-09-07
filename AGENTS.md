@@ -115,29 +115,52 @@ pareça sugerir implicitamente.
   Details, correlation ID, CORS, Helmet, rate limiting) e `libs/config`
   com o entrypoint server-only (`@mockp/config/server`) já estão
   implementados e com revisão técnica aprovada.
-- **Fase 3 — Docker, PostGIS, Redis e Prisma**: `In Progress`. A
-  Tarefa 3.0 (abertura documental e especificação técnica) e a
-  Tarefa 3.1 (Docker Compose com PostGIS e Redis) estão `Completed` e
-  aprovadas — [ADR 006](docs/adr/006-persistence-and-local-infrastructure.md)
-  está `Accepted`. A infraestrutura local já existe: `docker-compose.yml`
-  com `postgres` (`postgis/postgis:18-3.6`) e `redis`
-  (`redis:8.8.2-alpine`), sem `container_name`/`profiles`, healthchecks,
-  volumes nomeados separados, bancos `mockp` e `mockp_test` criados
-  deterministicamente; `DATABASE_URL`/`REDIS_URL` são obrigatórias no
-  `ServerConfig`, e `TEST_DATABASE_URL` é exclusiva de testes/scripts.
-  **Nenhum Prisma, `PrismaModule`, repository, readiness real ou
-  Dockerfile da API existe ainda.** A **Tarefa 3.2** (Prisma, schema,
-  migration inicial e seed) é agora a **única** tarefa autorizada.
-  **As Tarefas 3.3 a 3.6** (`PrismaModule`/`RedisModule`/repositories,
-  readiness real, Dockerfile da API, validação integrada) **ainda não
-  estão autorizadas** — cada uma só começa depois que a anterior
-  atender seus critérios de aceite (ver
-  [docs/IMPLEMENTATION_ROADMAP.md](docs/IMPLEMENTATION_ROADMAP.md),
+- **Fase 3 — Docker, PostGIS, Redis e Prisma**: `In Progress`. As
+  Tarefas 3.0 (abertura documental e especificação técnica), 3.1
+  (Docker Compose com PostGIS e Redis) e **3.2** (Prisma, schema,
+  migration inicial e seed) estão **`Completed`** e aprovadas —
+  [ADR 006](docs/adr/006-persistence-and-local-infrastructure.md) e
+  [ADR 007](docs/adr/007-multi-tenant-workspace-foundation.md) estão
+  ambas `Accepted` (ADR 007 supersede **exclusivamente a modelagem de
+  dados** da ADR 006; as decisões de infraestrutura local e pipeline da
+  ADR 006 — Docker Compose, Redis, separação de configs Prisma,
+  `yarn validate` — continuam válidas e não foram alteradas). A
+  infraestrutura local já existe: `docker-compose.yml` com `postgres`
+  (`postgis/postgis:18-3.6`) e `redis` (`redis:8.8.2-alpine`), sem
+  `container_name`/`profiles`, healthchecks, volumes nomeados
+  separados, bancos `mockp` e `mockp_test` criados deterministicamente;
+  `DATABASE_URL`/`REDIS_URL` são obrigatórias no `ServerConfig`, e
+  `TEST_DATABASE_URL` é exclusiva de testes/scripts. Prisma `7.10.0`,
+  seus arquivos de configuração (`prisma.config.ts`,
+  `prisma.migrate.config.ts`, `prisma.test.config.ts`,
+  `prisma/prisma-config.shared.ts`), `schema.prisma`, a migration
+  inicial e o seed **já existem e implementam a modelagem multi-tenant
+  de 15 entidades da ADR 007** — validados offline (`db:validate`,
+  `db:generate`, typecheck, lint, testes, `yarn validate`) **e em banco
+  limpo** (volume PostgreSQL recriado, migration aplicada em `mockp` e
+  `mockp_test`, seed idempotente em ambos, 15 tabelas de domínio +
+  `_prisma_migrations`, **23 `CHECK`s do domínio Mockp** (24 no total
+  do schema `public`, contando `spatial_ref_sys_srid_check`, que
+  pertence à extensão PostGIS, não ao domínio), 17 FKs, índices e
+  extensões confirmados, provas negativas/positivas executadas em
+  transação com rollback em `mockp_test` sem deixar fixtures) —
+  auditoria independente confirmou o resultado. **Nenhum
+  `PrismaModule`, `PrismaService`, repository, conexão de runtime da
+  API com o banco, readiness real ou Dockerfile da API existe ainda.**
+  **Somente a Tarefa 3.3** (`PrismaModule`/`RedisModule`/repositories
+  por agregado, ver ADR 007) **está autorizada a começar** — ainda
+  **não foi iniciada**. **As Tarefas 3.4 a 3.6** (readiness real,
+  Dockerfile da API, validação integrada) **continuam bloqueadas** —
+  cada uma só começa depois que a anterior atender seus critérios de
+  aceite (ver [docs/IMPLEMENTATION_ROADMAP.md](docs/IMPLEMENTATION_ROADMAP.md),
   Fase 3).
-- Ainda não existem Prisma, Dockerfile da API, `apps/worker` ou
-  `apps/web`/frontend neste repositório. PostgreSQL/PostGIS e Redis já
-  existem como containers locais (Docker Compose), mas nenhum código da
-  API os acessa ainda.
+- Prisma `7.10.0`, `schema.prisma`, a migration inicial e o seed (a
+  fundação multi-tenant da ADR 007) já existem e estão validados —
+  mas ainda não existem `PrismaModule`, `PrismaService`, repositories,
+  conexão runtime da API com o banco, Dockerfile da API, `apps/worker`
+  ou `apps/web`/frontend neste repositório. PostgreSQL/PostGIS e Redis
+  já existem como containers locais (Docker Compose), mas nenhum
+  código da API os acessa ainda.
 - Não crie `apps/web`, `apps/worker`, outras `libs/*` de produto,
   Next.js, Docker, autenticação, domínio de negócio ou qualquer outra
   peça de fases posteriores a Fase 3, e não antecipe entregáveis de

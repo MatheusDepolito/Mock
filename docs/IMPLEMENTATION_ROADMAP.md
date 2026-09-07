@@ -38,21 +38,34 @@ Regras de controle:
 
 ## Fase corrente
 
-**Fase 3 — Docker, PostGIS, Redis e Prisma**: `In Progress`. A
-Tarefa 3.0 (abertura documental e especificação técnica) e a
-Tarefa 3.1 (Docker Compose com PostGIS e Redis) estão `Completed` e
-aprovadas — [ADR 006](adr/006-persistence-and-local-infrastructure.md)
-está `Accepted`. `docker-compose.yml` sobe `postgres`
-(`postgis/postgis:18-3.6`) e `redis` (`redis:8.8.2-alpine`), com os
-bancos `mockp` e `mockp_test`, healthchecks e volumes nomeados
-separados; `DATABASE_URL`/`REDIS_URL` são obrigatórias no
-`ServerConfig`, e `TEST_DATABASE_URL` é exclusiva de testes/scripts.
-Nenhum Prisma, `PrismaModule`, repository, readiness real ou Dockerfile
-da API existe ainda. A **Tarefa 3.2** (Prisma, schema, migration
-inicial e seed) é agora a única tarefa autorizada; **as Tarefas 3.3 a
-3.6 ainda não estão autorizadas** — cada uma só inicia depois que a
-anterior atender seus critérios de aceite. As Fases 0, 1 e 2 estão
-`Completed`.
+**Fase 3 — Docker, PostGIS, Redis e Prisma**: `In Progress`. As
+Tarefas 3.0 (abertura documental e especificação técnica), 3.1 (Docker
+Compose com PostGIS e Redis) e **3.2** (Prisma, schema, migration
+inicial e seed) estão **`Completed`** e aprovadas —
+[ADR 006](adr/006-persistence-and-local-infrastructure.md) e
+[ADR 007](adr/007-multi-tenant-workspace-foundation.md) estão ambas
+`Accepted` (ADR 007 supersede **exclusivamente a modelagem de dados**
+da ADR 006, seção "Entidades permitidas" em diante; as decisões de
+infraestrutura local e pipeline da ADR 006 — Docker Compose, Redis,
+separação de configs Prisma, `yarn validate` — continuam válidas).
+`docker-compose.yml` sobe `postgres` (`postgis/postgis:18-3.6`) e
+`redis` (`redis:8.8.2-alpine`), com os bancos `mockp` e `mockp_test`,
+healthchecks e volumes nomeados separados; `DATABASE_URL`/`REDIS_URL`
+são obrigatórias no `ServerConfig`, e `TEST_DATABASE_URL` é exclusiva
+de testes/scripts. `schema.prisma`, a migration inicial e o seed
+**implementam as 15 entidades multi-tenant da ADR 007**, validados
+offline e em banco limpo (volume PostgreSQL recriado, migration
+aplicada em `mockp` e `mockp_test`, seed idempotente, 15 tabelas +
+`_prisma_migrations`, **23 `CHECK`s do domínio Mockp** — 24 no total
+do schema `public`, incluindo `spatial_ref_sys_srid_check`, que
+pertence à extensão PostGIS, não ao domínio —, 17 FKs, índices e
+extensões confirmados, provas negativas/positivas em transação com
+rollback) — auditoria independente aprovou o resultado. Nenhum
+`PrismaModule`, repository, readiness real ou Dockerfile da API
+existe ainda. **Somente a Tarefa 3.3 está autorizada a começar** —
+ainda **não foi iniciada**. **As Tarefas 3.4 a 3.6 continuam
+bloqueadas** — cada uma só inicia depois que a anterior atender seus
+critérios de aceite. As Fases 0, 1 e 2 estão `Completed`.
 
 ---
 
@@ -199,21 +212,28 @@ obrigatórias, sem endpoints de negócio.
 ## Fase 3 — Docker, PostGIS, Redis e Prisma
 
 **Status**: In Progress — Tarefa 3.0 (abertura documental e
-especificação técnica) e Tarefa 3.1 (Docker Compose com PostGIS e
-Redis) concluídas e aprovadas via
-[ADR 006](adr/006-persistence-and-local-infrastructure.md)
-(`Accepted`). A infraestrutura local já existe: `docker-compose.yml`
-com os serviços `postgres` (`postgis/postgis:18-3.6`) e `redis`
-(`redis:8.8.2-alpine`), sem `container_name`/`profiles`, healthchecks,
-volumes nomeados separados, bancos `mockp` e `mockp_test` criados
-deterministicamente; `DATABASE_URL`/`REDIS_URL` obrigatórias no
-`ServerConfig`, `TEST_DATABASE_URL` exclusiva de testes/scripts. Nenhum
-Prisma, `PrismaModule`, repository, readiness real (a API ainda checa
-apenas sua própria inicialização) ou Dockerfile da API foi criado. A
-**Tarefa 3.2** abaixo (Prisma, schema, migration inicial e seed) é
-agora a única tarefa autorizada. **As Tarefas 3.3 a 3.6 ainda não
-estão autorizadas** — cada uma só inicia depois que a anterior atender
-seus critérios de aceite.
+especificação técnica), Tarefa 3.1 (Docker Compose com PostGIS e
+Redis) e **Tarefa 3.2** (Prisma, schema, migration inicial e seed)
+**concluídas e aprovadas** via
+[ADR 006](adr/006-persistence-and-local-infrastructure.md) e
+[ADR 007](adr/007-multi-tenant-workspace-foundation.md) (ambas
+`Accepted` — ADR 007 supersede **exclusivamente a modelagem de dados**
+da ADR 006; as decisões de infraestrutura/pipeline da ADR 006
+continuam válidas). A infraestrutura local já existe:
+`docker-compose.yml` com os serviços `postgres`
+(`postgis/postgis:18-3.6`) e `redis` (`redis:8.8.2-alpine`), sem
+`container_name`/`profiles`, healthchecks, volumes nomeados separados,
+bancos `mockp` e `mockp_test` criados deterministicamente;
+`DATABASE_URL`/`REDIS_URL` obrigatórias no `ServerConfig`,
+`TEST_DATABASE_URL` exclusiva de testes/scripts. `schema.prisma`, a
+migration inicial e o seed **implementam as 15 entidades multi-tenant
+da ADR 007**, validados offline e em banco limpo — auditoria
+independente aprovou o resultado (ver "3.2" abaixo). Nenhum
+`PrismaModule`, repository, readiness real (a API ainda checa apenas
+sua própria inicialização) ou Dockerfile da API foi criado. **Somente
+a Tarefa 3.3 está autorizada a começar** — ainda **não foi iniciada**.
+**As Tarefas 3.4 a 3.6 continuam bloqueadas** — cada uma só inicia
+depois que a anterior atender seus critérios de aceite.
 
 **Objetivo**: provisionar a infraestrutura local (profile padrão) e
 modelar o núcleo de dados inicial.
@@ -226,15 +246,64 @@ modelar o núcleo de dados inicial.
   `container_name`, sem `profiles`, health checks, volumes nomeados
   separados); adicionar `DATABASE_URL`/`REDIS_URL` ao `.env.example`
   (valores locais não secretos) e ao schema Zod server-only.
-- **3.2 — Prisma, schema, migration inicial e seed**: instalar Prisma
-  na versão fixada pela ADR 006, criar `prisma.config.ts` e
-  `schema.prisma` com as 11 entidades do núcleo, gerar e customizar a
-  migration inicial (extensão PostGIS + índice GiST), implementar o
-  seed determinístico dos 4 papéis globais.
+- **3.2 — Prisma, schema, migration inicial e seed**: Prisma `7.10.0` e
+  seus arquivos de configuração (`prisma.config.ts`,
+  `prisma.migrate.config.ts`, `prisma.test.config.ts`,
+  `prisma/prisma-config.shared.ts`) **já foram criados**, sob a
+  autoridade da [ADR 006](adr/006-persistence-and-local-infrastructure.md)
+  para infraestrutura/Prisma-configuração/pipeline (inalterada). A
+  modelagem de dados **já foi reimplementada** e validada, tanto
+  offline quanto em banco limpo (Etapa B), para o schema final de 15
+  entidades definido pela
+  [ADR 007](adr/007-multi-tenant-workspace-foundation.md) (`Accepted`,
+  autoridade da modelagem):
+  - remoção de `BrokerageMembership`/`BrokerageMemberRole`,
+    substituídos por `WorkspaceMembership`/`WorkspaceMembershipRole`;
+  - `Workspace` como fronteira de tenant (`INDIVIDUAL`/`BROKERAGE`),
+    com `WorkspaceAgent`;
+  - UUIDv7 (`dbgenerated("uuidv7()")`) em toda entidade com ID não
+    determinístico, **exceto `Role.id`** (catálogo versionado e
+    determinístico, sem default, sempre explícito — ajuste aprovado
+    após a primeira reimplementação);
+  - `citext` para `email`/`slug`/`licenseNumber`/`jurisdictionCode`
+    (`jurisdictionCode` ajustado após a primeira reimplementação);
+  - `Address` com estrutura internacional completa (`addressLine1`
+    obrigatório, `addressLine2`/`district` opcionais — ajuste aprovado
+    após a primeira reimplementação);
+  - PostGIS e índice GiST em `Address.location` (mantidos da ADR 006);
+  - FKs compostas de isolamento de tenant;
+  - índices auxiliares de FK em `AuthIdentity.userId`,
+    `UserRole.roleId` e `AgentLicense.agentProfileId` (ajuste aprovado
+    após a primeira reimplementação);
+  - lifecycle explícito (`status`, timestamps, `version`) nas entidades
+    aplicáveis;
+  - `CHECK`s de coerência status/timestamp e de normalização de
+    formato definidos pela ADR 007;
+  - seed reduzido a `CUSTOMER` (`...001`) e `ADMIN` (`...004`);
+  - migration inicial **reescrita do zero**, não incremental (nenhuma
+    migration foi publicada/commitada em nenhum ambiente compartilhado
+    antes desta aplicação).
+  - **Etapa B concluída**: volume PostgreSQL recriado, migration
+    aplicada via `db:migrate:deploy`/`db:migrate:deploy:test` em
+    `mockp` e `mockp_test`, seed executado duas vezes em cada banco
+    (idempotência confirmada), estrutura (15 tabelas + `_prisma_migrations`,
+    **23 `CHECK`s do domínio Mockp** — 24 no total do schema `public`,
+    contando `spatial_ref_sys_srid_check`, próprio da extensão
+    PostGIS, não do domínio —, 17 FKs, índices tenant-scoped, GiST,
+    `citext`) conferida em ambos, e provas negativas/positivas
+    executadas em `mockp_test` dentro de uma transação com rollback
+    (sem fixtures remanescentes). **`Completed`** — aprovada por
+    auditoria independente (schema, migration, seed, provas em banco
+    limpo, `yarn validate` com 34 testes de integração).
 - **3.3 — `PrismaModule`, `RedisModule` e repositories por agregado**:
   `PrismaService`/`PrismaModule` (via `PrismaPg`), módulo de conexão
-  Redis, e `UserRepository`/`BrokerageRepository`/`PropertyRepository`
-  conforme os agregados definidos na ADR 006.
+  Redis, e repositories orientados aos agregados do modelo da ADR 007
+  — ex.: `UserRepository`, `WorkspaceRepository` (`Brokerage` é perfil
+  exclusivo do agregado `Workspace`, não um agregado próprio) e
+  `PropertyRepository` (`Address` pertence ao agregado `Property`).
+  Toda operação tenant-scoped exige `workspaceId` explícito no
+  repository. **Autorizada a começar** (Tarefa 3.2 concluída) —
+  **ainda não foi iniciada**.
 - **3.4 — Readiness real e testes de falha das dependências**:
   atualizar `GET /api/v1/health/ready` para checar PostgreSQL/PostGIS e
   Redis; testes de integração cobrindo o caminho feliz e a falha de
@@ -258,12 +327,16 @@ modelar o núcleo de dados inicial.
   de `node_modules` do host) — construído e validado nesta fase; usado
   depois pelo profile `full`, cuja execução conjunta é validada na
   Fase 9.
-- Schema Prisma com as entidades do núcleo: `User`, `Credential`,
-  `AuthIdentity`, `Role`, `UserRole`, `CustomerProfile`, `AgentProfile`,
-  `Brokerage`, `BrokerageMembership`, `Property`, `Address`, com os
-  relacionamentos descritos em
+- Schema Prisma com as 15 entidades definidas pela
+  [ADR 007](adr/007-multi-tenant-workspace-foundation.md) (`Accepted`,
+  autoridade da modelagem — supersede exclusivamente a modelagem de
+  dados da ADR 006): `User`, `Credential`, `AuthIdentity`, `Role`,
+  `UserRole`, `CustomerProfile`, `AgentProfile`, `AgentLicense`,
+  `Workspace`, `WorkspaceMembership`, `WorkspaceMembershipRole`,
+  `WorkspaceAgent`, `Brokerage`, `Property`, `Address`, com os
+  relacionamentos resumidos em
   [docs/TARGET_ARCHITECTURE.md](TARGET_ARCHITECTURE.md), seção 10, e
-  detalhados campo a campo na [ADR 006](adr/006-persistence-and-local-infrastructure.md).
+  detalhados campo a campo na ADR 007.
 - Repository por agregado (ex.: `Property` + `Address` no mesmo
   repository), não um repository por tabela.
 - Migration inicial e seed mínimo determinístico.
@@ -288,8 +361,10 @@ modelar o núcleo de dados inicial.
 
 - Modelo de dados conforme seção 10 de
   [docs/TARGET_ARCHITECTURE.md](TARGET_ARCHITECTURE.md) e a
-  [ADR 006](adr/006-persistence-and-local-infrastructure.md), sem
-  nenhuma entidade de negócio fora do núcleo revisado.
+  [ADR 007](adr/007-multi-tenant-workspace-foundation.md) (autoridade
+  da modelagem), sem nenhuma entidade de negócio fora do núcleo
+  revisado. Infraestrutura, Prisma/configuração e pipeline continuam
+  conforme a [ADR 006](adr/006-persistence-and-local-infrastructure.md).
 - Readiness da API passa a refletir a saúde real das dependências
   (PostgreSQL/PostGIS e Redis).
 
