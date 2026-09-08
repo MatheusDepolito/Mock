@@ -49,8 +49,12 @@ describe('Health endpoints', () => {
     // do exist and are part of AppModule — the client is constructed with
     // `lazyConnect: true`, and no endpoint/test in this suite ever calls
     // RedisService.ping(), so constructing it never opens a socket.
-    // PrismaModule still doesn't exist (Tarefa 3.3.2+). Real readiness
-    // (actually probing PostgreSQL/Redis) continues to be Tarefa 3.4.
+    // As of Tarefa 3.3.2, PrismaModule/PrismaService also exist and are
+    // part of AppModule — PrismaService extends the generated
+    // PrismaClient constructed with a PrismaPg adapter, but no test in
+    // this suite ever issues a query, so constructing it never opens a
+    // socket either. Real readiness (actually probing PostgreSQL/Redis)
+    // continues to be Tarefa 3.4.
     expect(config.databaseUrl).toMatch(/^postgres(ql)?:\/\//);
     expect(config.redisUrl).toMatch(/^rediss?:\/\//);
     expect(app).toBeDefined();

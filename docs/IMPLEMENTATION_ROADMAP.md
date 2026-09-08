@@ -60,9 +60,13 @@ aplicada em `mockp` e `mockp_test`, seed idempotente, 15 tabelas +
 do schema `public`, incluindo `spatial_ref_sys_srid_check`, que
 pertence à extensão PostGIS, não ao domínio —, 17 FKs, índices e
 extensões confirmados, provas negativas/positivas em transação com
-rollback) — auditoria independente aprovou o resultado. Nenhum
-`PrismaModule`, repository, readiness real ou Dockerfile da API
-existe ainda. **A Tarefa 3.3 está `In Progress`**. O planejamento
+rollback) — auditoria independente aprovou o resultado. **A Tarefa 3.3
+está `In Progress`**: `PrismaModule` e `PrismaService` já existem no
+código e já estão importados em `AppModule` — a conexão com o Prisma
+continua exclusivamente lazy (nenhum `$connect()` eager, nenhuma query
+durante o bootstrap) e isso ainda **não representa readiness real**.
+Nenhum repository, módulo de domínio, harness de infraestrutura real,
+readiness real ou Dockerfile da API existe ainda. O planejamento
 arquitetural está **concluído e aprovado**:
 [ADR 008](adr/008-runtime-persistence-and-repositories.md) está
 `Accepted`. A Tarefa 3.3 é executada subtarefa por subtarefa (oito no
@@ -72,11 +76,21 @@ aprovada**: `RuntimeConfigModule`, `RedisModule` e `RedisService` já
 existem no código e já estão em `AppModule` — a integração com o Redis
 é exclusivamente lazy (nenhum teste offline abre socket real) e ainda
 **não representa readiness real** (isso continua sendo exclusivamente
-a Tarefa 3.4). **Somente a subtarefa 3.3.2** (`PrismaModule` e `PrismaService` com testes offline, conforme ADR 008) **está autorizada
-a começar**; as subtarefas 3.3.3 a 3.3.8 **ainda não estão
-autorizadas**. **As Tarefas 3.4 a 3.6 continuam bloqueadas** — cada
-uma só inicia depois que a anterior atender seus critérios de aceite.
-As Fases 0, 1 e 2 estão `Completed`.
+a Tarefa 3.4). **A subtarefa 3.3.2** (`PrismaModule` e `PrismaService`
+com testes offline, conforme ADR 008 §2.2) está **`Completed` e
+aprovada**: `PrismaModule` e `PrismaService` já existem no código e já
+estão em `AppModule` — a conexão com o Prisma é exclusivamente lazy
+(nenhum `$connect()` eager, nenhuma query no bootstrap,
+`onModuleDestroy()` aguarda `$disconnect()`, nenhum teste offline abre
+conexão PostgreSQL real) e ainda **não representa readiness real**
+(isso continua sendo exclusivamente a Tarefa 3.4); 59 testes unitários
+e 34 testes de integração offline confirmados. **Somente a subtarefa
+3.3.3** (composição offline do `AppModule`, com prova de instância
+única de `PrismaService`/`RedisService` no grafo Nest, conforme ADR 008
+§7.2/§8) **está autorizada a começar**; as subtarefas 3.3.4 a 3.3.8
+**ainda não estão autorizadas**. **As Tarefas 3.4 a 3.6 continuam
+bloqueadas** — cada uma só inicia depois que a anterior atender seus
+critérios de aceite. As Fases 0, 1 e 2 estão `Completed`.
 
 ---
 
@@ -239,20 +253,22 @@ bancos `mockp` e `mockp_test` criados deterministicamente;
 `TEST_DATABASE_URL` exclusiva de testes/scripts. `schema.prisma`, a
 migration inicial e o seed **implementam as 15 entidades multi-tenant
 da ADR 007**, validados offline e em banco limpo — auditoria
-independente aprovou o resultado (ver "3.2" abaixo). Nenhum
-`PrismaModule`, repository ou Dockerfile da API foi criado; readiness
-(`a API ainda checa apenas sua própria inicialização`) permanece
-exclusivamente Tarefa 3.4. **A Tarefa 3.3 está `In Progress`**.
-Planejamento arquitetural **concluído e aprovado**:
+independente aprovou o resultado (ver "3.2" abaixo). Nenhum repository
+ou Dockerfile da API foi criado ainda; readiness (`a API ainda checa
+apenas sua própria inicialização`) permanece exclusivamente Tarefa 3.4.
+**A Tarefa 3.3 está `In Progress`**. Planejamento arquitetural
+**concluído e aprovado**:
 [ADR 008](adr/008-runtime-persistence-and-repositories.md) está
 `Accepted`. **A subtarefa 3.3.1** (`RuntimeConfigModule` e
 `RedisModule`/`RedisService` com testes offline) está **`Completed` e
-aprovada** — ver "3.3" abaixo para o detalhamento. **Somente a
-subtarefa 3.3.2** (`PrismaModule` e `PrismaService` com testes offline)
-**está autorizada a começar**; as subtarefas 3.3.3 a 3.3.8 **ainda não
-estão autorizadas**. **As Tarefas 3.4 a 3.6 continuam bloqueadas** —
-cada uma só inicia depois que a anterior atender seus critérios de
-aceite.
+aprovada** — ver "3.3" abaixo para o detalhamento. **A subtarefa 3.3.2**
+(`PrismaModule` e `PrismaService` com testes offline) está **`Completed`
+e aprovada** — ver "3.3" abaixo para o detalhamento. **Somente a
+subtarefa 3.3.3** (composição offline do `AppModule`, conforme ADR 008
+§7.2/§8) **está autorizada a começar**; as subtarefas 3.3.4 a 3.3.8
+**ainda não estão autorizadas**. **As Tarefas 3.4 a 3.6 continuam
+bloqueadas** — cada uma só inicia depois que a anterior atender seus
+critérios de aceite.
 
 **Objetivo**: provisionar a infraestrutura local (profile padrão) e
 modelar o núcleo de dados inicial.
@@ -341,10 +357,28 @@ modelar o núcleo de dados inicial.
     offline abre socket real, e sua existência **não representa
     readiness real** (isso continua sendo exclusivamente a Tarefa 3.4).
     52 testes unitários e 34 testes de integração offline confirmados.
-  - **Somente a subtarefa 3.3.2** (`PrismaModule` e `PrismaService` com
-    testes offline, conforme ADR 008) **está autorizada a começar**; as
-    subtarefas 3.3.3 a 3.3.8 **ainda não estão autorizadas**, cada uma
-    exigindo autorização explícita própria.
+  - **3.3.2 — `PrismaModule`/`PrismaService` + testes offline**:
+    **`Completed`** — aprovada tecnicamente. `PrismaService`
+    (`@Injectable()`, estende o `PrismaClient` gerado localmente,
+    implementa `OnModuleDestroy`) injeta `SERVER_CONFIG` e constrói
+    `PrismaPg` usando exclusivamente `config.databaseUrl`; `PrismaModule`
+    (estático, não-global, `providers`/`exports: [PrismaService]`) já
+    existem no código e já estão importados em `AppModule`. **A conexão
+    com o Prisma é exclusivamente lazy** — nenhum `OnModuleInit`,
+    nenhum `$connect()` eager, nenhuma query durante o bootstrap,
+    nenhum teste offline abre conexão PostgreSQL real;
+    `onModuleDestroy()` aguarda (`await`) `this.$disconnect()`. Sua
+    existência **não representa readiness real** (isso continua sendo
+    exclusivamente a Tarefa 3.4). 59 testes unitários e 34 testes de
+    integração offline confirmados.
+  - **Somente a subtarefa 3.3.3** (composição offline do `AppModule`
+    somente com módulos já funcionais — `RuntimeConfigModule` +
+    `PrismaModule` + `RedisModule` já wired nas subtarefas 3.3.1–3.3.2,
+    incluindo a prova de instância única de `PrismaService` e
+    `RedisService` no grafo Nest, exatamente conforme ADR 008 §7.2/§8)
+    **está autorizada a começar**; as subtarefas 3.3.4 a 3.3.8 **ainda
+    não estão autorizadas**, cada uma exigindo autorização explícita
+    própria.
 - **3.4 — Readiness real e testes de falha das dependências**:
   atualizar `GET /api/v1/health/ready` para checar PostgreSQL/PostGIS e
   Redis; testes de integração cobrindo o caminho feliz e a falha de

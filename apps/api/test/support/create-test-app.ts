@@ -16,12 +16,13 @@ export const TEST_SERVER_CONFIG: ServerConfig = {
   host: '127.0.0.1',
   logLevel: 'silent',
   corsAllowedOrigins: [ALLOWED_TEST_ORIGIN],
-  // Syntactically valid but never dialed: PrismaModule doesn't exist yet
-  // (Tarefa 3.3.2+). RedisModule/RedisService now exist (Tarefa 3.3.1),
-  // but RedisService connects lazily (no socket opened by construction)
-  // and no test in this suite calls RedisService.ping() — so this value
-  // never causes a real connection attempt. Every test in this suite
-  // proves the API boots and answers health checks with no
+  // Syntactically valid but never dialed: PrismaModule/PrismaService
+  // (Tarefa 3.3.2) and RedisModule/RedisService (Tarefa 3.3.1) both
+  // exist and are part of AppModule now, but both connect exclusively
+  // lazily — constructing either never opens a socket, and no test in
+  // this suite issues a Prisma query or calls RedisService.ping() — so
+  // this value never causes a real connection attempt. Every test in
+  // this suite proves the API boots and answers health checks with no
   // PostgreSQL/Redis process reachable from these values.
   databaseUrl: 'postgresql://mockp:mockp@localhost:5432/mockp_test',
   redisUrl: 'redis://localhost:6379',

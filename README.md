@@ -21,14 +21,23 @@ validados offline e em banco limpo (auditoria independente aprovada).
 `RuntimeConfigModule`, `RedisModule` e `RedisService` já existem e
 estão em `AppModule` — a integração com o Redis é exclusivamente lazy
 (nenhum teste offline abre socket real) e ainda não representa
-readiness real. Só a subtarefa 3.3.2 (`PrismaModule` e `PrismaService`
-com testes offline) está autorizada a começar; as subtarefas
-3.3.3–3.3.8 ainda não estão autorizadas; as Tarefas 3.4 a 3.6 continuam
-bloqueadas. Nenhum `PrismaModule`, `PrismaService`, repository, conexão
-de runtime da API com o banco, readiness real, Dockerfile da API,
-worker ou frontend existe ainda no repositório. Antes de qualquer novo
-scaffold ou implementação, leia a documentação abaixo — ela é a fonte
-de verdade do projeto.
+readiness real. **A subtarefa 3.3.2 está `Completed` e aprovada**:
+`PrismaModule` e `PrismaService` (estende o `PrismaClient` gerado,
+injeta `SERVER_CONFIG`, constrói `PrismaPg` exclusivamente com
+`config.databaseUrl`) já existem e estão em `AppModule` — a conexão
+com o Prisma é exclusivamente lazy (nenhum `$connect()` eager, nenhuma
+query no bootstrap, nenhum teste offline abre conexão PostgreSQL real;
+`onModuleDestroy()` aguarda `$disconnect()`) e ainda não representa
+readiness real (59 testes unitários e 34 testes de integração offline
+confirmados). Só a subtarefa 3.3.3 (composição offline do `AppModule`
+com prova de instância única de `PrismaService`/`RedisService`,
+conforme ADR 008 §7.2/§8) está autorizada a começar; as subtarefas
+3.3.4–3.3.8 ainda não estão autorizadas; as Tarefas 3.4 a 3.6 continuam
+bloqueadas. Nenhum repository, módulo de domínio, harness de
+infraestrutura real, readiness real, Dockerfile da API, worker ou
+frontend existe ainda no repositório. Antes de qualquer novo scaffold
+ou implementação, leia a documentação abaixo — ela é a fonte de
+verdade do projeto.
 
 ## Ordem de leitura recomendada
 
@@ -83,10 +92,19 @@ de verdade do projeto.
   `RedisModule` (estático, não-global) e `RedisService` (composição
   sobre `ioredis@6.0.0`, conexão lazy) já existem e estão em
   `AppModule` — nenhum teste offline abre socket real, e isso ainda não
-  representa readiness real (Tarefa 3.4). Só a subtarefa 3.3.2
-  (`PrismaModule` e `PrismaService` com testes offline) está autorizada a
-  começar; as subtarefas 3.3.3–3.3.8 ainda não estão autorizadas; as
-  Tarefas 3.4 a 3.6 continuam bloqueadas.
+  representa readiness real (Tarefa 3.4). **A subtarefa 3.3.2 está
+  `Completed` e aprovada**: `PrismaModule` (estático, não-global) e
+  `PrismaService` (estende o `PrismaClient` gerado, injeta
+  `SERVER_CONFIG`, constrói `PrismaPg` exclusivamente com
+  `config.databaseUrl`) já existem e estão em `AppModule` — a conexão
+  é exclusivamente lazy (nenhum `$connect()` eager, nenhuma query no
+  bootstrap, `onModuleDestroy()` aguarda `$disconnect()`), nenhum teste
+  offline abre conexão PostgreSQL real, e isso ainda não representa
+  readiness real (Tarefa 3.4). Só a subtarefa 3.3.3 (composição offline
+  do `AppModule` com prova de instância única de `PrismaService`/
+  `RedisService`, ADR 008 §7.2/§8) está autorizada a começar; as
+  subtarefas 3.3.4–3.3.8 ainda não estão autorizadas; as Tarefas 3.4 a
+  3.6 continuam bloqueadas.
 - Repositório com workspace Yarn/Nx configurado, o skeleton técnico da
   API NestJS implementado, PostgreSQL/PostGIS + Redis disponíveis via
   Docker Compose, e Prisma (schema, migration inicial e seed da

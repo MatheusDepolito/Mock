@@ -9,6 +9,7 @@ import { HealthModule } from '../health/health.module';
 import { ProblemDetailsFilter } from '../common/problem-details.filter';
 import { getRequestId } from '../common/request-id';
 import { RuntimeConfigModule } from '../common/runtime-config.module';
+import { PrismaModule } from '../prisma/prisma.module';
 import { RedisModule } from '../redis/redis.module';
 
 const REDACTED_HEADER_PATHS = [
@@ -69,10 +70,14 @@ export class AppModule {
             limit: serverConfig.rateLimit.limit,
           },
         ]),
-        // Static, non-global (unlike RuntimeConfigModule above) —
-        // imported directly here to register RedisService's lifecycle
-        // even though nothing consumes it yet (Tarefa 3.3.1). See ADR
-        // 008 §2.4.
+        // Static, non-global (unlike RuntimeConfigModule above) — both
+        // imported directly here to register PrismaService's/
+        // RedisService's lifecycle (OnModuleDestroy) even though nothing
+        // consumes them yet (Tarefa 3.3.1 for Redis, 3.3.2 for Prisma).
+        // Neither import opens a connection: both stay exclusively lazy
+        // until a real consumer issues a query/command. See ADR 008
+        // §2.4.
+        PrismaModule,
         RedisModule,
         HealthModule,
       ],

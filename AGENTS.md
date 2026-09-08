@@ -144,9 +144,10 @@ pareça sugerir implicitamente.
   pertence à extensão PostGIS, não ao domínio), 17 FKs, índices e
   extensões confirmados, provas negativas/positivas executadas em
   transação com rollback em `mockp_test` sem deixar fixtures) —
-  auditoria independente confirmou o resultado. **Nenhum
-  `PrismaModule`, `PrismaService`, repository, conexão de runtime da
-  API com o banco, readiness real ou Dockerfile da API existe ainda.**
+  auditoria independente confirmou o resultado. Ao final da Tarefa 3.2,
+  nenhum `PrismaModule`, `PrismaService`, repository, conexão de
+  runtime da API com o banco, readiness real ou Dockerfile da API
+  existia ainda — ver abaixo o que a Tarefa 3.3 já entregou desde então.
   **A Tarefa 3.3** (`PrismaModule`/`RedisModule`/repositories por
   agregado, ver ADR 007) está **`In Progress`**, executada subtarefa
   por subtarefa (oito no total, definidas na ADR 008 §8), cada uma com
@@ -159,22 +160,43 @@ pareça sugerir implicitamente.
   `AppModule`. **A integração com o Redis é exclusivamente lazy** —
   nenhum teste offline abre socket real, e sua mera existência **não
   representa readiness real** (isso continua sendo exclusivamente a
-  Tarefa 3.4). **Nenhum `PrismaModule`, `PrismaService`, repository ou
-  Dockerfile da API existe ainda.** **Somente a subtarefa 3.3.2**
-  (`PrismaModule` e `PrismaService` com testes offline, conforme ADR 008)
-  **está autorizada a começar**; as subtarefas 3.3.3 a 3.3.8 **ainda
+  Tarefa 3.4). **A subtarefa 3.3.2** (`PrismaModule` e `PrismaService`
+  com testes offline, conforme ADR 008 §2.2) está **`Completed` e
+  aprovada**: `PrismaService` (`@Injectable()`, estende o `PrismaClient`
+  gerado localmente, implementa `OnModuleDestroy`) injeta
+  `SERVER_CONFIG` e constrói `PrismaPg` usando exclusivamente
+  `config.databaseUrl`; `PrismaModule` (estático, não-global,
+  `providers`/`exports: [PrismaService]`) já existe no código e já está
+  importado em `AppModule`. **A conexão com o Prisma é exclusivamente
+  lazy** — nenhum `OnModuleInit`, nenhum `$connect()` eager, nenhuma
+  query durante o bootstrap, nenhum teste offline abre conexão
+  PostgreSQL real; `onModuleDestroy()` aguarda (`await`)
+  `this.$disconnect()`. Sua mera existência **não representa readiness
+  real** (isso continua sendo exclusivamente a Tarefa 3.4). 59 testes
+  unitários e 34 testes de integração offline confirmados. **Nenhum
+  repository, módulo de domínio, harness de infraestrutura real
+  (`test:integration:infra`/`validate:infra`), conexão real com
+  PostgreSQL/Redis, readiness real, Controller/Service HTTP, endpoint,
+  DTO ou Dockerfile da API existe ainda.** **Somente a subtarefa 3.3.3**
+  (composição offline do `AppModule` —
+  `RuntimeConfigModule`+`PrismaModule`+`RedisModule` já wired,
+  incluindo a prova de instância única de `PrismaService` e
+  `RedisService` no grafo Nest, exatamente conforme ADR 008 §7.2/§8)
+  **está autorizada a começar**; as subtarefas 3.3.4 a 3.3.8 **ainda
   não estão autorizadas**. **As Tarefas 3.4 a 3.6** (readiness real,
   Dockerfile da API, validação integrada) **continuam bloqueadas** —
   cada uma só começa depois que a anterior atender seus critérios de
   aceite (ver [docs/IMPLEMENTATION_ROADMAP.md](docs/IMPLEMENTATION_ROADMAP.md),
   Fase 3).
 - Prisma `7.10.0`, `schema.prisma`, a migration inicial e o seed (a
-  fundação multi-tenant da ADR 007) já existem e estão validados —
-  mas ainda não existem `PrismaModule`, `PrismaService`, repositories,
-  conexão runtime da API com o banco, Dockerfile da API, `apps/worker`
-  ou `apps/web`/frontend neste repositório. PostgreSQL/PostGIS e Redis
-  já existem como containers locais (Docker Compose), mas nenhum
-  código da API os acessa ainda.
+  fundação multi-tenant da ADR 007) já existem e estão validados;
+  `PrismaModule`/`PrismaService` também já existem e estão em
+  `AppModule` (conexão exclusivamente lazy) — mas ainda não existem
+  repositories, conexão runtime real da API com o banco, Dockerfile da
+  API, `apps/worker` ou `apps/web`/frontend neste repositório.
+  PostgreSQL/PostGIS e Redis já existem como containers locais (Docker
+  Compose), mas nenhum código da API abre uma conexão real com eles
+  ainda.
 - Não crie `apps/web`, `apps/worker`, outras `libs/*` de produto,
   Next.js, Docker, autenticação, domínio de negócio ou qualquer outra
   peça de fases posteriores a Fase 3, e não antecipe entregáveis de
