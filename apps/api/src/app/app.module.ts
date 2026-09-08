@@ -8,8 +8,8 @@ import type { ServerConfig } from '@mockp/config/server';
 import { HealthModule } from '../health/health.module';
 import { ProblemDetailsFilter } from '../common/problem-details.filter';
 import { getRequestId } from '../common/request-id';
-
-export const SERVER_CONFIG = Symbol('SERVER_CONFIG');
+import { RuntimeConfigModule } from '../common/runtime-config.module';
+import { RedisModule } from '../redis/redis.module';
 
 const REDACTED_HEADER_PATHS = [
   'req.headers.authorization',
@@ -48,6 +48,10 @@ export class AppModule {
     return {
       module: AppModule,
       imports: [
+        // Global — provides SERVER_CONFIG application-wide from this
+        // same serverConfig, never re-reading process.env. See
+        // docs/adr/008-runtime-persistence-and-repositories.md (§2.1).
+        RuntimeConfigModule.forRoot(serverConfig),
         // The .env file (if any) is already loaded by main.ts/the test
         // harness, before loadServerConfig() runs — see
         // @mockp/config/server's loadEnvFile(). ConfigModule must not load
@@ -65,14 +69,17 @@ export class AppModule {
             limit: serverConfig.rateLimit.limit,
           },
         ]),
+        // Static, non-global (unlike RuntimeConfigModule above) —
+        // imported directly here to register RedisService's lifecycle
+        // even though nothing consumes it yet (Tarefa 3.3.1). See ADR
+        // 008 §2.4.
+        RedisModule,
         HealthModule,
       ],
       providers: [
-        { provide: SERVER_CONFIG, useValue: serverConfig },
         { provide: APP_GUARD, useClass: ThrottlerGuard },
         { provide: APP_FILTER, useClass: ProblemDetailsFilter },
       ],
-      exports: [SERVER_CONFIG],
     };
   }
 }

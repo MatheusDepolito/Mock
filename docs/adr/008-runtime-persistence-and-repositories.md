@@ -557,7 +557,11 @@ export class RedisService implements OnModuleDestroy {
    * preservado quando existe uma causa original). Trata explicitamente
    * todo estado possível de `client.status` antes de enviar o comando:
    * - 'wait' (lazyConnect, nunca conectou): connect() explícito, sob timeout.
-   * - 'connecting'/'reconnecting': aguarda 'ready', sob o mesmo timeout.
+   * - 'connecting'/'connect'/'reconnecting': aguarda 'ready', sob o mesmo
+   *   timeout. 'connect' é um estado real e transitório do ioredis (o
+   *   socket TCP já conectou, mas o client ainda não concluiu o
+   *   handshake inicial) — tratado exatamente como 'connecting': o
+   *   client ainda não está pronto para receber um comando.
    * - 'ready': segue direto para o PING (que já carrega commandTimeout).
    * - 'close'/'end': falha IMEDIATAMENTE — nunca tenta enviar um comando
    *   numa conexão já encerrada (só pioraria o diagnóstico).
@@ -570,6 +574,7 @@ export class RedisService implements OnModuleDestroy {
           await withTimeout(this.client.connect(), REDIS_CONNECT_TIMEOUT_MS);
           break;
         case 'connecting':
+        case 'connect':
         case 'reconnecting':
           await this.waitUntilReady(REDIS_CONNECT_TIMEOUT_MS);
           break;
@@ -696,19 +701,19 @@ expõe um erro do driver diretamente.
 
 #### 3.1 Opções — tabela final
 
-| Opção                                   | Valor                                                  | Justificativa                                                                                                                                                                 |
-| --------------------------------------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `lazyConnect`                           | `true`                                                 | Construir o service não pode abrir socket, ou os 34 testes offline quebram sem Docker.                                                                                        |
-| `enableOfflineQueue`                    | `false`                                                | Sem isso, um comando acidental na suíte offline ficaria enfileirado indefinidamente — vira erro imediato e explícito em vez de hang silencioso.                               |
-| `connectTimeout`                        | `2000`ms                                               | Finito — nenhuma tentativa de conexão trava `ping()` indefinidamente.                                                                                                         |
-| `commandTimeout`                        | `2000`ms                                               | Finito — nenhum comando individual trava indefinidamente mesmo com conexão estabelecida mas servidor não respondendo.                                                         |
-| `maxRetriesPerRequest`                  | `1`                                                    | Finito e pequeno — apropriado para uma requisição HTTP com prazo de resposta; ver "Por que não as opções do BullMQ" abaixo.                                                   |
-| `retryStrategy`                         | `(n) => Math.min(n × 200, 2000)`                       | Backoff linear limitado a 2s para a **reconexão do socket** (eixo diferente de `maxRetriesPerRequest`, que limita quantas vezes um comando específico espera pela reconexão). |
-| Listener `on('error', …)`               | Sempre registrado, mensagem fixa + `err.code` apenas   | Obrigatório (evita derrubar o processo); nunca loga URL, credenciais ou o objeto `Error` inteiro.                                                                             |
-| `isReady()`                             | `status === 'ready'`                                   | Reuso direto pela Tarefa 3.4, sem recriar client.                                                                                                                             |
-| `ping()` em `status === 'wait'`         | `connect()` explícito, sob timeout                     | Torna a transição lazy → conectado uma etapa observável e limitada no tempo, em vez de depender do auto-connect implícito do `ioredis` ao enviar um comando.                  |
-| `ping()` em `connecting`/`reconnecting` | Aguarda `'ready'`, sob o mesmo timeout                 | Nunca espera indefinidamente por uma reconexão em andamento.                                                                                                                  |
-| Encerramento                            | `quit()` se `ready`, com timeout; senão `disconnect()` | Gracioso quando possível, nunca trava `app.close()`; idempotente por natureza (reler `status` a cada chamada).                                                                |
+| Opção                                             | Valor                                                  | Justificativa                                                                                                                                                                                                                  |
+| ------------------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `lazyConnect`                                     | `true`                                                 | Construir o service não pode abrir socket, ou os 34 testes offline quebram sem Docker.                                                                                                                                         |
+| `enableOfflineQueue`                              | `false`                                                | Sem isso, um comando acidental na suíte offline ficaria enfileirado indefinidamente — vira erro imediato e explícito em vez de hang silencioso.                                                                                |
+| `connectTimeout`                                  | `2000`ms                                               | Finito — nenhuma tentativa de conexão trava `ping()` indefinidamente.                                                                                                                                                          |
+| `commandTimeout`                                  | `2000`ms                                               | Finito — nenhum comando individual trava indefinidamente mesmo com conexão estabelecida mas servidor não respondendo.                                                                                                          |
+| `maxRetriesPerRequest`                            | `1`                                                    | Finito e pequeno — apropriado para uma requisição HTTP com prazo de resposta; ver "Por que não as opções do BullMQ" abaixo.                                                                                                    |
+| `retryStrategy`                                   | `(n) => Math.min(n × 200, 2000)`                       | Backoff linear limitado a 2s para a **reconexão do socket** (eixo diferente de `maxRetriesPerRequest`, que limita quantas vezes um comando específico espera pela reconexão).                                                  |
+| Listener `on('error', …)`                         | Sempre registrado, mensagem fixa + `err.code` apenas   | Obrigatório (evita derrubar o processo); nunca loga URL, credenciais ou o objeto `Error` inteiro.                                                                                                                              |
+| `isReady()`                                       | `status === 'ready'`                                   | Reuso direto pela Tarefa 3.4, sem recriar client.                                                                                                                                                                              |
+| `ping()` em `status === 'wait'`                   | `connect()` explícito, sob timeout                     | Torna a transição lazy → conectado uma etapa observável e limitada no tempo, em vez de depender do auto-connect implícito do `ioredis` ao enviar um comando.                                                                   |
+| `ping()` em `connecting`/`connect`/`reconnecting` | Aguarda `'ready'`, sob o mesmo timeout                 | Nunca espera indefinidamente por uma conexão/reconexão em andamento. `connect` é um estado real e transitório do `ioredis` (socket TCP já estabelecido, handshake inicial ainda não concluído) — tratado igual a `connecting`. |
+| Encerramento                                      | `quit()` se `ready`, com timeout; senão `disconnect()` | Gracioso quando possível, nunca trava `app.close()`; idempotente por natureza (reler `status` a cada chamada).                                                                                                                 |
 
 #### 3.2 Por que a configuração do client da API não reutiliza as opções do BullMQ worker
 

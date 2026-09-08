@@ -16,18 +16,19 @@ existem** no repositório, implementando a modelagem multi-tenant
 (`Accepted` — supersede exclusivamente a modelagem de dados da ADR 006;
 as decisões de infraestrutura/pipeline da ADR 006 continuam válidas),
 validados offline e em banco limpo (auditoria independente aprovada).
-**Somente a Tarefa 3.3 está autorizada a começar** (ainda sem
-implementação) — o planejamento arquitetural está concluído e aprovado:
-[ADR 008](docs/adr/008-runtime-persistence-and-repositories.md) está
-`Accepted`. Só a subtarefa 3.3.1 (`RuntimeConfigModule` e
-`RedisModule`/`RedisService` com testes offline) está autorizada a
-começar; as subtarefas 3.3.2–3.3.8 ainda não estão autorizadas; as
-Tarefas 3.4 a 3.6 continuam bloqueadas. Nenhum
-`PrismaModule`, `PrismaService`, repository, conexão de runtime da API
-com o banco, readiness real, Dockerfile da API, worker ou frontend
-existe ainda no repositório. Antes de qualquer novo scaffold ou
-implementação, leia a documentação abaixo — ela é a fonte de verdade do
-projeto.
+**A Tarefa 3.3 está `In Progress`**, executada subtarefa por subtarefa
+(ADR 008 `Accepted`). **A subtarefa 3.3.1 está `Completed` e aprovada**:
+`RuntimeConfigModule`, `RedisModule` e `RedisService` já existem e
+estão em `AppModule` — a integração com o Redis é exclusivamente lazy
+(nenhum teste offline abre socket real) e ainda não representa
+readiness real. Só a subtarefa 3.3.2 (`PrismaModule` e `PrismaService`
+com testes offline) está autorizada a começar; as subtarefas
+3.3.3–3.3.8 ainda não estão autorizadas; as Tarefas 3.4 a 3.6 continuam
+bloqueadas. Nenhum `PrismaModule`, `PrismaService`, repository, conexão
+de runtime da API com o banco, readiness real, Dockerfile da API,
+worker ou frontend existe ainda no repositório. Antes de qualquer novo
+scaffold ou implementação, leia a documentação abaixo — ela é a fonte
+de verdade do projeto.
 
 ## Ordem de leitura recomendada
 
@@ -74,12 +75,17 @@ projeto.
   entidades da ADR 007, validada offline e em banco limpo (auditoria
   independente aprovada). Nenhum `PrismaModule`, `PrismaService`,
   repository, conexão de runtime da API com o banco ou Dockerfile da
-  API existe ainda. **Somente a Tarefa 3.3 está autorizada a começar**
-  (ainda sem implementação) — planejamento arquitetural concluído e
-  aprovado via [ADR 008](docs/adr/008-runtime-persistence-and-repositories.md)
-  (`Accepted`). Só a subtarefa 3.3.1 (`RuntimeConfigModule` e
-  `RedisModule`/`RedisService` com testes offline) está autorizada a
-  começar; as subtarefas 3.3.2–3.3.8 ainda não estão autorizadas; as
+  API existe ainda. **A Tarefa 3.3 está `In Progress`**, planejamento
+  arquitetural concluído e aprovado via
+  [ADR 008](docs/adr/008-runtime-persistence-and-repositories.md)
+  (`Accepted`). **A subtarefa 3.3.1 está `Completed` e aprovada**:
+  `RuntimeConfigModule` (único módulo global, fornece `SERVER_CONFIG`),
+  `RedisModule` (estático, não-global) e `RedisService` (composição
+  sobre `ioredis@6.0.0`, conexão lazy) já existem e estão em
+  `AppModule` — nenhum teste offline abre socket real, e isso ainda não
+  representa readiness real (Tarefa 3.4). Só a subtarefa 3.3.2
+  (`PrismaModule` e `PrismaService` com testes offline) está autorizada a
+  começar; as subtarefas 3.3.3–3.3.8 ainda não estão autorizadas; as
   Tarefas 3.4 a 3.6 continuam bloqueadas.
 - Repositório com workspace Yarn/Nx configurado, o skeleton técnico da
   API NestJS implementado, PostgreSQL/PostGIS + Redis disponíveis via
