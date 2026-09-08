@@ -131,12 +131,16 @@ documentação:
   vivo** (não verifica nenhuma dependência externa).
 - `GET /api/v1/health/ready` — confirma que as **dependências
   obrigatórias** da aplicação estão prontas. O que conta como
-  "dependência obrigatória" muda ao longo do roadmap: na Fase 2, antes
-  de existir qualquer infraestrutura externa, readiness verifica apenas
-  a inicialização da própria aplicação; a partir da Fase 3, passa a
-  verificar também PostgreSQL/PostGIS e Redis. Falha de qualquer
-  dependência retorna `503` com corpo em Problem Details e
-  `code: SERVICE_UNAVAILABLE`.
+  "dependência obrigatória" muda ao longo do roadmap: durante a Fase 2
+  e até a conclusão da Tarefa 3.3 (inclusive), antes de existir
+  qualquer verificação real de infraestrutura externa, readiness
+  verifica **somente** a inicialização da própria aplicação — isso
+  continua valendo mesmo depois que `PrismaModule`/`RedisModule`
+  existirem no código (Tarefa 3.3), já que sua existência não implica
+  checagem de readiness. A verificação real de PostgreSQL/PostGIS e
+  Redis será introduzida especificamente pela **Tarefa 3.4** da Fase 3,
+  não antes. Falha de qualquer dependência retorna `503` com corpo em
+  Problem Details e `code: SERVICE_UNAVAILABLE`.
 - Swagger UI em `/docs`.
 - OpenAPI JSON em `/docs-json`.
 
