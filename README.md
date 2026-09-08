@@ -16,8 +16,13 @@ existem** no repositório, implementando a modelagem multi-tenant
 (`Accepted` — supersede exclusivamente a modelagem de dados da ADR 006;
 as decisões de infraestrutura/pipeline da ADR 006 continuam válidas),
 validados offline e em banco limpo (auditoria independente aprovada).
-**Somente a Tarefa 3.3 está autorizada a começar** (ainda não
-iniciada); as Tarefas 3.4 a 3.6 continuam bloqueadas. Nenhum
+**Somente a Tarefa 3.3 está autorizada a começar** (ainda sem
+implementação) — o planejamento arquitetural está concluído e aprovado:
+[ADR 008](docs/adr/008-runtime-persistence-and-repositories.md) está
+`Accepted`. Só a subtarefa 3.3.1 (`RuntimeConfigModule` e
+`RedisModule`/`RedisService` com testes offline) está autorizada a
+começar; as subtarefas 3.3.2–3.3.8 ainda não estão autorizadas; as
+Tarefas 3.4 a 3.6 continuam bloqueadas. Nenhum
 `PrismaModule`, `PrismaService`, repository, conexão de runtime da API
 com o banco, readiness real, Dockerfile da API, worker ou frontend
 existe ainda no repositório. Antes de qualquer novo scaffold ou
@@ -70,7 +75,12 @@ projeto.
   independente aprovada). Nenhum `PrismaModule`, `PrismaService`,
   repository, conexão de runtime da API com o banco ou Dockerfile da
   API existe ainda. **Somente a Tarefa 3.3 está autorizada a começar**
-  (ainda não iniciada); as Tarefas 3.4 a 3.6 continuam bloqueadas.
+  (ainda sem implementação) — planejamento arquitetural concluído e
+  aprovado via [ADR 008](docs/adr/008-runtime-persistence-and-repositories.md)
+  (`Accepted`). Só a subtarefa 3.3.1 (`RuntimeConfigModule` e
+  `RedisModule`/`RedisService` com testes offline) está autorizada a
+  começar; as subtarefas 3.3.2–3.3.8 ainda não estão autorizadas; as
+  Tarefas 3.4 a 3.6 continuam bloqueadas.
 - Repositório com workspace Yarn/Nx configurado, o skeleton técnico da
   API NestJS implementado, PostgreSQL/PostGIS + Redis disponíveis via
   Docker Compose, e Prisma (schema, migration inicial e seed da

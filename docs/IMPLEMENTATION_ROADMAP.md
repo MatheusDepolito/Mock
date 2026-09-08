@@ -63,9 +63,16 @@ extensões confirmados, provas negativas/positivas em transação com
 rollback) — auditoria independente aprovou o resultado. Nenhum
 `PrismaModule`, repository, readiness real ou Dockerfile da API
 existe ainda. **Somente a Tarefa 3.3 está autorizada a começar** —
-ainda **não foi iniciada**. **As Tarefas 3.4 a 3.6 continuam
-bloqueadas** — cada uma só inicia depois que a anterior atender seus
-critérios de aceite. As Fases 0, 1 e 2 estão `Completed`.
+ainda **sem nenhuma implementação**. O planejamento arquitetural está
+**concluído e aprovado**:
+[ADR 008](adr/008-runtime-persistence-and-repositories.md) está
+`Accepted`. A Tarefa 3.3 é executada subtarefa por subtarefa (oito no
+total, ADR 008 §8) — **somente a subtarefa 3.3.1** (`RuntimeConfigModule`
+e `RedisModule`/`RedisService` com testes offline) **está autorizada a
+começar**; as subtarefas 3.3.2 a 3.3.8 **ainda não estão autorizadas**.
+**As Tarefas 3.4 a 3.6 continuam bloqueadas** — cada uma só inicia
+depois que a anterior atender seus critérios de aceite. As Fases 0, 1
+e 2 estão `Completed`.
 
 ---
 
@@ -231,7 +238,12 @@ da ADR 007**, validados offline e em banco limpo — auditoria
 independente aprovou o resultado (ver "3.2" abaixo). Nenhum
 `PrismaModule`, repository, readiness real (a API ainda checa apenas
 sua própria inicialização) ou Dockerfile da API foi criado. **Somente
-a Tarefa 3.3 está autorizada a começar** — ainda **não foi iniciada**.
+a Tarefa 3.3 está autorizada a começar** — ainda **sem nenhuma
+implementação**. Planejamento arquitetural **concluído e aprovado**:
+[ADR 008](adr/008-runtime-persistence-and-repositories.md) está
+`Accepted`. **Somente a subtarefa 3.3.1** (`RuntimeConfigModule` e
+`RedisModule`/`RedisService` com testes offline) **está autorizada a
+começar**; as subtarefas 3.3.2 a 3.3.8 **ainda não estão autorizadas**.
 **As Tarefas 3.4 a 3.6 continuam bloqueadas** — cada uma só inicia
 depois que a anterior atender seus critérios de aceite.
 
@@ -302,8 +314,20 @@ modelar o núcleo de dados inicial.
   exclusivo do agregado `Workspace`, não um agregado próprio) e
   `PropertyRepository` (`Address` pertence ao agregado `Property`).
   Toda operação tenant-scoped exige `workspaceId` explícito no
-  repository. **Autorizada a começar** (Tarefa 3.2 concluída) —
-  **ainda não foi iniciada**.
+  repository. **Autorizada a começar** (Tarefa 3.2 concluída) — ainda
+  **sem nenhuma implementação**. Planejamento arquitetural **concluído
+  e aprovado**: [ADR 008](adr/008-runtime-persistence-and-repositories.md)
+  está `Accepted`, incluindo `RuntimeConfigModule` (único módulo
+  global), `PrismaModule`/`RedisModule` estáticos não-globais, conexões
+  lazy, `RedisService` por composição, contratos dos repositories, CAS
+  e locks, catálogo de erros internos, a antecipação de
+  `validate:infra` para esta tarefa, e a substituição pontual da
+  decisão de UUID raw de `Address` da ADR 006. Divisão em oito
+  subtarefas (ADR 008 §8) — **somente a subtarefa 3.3.1**
+  (`RuntimeConfigModule` e `RedisModule`/`RedisService` com testes
+  offline) **está autorizada a começar**; as subtarefas 3.3.2 a 3.3.8
+  **ainda não estão autorizadas**, cada uma exigindo autorização
+  explícita própria.
 - **3.4 — Readiness real e testes de falha das dependências**:
   atualizar `GET /api/v1/health/ready` para checar PostgreSQL/PostGIS e
   Redis; testes de integração cobrindo o caminho feliz e a falha de

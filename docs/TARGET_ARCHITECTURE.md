@@ -506,6 +506,19 @@ adição exige revisão desta seção (e da ADR 007) antes da implementação.
   pertencem ao repository desse agregado, garantidas dentro da mesma
   transação Prisma.
 
+> **Estado de implementação**: `PrismaModule`/`PrismaService`, o módulo
+> de Redis e os três repositories acima ainda não existem no código —
+> a Tarefa 3.3 (Fase 3, ver
+> [docs/IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md)) está
+> autorizada, mas continua sem nenhuma implementação. O planejamento
+> arquitetural está concluído e aprovado —
+> [ADR 008](adr/008-runtime-persistence-and-repositories.md) está
+> `Accepted`. A Tarefa 3.3 é executada subtarefa por subtarefa (oito no
+> total, ver ADR 008 §8); somente a subtarefa 3.3.1
+> (`RuntimeConfigModule` e `RedisModule`/`RedisService` com testes
+> offline) está autorizada a começar — as subtarefas 3.3.2 a 3.3.8
+> ainda não estão autorizadas.
+
 ### Decisões de modelagem
 
 - Identificadores primários: UUIDv7 (`dbgenerated("uuidv7()")`, nativo

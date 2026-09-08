@@ -149,9 +149,17 @@ pareça sugerir implicitamente.
   API com o banco, readiness real ou Dockerfile da API existe ainda.**
   **Somente a Tarefa 3.3** (`PrismaModule`/`RedisModule`/repositories
   por agregado, ver ADR 007) **está autorizada a começar** — ainda
-  **não foi iniciada**. **As Tarefas 3.4 a 3.6** (readiness real,
-  Dockerfile da API, validação integrada) **continuam bloqueadas** —
-  cada uma só começa depois que a anterior atender seus critérios de
+  **sem nenhuma implementação**. O planejamento arquitetural está
+  **concluído e aprovado**: [ADR 008](docs/adr/008-runtime-persistence-and-repositories.md)
+  está `Accepted`. A Tarefa 3.3 é executada **subtarefa por
+  subtarefa** (oito no total, definidas na ADR 008 §8), cada uma com
+  autorização explícita própria — **somente a subtarefa 3.3.1**
+  (`RuntimeConfigModule` e `RedisModule`/`RedisService` com testes
+  offline) **está autorizada a começar**; as subtarefas 3.3.2 a 3.3.8
+  **ainda não estão autorizadas**. **As Tarefas 3.4 a 3.6** (readiness
+  real, Dockerfile da API, validação integrada) **continuam
+  bloqueadas** — cada uma só começa depois que a anterior atender seus
+  critérios de
   aceite (ver [docs/IMPLEMENTATION_ROADMAP.md](docs/IMPLEMENTATION_ROADMAP.md),
   Fase 3).
 - Prisma `7.10.0`, `schema.prisma`, a migration inicial e o seed (a
