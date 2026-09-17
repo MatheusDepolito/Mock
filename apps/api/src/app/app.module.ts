@@ -11,6 +11,7 @@ import { getRequestId } from '../common/request-id';
 import { RuntimeConfigModule } from '../common/runtime-config.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { RedisModule } from '../redis/redis.module';
+import { UsersModule } from '../users/users.module';
 
 const REDACTED_HEADER_PATHS = [
   'req.headers.authorization',
@@ -80,6 +81,12 @@ export class AppModule {
         PrismaModule,
         RedisModule,
         HealthModule,
+        // First domain module (Tarefa 3.3.5) — declares/exports only
+        // UserRepository, no Controller. Imports PrismaModule itself
+        // (see users.module.ts); reuses the same PrismaService singleton
+        // already registered above, per the static-module semantics
+        // already proven by the 3.3.3 composition test.
+        UsersModule,
       ],
       providers: [
         { provide: APP_GUARD, useClass: ThrottlerGuard },

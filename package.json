@@ -18,7 +18,8 @@
     "typecheck": "tsc -b",
     "nx:report": "nx report",
     "validate:nx": "nx run-many -t db:validate db:generate lint typecheck test build && nx run api:test:integration",
-    "validate": "yarn format:check && yarn lint && yarn validate:nx"
+    "validate": "yarn format:check && yarn lint && yarn validate:nx",
+    "validate:infra": "nx run api:db:migrate:deploy:test && nx run api:db:seed:test && nx run api:test:integration:infra"
   },
   "dependencies": {
     "@nestjs/common": "11.2.3",

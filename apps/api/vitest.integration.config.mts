@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 
 export default defineConfig(() => ({
   root: import.meta.dirname,
@@ -10,6 +10,10 @@ export default defineConfig(() => ({
     globals: true,
     environment: 'node',
     include: ['test/**/*.spec.ts'],
+    // test/infra/** requires real PostgreSQL/Redis (Tarefa 3.3.4) — runs
+    // only via vitest.integration.infra.config.mts /
+    // `yarn validate:infra`, never as part of this fully offline suite.
+    exclude: [...configDefaults.exclude, 'test/infra/**'],
     reporters: ['default'],
     hookTimeout: 20000,
     testTimeout: 20000,

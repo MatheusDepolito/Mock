@@ -53,6 +53,17 @@
           "cwd": "apps/api"
         }
       },
+      "test:integration:infra": {
+        "executor": "nx:run-commands",
+        "cache": false,
+        "dependsOn": [
+          "db:generate"
+        ],
+        "options": {
+          "command": "vitest run --config vitest.integration.infra.config.mts",
+          "cwd": "apps/api"
+        }
+      },
       "typecheck": {
         "executor": "nx:run-commands",
         "dependsOn": [
@@ -132,6 +143,9 @@
       "db:seed:test": {
         "executor": "nx:run-commands",
         "cache": false,
+        "dependsOn": [
+          "db:generate"
+        ],
         "options": {
           "command": "prisma db seed --config prisma.test.config.ts",
           "cwd": "apps/api"
