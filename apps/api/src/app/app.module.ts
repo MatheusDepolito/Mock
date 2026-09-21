@@ -12,6 +12,7 @@ import { RuntimeConfigModule } from '../common/runtime-config.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { RedisModule } from '../redis/redis.module';
 import { UsersModule } from '../users/users.module';
+import { WorkspacesModule } from '../workspaces/workspaces.module';
 
 const REDACTED_HEADER_PATHS = [
   'req.headers.authorization',
@@ -87,6 +88,11 @@ export class AppModule {
         // already registered above, per the static-module semantics
         // already proven by the 3.3.3 composition test.
         UsersModule,
+        // Second domain module (Tarefa 3.3.6) — declares/exports only
+        // WorkspaceRepository, no Controller. Never imports UsersModule
+        // itself (see workspaces.module.ts) — precondition checks on
+        // User/AgentProfile go through PrismaService directly.
+        WorkspacesModule,
       ],
       providers: [
         { provide: APP_GUARD, useClass: ThrottlerGuard },

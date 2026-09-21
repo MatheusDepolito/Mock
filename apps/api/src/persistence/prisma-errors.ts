@@ -19,6 +19,17 @@ import { PersistenceError, UnexpectedPersistenceError } from './errors';
  * classic `meta.target` shape defensively (still exact-match only) in case
  * a future Prisma/adapter version ever produces it — never a heuristic or
  * partial match either way.
+ *
+ * `extractConstraintName` accepts two exact forms: the real driver-adapter
+ * path (`meta.driverAdapterError.cause.constraint.index`, a string) and,
+ * as an exact fallback, a string `meta.target`. It is shared by
+ * `isUniqueViolation` (`P2002`) and `isForeignKeyViolation` (`P2003`,
+ * below), so both accept those same two forms. The nested driver-adapter
+ * structure was observed empirically against `mockp_test` (for `P2002` in
+ * Tarefa 3.3.5 and for `P2003` in Tarefa 3.3.6, where only
+ * `code`/`kind`/`originalCode` differ) — it is an observation about this
+ * stack, not a decision specified by ADR 008. No comparison anywhere in
+ * this module uses a substring or the driver's textual message.
  */
 export interface KnownUniqueViolationTarget {
   readonly constraintName?: string;
@@ -91,6 +102,34 @@ export function isUniqueViolation(
   }
 
   return false;
+}
+
+/**
+ * Recognizes a `P2003` foreign-key-constraint violation ONLY when the
+ * constraint name matches `constraintName` exactly — never by substring,
+ * `includes`, the driver's textual message, or any other heuristic.
+ * Reuses `extractConstraintName` unchanged, so it accepts the same two
+ * exact forms described in the module doc above (the driver-adapter
+ * path and the exact string `meta.target` fallback). Unlike
+ * `isUniqueViolation`, there is no `columns`-based alternative, and
+ * `meta.field_name` is not supported. Any other code, missing/malformed
+ * metadata, or a constraint name that does not match exactly is NOT
+ * recognized here (the caller falls back to
+ * `wrapUnexpectedPersistenceError`).
+ */
+export function isForeignKeyViolation(
+  error: unknown,
+  constraintName: string,
+): boolean {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) {
+    return false;
+  }
+
+  if (error.code !== 'P2003') {
+    return false;
+  }
+
+  return extractConstraintName(error) === constraintName;
 }
 
 /**
