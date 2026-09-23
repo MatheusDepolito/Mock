@@ -61,36 +61,41 @@ do schema `public`, incluindo `spatial_ref_sys_srid_check`, que
 pertence à extensão PostGIS, não ao domínio —, 17 FKs, índices e
 extensões confirmados, provas negativas/positivas em transação com
 rollback) — auditoria independente aprovou o resultado. **A Tarefa 3.3
-está `In Progress`**: `PrismaModule` e `PrismaService` já existem no
-código e já estão importados em `AppModule` — a conexão com o Prisma
-continua exclusivamente lazy (nenhum `$connect()` eager, nenhuma query
-durante o bootstrap) e isso ainda **não representa readiness real**.
-Nenhum repository, módulo de domínio, harness de infraestrutura real,
-readiness real ou Dockerfile da API existe ainda. O planejamento
-arquitetural está **concluído e aprovado**:
-[ADR 008](adr/008-runtime-persistence-and-repositories.md) está
-`Accepted`. A Tarefa 3.3 é executada subtarefa por subtarefa (oito no
-total, ADR 008 §8). **A subtarefa 3.3.1** (`RuntimeConfigModule` e
-`RedisModule`/`RedisService` com testes offline) está **`Completed` e
-aprovada**: `RuntimeConfigModule`, `RedisModule` e `RedisService` já
-existem no código e já estão em `AppModule` — a integração com o Redis
-é exclusivamente lazy (nenhum teste offline abre socket real) e ainda
-**não representa readiness real** (isso continua sendo exclusivamente
-a Tarefa 3.4). **A subtarefa 3.3.2** (`PrismaModule` e `PrismaService`
-com testes offline, conforme ADR 008 §2.2) está **`Completed` e
-aprovada**: `PrismaModule` e `PrismaService` já existem no código e já
-estão em `AppModule` — a conexão com o Prisma é exclusivamente lazy
-(nenhum `$connect()` eager, nenhuma query no bootstrap,
+está `In Progress`**. O planejamento arquitetural está **concluído e
+aprovado**: [ADR 008](adr/008-runtime-persistence-and-repositories.md)
+está `Accepted`. A Tarefa 3.3 é executada subtarefa por subtarefa
+(oito no total, ADR 008 §8). **As subtarefas 3.3.1 a 3.3.6 estão
+`Completed` e aprovadas**: **3.3.1** — `RuntimeConfigModule`,
+`RedisModule` e `RedisService` (integração com o Redis exclusivamente
+lazy, nenhum teste offline abre socket real); **3.3.2** —
+`PrismaModule` e `PrismaService` (conexão com o Prisma exclusivamente
+lazy, nenhum `$connect()` eager, nenhuma query no bootstrap,
 `onModuleDestroy()` aguarda `$disconnect()`, nenhum teste offline abre
-conexão PostgreSQL real) e ainda **não representa readiness real**
-(isso continua sendo exclusivamente a Tarefa 3.4); 59 testes unitários
-e 34 testes de integração offline confirmados. **Somente a subtarefa
-3.3.3** (composição offline do `AppModule`, com prova de instância
-única de `PrismaService`/`RedisService` no grafo Nest, conforme ADR 008
-§7.2/§8) **está autorizada a começar**; as subtarefas 3.3.4 a 3.3.8
-**ainda não estão autorizadas**. **As Tarefas 3.4 a 3.6 continuam
-bloqueadas** — cada uma só inicia depois que a anterior atender seus
-critérios de aceite. As Fases 0, 1 e 2 estão `Completed`.
+conexão PostgreSQL real); **3.3.3** — composição offline do
+`AppModule`, com prova de instância única de `PrismaService`/
+`RedisService` no grafo Nest, conforme ADR 008 §7.2/§8; **3.3.4** —
+harness de infraestrutura real (`apps/api/test/infra/`, target
+`api:test:integration:infra`, comando raiz `yarn validate:infra`,
+conforme ADR 008 §7.3/§7.5) e os primeiros testes reais contra
+PostgreSQL/PostGIS e Redis; **3.3.5** — `UserRepository`
+(`createWithCredential`/`createWithAuthIdentity`/`findById`/
+`findByEmail`, ADR 008 §4.1) e `UsersModule`; **3.3.6** —
+`WorkspaceRepository` (`createIndividualWorkspace`/
+`createBrokerageWorkspace`, ambos totalmente atômicos em uma única
+transação, mais `findById`, ADR 008 §4.2) e `WorkspacesModule`. Todos
+já existem no código e já estão importados em `AppModule`. Nenhum dos
+dois (Prisma/Redis) ainda representa readiness real — isso continua
+sendo exclusivamente a Tarefa 3.4; nenhum Dockerfile da API existe
+ainda. 132 testes unitários, 44 testes de integração offline e 23
+testes de integração com infraestrutura real confirmados ao final da
+3.3.6. **A subtarefa 3.3.7** (`PropertyRepository`/`PropertiesModule`,
+ADR 008 §4.3) é a próxima da sequência: o planejamento e a revisão
+técnica do plano já foram concluídos, mas **a implementação continua
+bloqueada até autorização explícita e separada do responsável pelo
+projeto**. **A subtarefa 3.3.8 não foi iniciada e continua
+bloqueada**. **As Tarefas 3.4 a 3.6 continuam bloqueadas** — cada uma
+só inicia depois que a anterior atender seus critérios de aceite. As
+Fases 0, 1 e 2 estão `Completed`.
 
 ---
 
@@ -259,16 +264,14 @@ apenas sua própria inicialização`) permanece exclusivamente Tarefa 3.4.
 **A Tarefa 3.3 está `In Progress`**. Planejamento arquitetural
 **concluído e aprovado**:
 [ADR 008](adr/008-runtime-persistence-and-repositories.md) está
-`Accepted`. **A subtarefa 3.3.1** (`RuntimeConfigModule` e
-`RedisModule`/`RedisService` com testes offline) está **`Completed` e
-aprovada** — ver "3.3" abaixo para o detalhamento. **A subtarefa 3.3.2**
-(`PrismaModule` e `PrismaService` com testes offline) está **`Completed`
-e aprovada** — ver "3.3" abaixo para o detalhamento. **Somente a
-subtarefa 3.3.3** (composição offline do `AppModule`, conforme ADR 008
-§7.2/§8) **está autorizada a começar**; as subtarefas 3.3.4 a 3.3.8
-**ainda não estão autorizadas**. **As Tarefas 3.4 a 3.6 continuam
-bloqueadas** — cada uma só inicia depois que a anterior atender seus
-critérios de aceite.
+`Accepted`. **As subtarefas 3.3.1 a 3.3.6 estão `Completed` e
+aprovadas** — ver "3.3" abaixo para o detalhamento de cada uma. **A
+subtarefa 3.3.7** (`PropertyRepository`/`PropertiesModule`) teve seu
+planejamento e revisão técnica concluídos, mas **a implementação
+continua bloqueada até autorização explícita e separada**; **a
+subtarefa 3.3.8 não foi iniciada e continua bloqueada**. **As Tarefas
+3.4 a 3.6 continuam bloqueadas** — cada uma só inicia depois que a
+anterior atender seus critérios de aceite.
 
 **Objetivo**: provisionar a infraestrutura local (profile padrão) e
 modelar o núcleo de dados inicial.
@@ -356,7 +359,6 @@ modelar o núcleo de dados inicial.
     integração com o Redis é **exclusivamente lazy** — nenhum teste
     offline abre socket real, e sua existência **não representa
     readiness real** (isso continua sendo exclusivamente a Tarefa 3.4).
-    52 testes unitários e 34 testes de integração offline confirmados.
   - **3.3.2 — `PrismaModule`/`PrismaService` + testes offline**:
     **`Completed`** — aprovada tecnicamente. `PrismaService`
     (`@Injectable()`, estende o `PrismaClient` gerado localmente,
@@ -369,16 +371,48 @@ modelar o núcleo de dados inicial.
     nenhum teste offline abre conexão PostgreSQL real;
     `onModuleDestroy()` aguarda (`await`) `this.$disconnect()`. Sua
     existência **não representa readiness real** (isso continua sendo
-    exclusivamente a Tarefa 3.4). 59 testes unitários e 34 testes de
-    integração offline confirmados.
-  - **Somente a subtarefa 3.3.3** (composição offline do `AppModule`
-    somente com módulos já funcionais — `RuntimeConfigModule` +
-    `PrismaModule` + `RedisModule` já wired nas subtarefas 3.3.1–3.3.2,
-    incluindo a prova de instância única de `PrismaService` e
-    `RedisService` no grafo Nest, exatamente conforme ADR 008 §7.2/§8)
-    **está autorizada a começar**; as subtarefas 3.3.4 a 3.3.8 **ainda
-    não estão autorizadas**, cada uma exigindo autorização explícita
-    própria.
+    exclusivamente a Tarefa 3.4).
+  - **3.3.3 — Composição offline do `AppModule`**: **`Completed`** —
+    aprovada tecnicamente. Composição somente com módulos já
+    funcionais — `RuntimeConfigModule` + `PrismaModule` + `RedisModule`
+    já wired nas subtarefas 3.3.1–3.3.2, incluindo a prova de instância
+    única de `PrismaService` e `RedisService` no grafo Nest, exatamente
+    conforme ADR 008 §7.2/§8. Os 34 testes de integração offline
+    existentes continuam verdes sem alteração de comportamento.
+  - **3.3.4 — Harness de infraestrutura real + primeiros testes
+    reais**: **`Completed`** — aprovada tecnicamente. Cria
+    `apps/api/test/infra/` (config dedicado, target
+    `api:test:integration:infra`, comando raiz `yarn validate:infra`,
+    `TRUNCATE` guardado sobre as tabelas mutáveis, execução serial —
+    ADR 008 §7.5), e os primeiros testes reais: `PrismaService`
+    executando uma query real, `RedisService.ping()` real (só
+    `connect`/`PING`, nenhuma escrita — ADR 008 §7.6).
+  - **3.3.5 — `UserRepository`/`UsersModule`**: **`Completed`** —
+    aprovada tecnicamente. Implementação completa (ADR 008 §4.1):
+    `createWithCredential`, `createWithAuthIdentity`, `findById`,
+    `findByEmail`, com a validação de `roleNames` (vazio → duplicata →
+    existência no catálogo) antes de qualquer query, mais testes
+    offline, reais (`DUPLICATE_EMAIL`/`DUPLICATE_AUTH_IDENTITY`) e de
+    contrato de `AgentLicense`. `AppModule` passou a importar
+    `UsersModule` nesta subtarefa.
+  - **3.3.6 — `WorkspaceRepository`/`WorkspacesModule`**:
+    **`Completed`** — aprovada tecnicamente. `createIndividualWorkspace`
+    e `createBrokerageWorkspace` (ambos totalmente atômicos em uma
+    única transação, ADR 008 §4.2), mais `findById`, com testes
+    offline/reais (`OWNER_NOT_FOUND`, `AGENT_PROFILE_REQUIRED`,
+    `DUPLICATE_WORKSPACE_SLUG`) e de contrato da FK composta
+    `WorkspaceAgent` ↔ `WorkspaceMembership`. `AppModule` passou a
+    importar `WorkspacesModule` nesta subtarefa.
+    **Contagem confirmada ao final da 3.3.6**: 132 testes unitários, 44
+    testes de integração offline e 23 testes de integração com
+    infraestrutura real.
+  - **3.3.7 — `PropertyRepository`/`PropertiesModule`** (ADR 008 §4.3):
+    **planejamento e revisão técnica do plano concluídos** — a
+    implementação **continua bloqueada até autorização explícita e
+    separada** do responsável pelo projeto; concluir o planejamento e a
+    revisão não substitui essa autorização.
+  - **3.3.8 — Validação integrada e fechamento posterior**: **não
+    iniciada, bloqueada** até a 3.3.7 ser implementada e aprovada.
 - **3.4 — Readiness real e testes de falha das dependências**:
   atualizar `GET /api/v1/health/ready` para checar PostgreSQL/PostGIS e
   Redis; testes de integração cobrindo o caminho feliz e a falha de

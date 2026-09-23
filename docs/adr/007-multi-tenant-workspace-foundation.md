@@ -505,6 +505,61 @@ obrigatório, **sem default** — nunca assume uma moeda, ver
 "Normalização e validação de formato"), `publishedAt`, `archivedAt`,
 `version`.
 
+#### Máquina de estados de `Property.status`
+
+**Microcorreção documental (registrada durante a revisão técnica do
+plano da subtarefa 3.3.7, ADR 008 §4.3/§8)**: o `CHECK`
+`properties_lifecycle_coherence` (ver "Coerência entre status e
+timestamps" abaixo) restringe apenas a **coerência** de cada linha —
+`status` e seus timestamps compatíveis entre si — mas nunca restringiu
+nem definiu **transições**. Sem esta seção, a semântica de
+`publishedAt`/`archivedAt` através de uma transição ficava indefinida,
+ao contrário do que já vale para `WorkspaceMembership.status`/
+`WorkspaceAgent.status`. Esta seção fecha essa lacuna.
+
+**Nesta subtarefa (3.3.7), todos os três destinos são permitidos a
+partir de qualquer estado atual** — `DRAFT`, `PUBLISHED`, `ARCHIVED` —
+sem nenhuma lista adicional de transições proibidas. O `Repository`
+(`PropertyRepository.updatePropertyStatus`, ADR 008 §4.3) nunca
+recebe timestamps do chamador; ele os recomputa **inteiramente a
+partir do estado de destino solicitado**, segundo a semântica abaixo:
+
+- **Destino `DRAFT`**: `publishedAt = null`, `archivedAt = null` —
+  inclusive quando o estado anterior era `PUBLISHED` ou `ARCHIVED`
+  (satisfaz o `CHECK` de coerência de `DRAFT` por construção, e
+  descarta o histórico de publicação/arquivamento anteriores: uma
+  `Property` que volta para `DRAFT` recebe um `publishedAt` novo na
+  próxima publicação, não o antigo).
+- **Destino `PUBLISHED`**: se `publishedAt` já estiver preenchido
+  (publicação anterior preservada por não ter passado por `DRAFT`),
+  **preserva-se o valor existente**; se `publishedAt` estiver nulo,
+  preenche-se com o timestamp corrente do banco. `archivedAt = null`
+  em ambos os casos. Isso é o que permite que republicar uma
+  `Property` arquivada preserve o instante histórico da primeira
+  publicação.
+- **Destino `ARCHIVED`**: `publishedAt` é **preservado como está**
+  (inclusive `null`, se a `Property` nunca foi publicada — arquivar
+  diretamente a partir de `DRAFT` é uma transição permitida e
+  estruturalmente coerente com o `CHECK`, que só exige `archivedAt`
+  não nulo para `ARCHIVED`); `archivedAt` é preenchido com o timestamp
+  corrente do banco.
+
+**CAS e chamadas para o estado atual**: toda chamada bem-sucedida de
+`updatePropertyStatus` é uma atualização CAS por
+`workspaceId`+`propertyId`+`expectedVersion` (ADR 008 §6) — inclusive
+quando o `status` solicitado é igual ao `status` atual, a operação
+ainda incrementa `version` e atualiza `updatedAt`; os timestamps são
+sempre recomputados conforme a semântica do estado de destino acima
+(nunca reaproveitados cegamente do estado anterior fora das regras
+descritas). Nenhum retry automático; isolamento `Read Committed`
+(ADR 008 §6) — sem mudança em relação ao já decidido.
+
+Esta permissividade total de destino (sem lista de transições
+proibidas) é uma decisão desta subtarefa, não uma correção retroativa
+de um erro anterior — nenhum `PersistenceErrorReason` novo é criado
+para "transição inválida", porque esta ADR não introduz nenhuma
+transição proibida.
+
 `Address` ganha `workspaceId` (obrigatório) com **FK composta**
 `(workspaceId, propertyId) → Property(workspaceId, id)` — exige
 `@@unique([workspaceId, id])` em `Property` como alvo (adicional ao PK
@@ -611,13 +666,13 @@ Regras de coerência `status ⇔ timestamp`, cada uma reforçada por um
 `CHECK` SQL explícito na migration (linha única, sem consultar outra
 tabela — compatível com a limitação de `CHECK` descrita acima):
 
-| Entidade              | Regra                                                                                                                                                                                                                               | `CHECK` (esboço)                                          |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| `User`                | `status = DEACTIVATED` **se e somente se** `deactivatedAt` não nulo                                                                                                                                                                 | `(status = 'DEACTIVATED') = (deactivated_at IS NOT NULL)` |
-| `Workspace`           | `status = ARCHIVED` se e somente se `archivedAt` não nulo                                                                                                                                                                           | `(status = 'ARCHIVED') = (archived_at IS NOT NULL)`       |
-| `WorkspaceMembership` | `status = LEFT` se e somente se `endedAt` não nulo                                                                                                                                                                                  | `(status = 'LEFT') = (ended_at IS NOT NULL)`              |
-| `WorkspaceAgent`      | `status = REVOKED` se e somente se `revokedAt` não nulo                                                                                                                                                                             | `(status = 'REVOKED') = (revoked_at IS NOT NULL)`         |
-| `Property`            | `DRAFT`: `publishedAt` e `archivedAt` nulos. `PUBLISHED`: `publishedAt` não nulo e `archivedAt` nulo. `ARCHIVED`: `archivedAt` não nulo; `publishedAt` pode continuar preenchido (o imóvel já foi publicado antes de ser arquivado) | três ramos combinados num único `CHECK` por `status`      |
+| Entidade              | Regra                                                                                                                                                                                                                                                                                                                                                                                                                           | `CHECK` (esboço)                                          |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| `User`                | `status = DEACTIVATED` **se e somente se** `deactivatedAt` não nulo                                                                                                                                                                                                                                                                                                                                                             | `(status = 'DEACTIVATED') = (deactivated_at IS NOT NULL)` |
+| `Workspace`           | `status = ARCHIVED` se e somente se `archivedAt` não nulo                                                                                                                                                                                                                                                                                                                                                                       | `(status = 'ARCHIVED') = (archived_at IS NOT NULL)`       |
+| `WorkspaceMembership` | `status = LEFT` se e somente se `endedAt` não nulo                                                                                                                                                                                                                                                                                                                                                                              | `(status = 'LEFT') = (ended_at IS NOT NULL)`              |
+| `WorkspaceAgent`      | `status = REVOKED` se e somente se `revokedAt` não nulo                                                                                                                                                                                                                                                                                                                                                                         | `(status = 'REVOKED') = (revoked_at IS NOT NULL)`         |
+| `Property`            | `DRAFT`: `publishedAt` e `archivedAt` nulos. `PUBLISHED`: `publishedAt` não nulo e `archivedAt` nulo. `ARCHIVED`: `archivedAt` não nulo; `publishedAt` pode continuar preenchido (quando o imóvel já foi publicado antes de ser arquivado) ou nulo (quando arquivado diretamente a partir de `DRAFT`) — ver "Máquina de estados de `Property.status`" acima para a semântica completa de transição, que este `CHECK` não define | três ramos combinados num único `CHECK` por `status`      |
 
 `version` (presente em `User`, `Workspace`, `WorkspaceMembership`,
 `WorkspaceAgent`, `Property`) tem `CHECK (version >= 1)` e é

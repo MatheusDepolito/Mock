@@ -510,34 +510,39 @@ adição exige revisão desta seção (e da ADR 007) antes da implementação.
   pertencem ao repository desse agregado, garantidas dentro da mesma
   transação Prisma.
 
-> **Estado de implementação**: os três repositories acima (`UserRepository`,
-> `WorkspaceRepository`, `PropertyRepository`) ainda não existem no
-> código — a Tarefa 3.3 (Fase 3, ver
-> [docs/IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md)) está
-> `In Progress`, planejamento arquitetural concluído e aprovado via
-> [ADR 008](adr/008-runtime-persistence-and-repositories.md)
-> (`Accepted`). A subtarefa 3.3.1 (`RuntimeConfigModule` e
-> `RedisModule`/`RedisService` com testes offline) está `Completed` e
-> aprovada — os três já existem no código e já estão em `AppModule`; a
-> integração com o Redis é exclusivamente lazy (nenhum teste offline
-> abre socket real) e ainda não representa readiness real (isso
-> continua sendo exclusivamente a Tarefa 3.4). A subtarefa 3.3.2
-> (`PrismaModule` e `PrismaService` com testes offline) está `Completed`
-> e aprovada — `PrismaService` estende o `PrismaClient` gerado, injeta
-> `SERVER_CONFIG` e constrói `PrismaPg` exclusivamente com
-> `config.databaseUrl`; `PrismaModule` (estático, não-global) e
-> `PrismaService` já existem no código e já estão em `AppModule`. A
-> conexão com o Prisma também é exclusivamente lazy (nenhum
-> `$connect()` eager, nenhuma query durante o bootstrap,
-> `onModuleDestroy()` aguarda `$disconnect()`, nenhum teste offline
-> abre conexão PostgreSQL real) e ainda não representa readiness real
-> (isso continua sendo exclusivamente a Tarefa 3.4); 59 testes
-> unitários e 34 testes de integração offline confirmados. Somente a
-> subtarefa 3.3.3 (composição offline do `AppModule` somente com
-> módulos já funcionais, incluindo a prova de instância única de
-> `PrismaService`/`RedisService` no grafo Nest, exatamente conforme ADR
-> 008 §7.2/§8) está autorizada a começar — as subtarefas 3.3.4 a 3.3.8
-> ainda não estão autorizadas.
+> **Estado de implementação**: de `UserRepository`,
+> `WorkspaceRepository` e `PropertyRepository`, os dois primeiros já
+> existem no código — `PropertyRepository` ainda não. A Tarefa 3.3
+> (Fase 3, ver [docs/IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md))
+> está `In Progress`, planejamento arquitetural concluído e aprovado
+> via [ADR 008](adr/008-runtime-persistence-and-repositories.md)
+> (`Accepted`). **As subtarefas 3.3.1 a 3.3.6 estão `Completed` e
+> aprovadas**: 3.3.1 (`RuntimeConfigModule`/`RedisModule`/
+> `RedisService` com testes offline), 3.3.2 (`PrismaModule`/
+> `PrismaService` com testes offline), 3.3.3 (composição offline do
+> `AppModule`, com prova de instância única de `PrismaService`/
+> `RedisService` no grafo Nest, ADR 008 §7.2/§8), 3.3.4 (harness de
+> infraestrutura real em `apps/api/test/infra/`, target
+> `api:test:integration:infra`, comando raiz `yarn validate:infra`,
+> ADR 008 §7.3/§7.5, com os primeiros testes reais contra
+> PostgreSQL/PostGIS e Redis), 3.3.5 (`UserRepository`/`UsersModule`,
+> `createWithCredential`/`createWithAuthIdentity`/`findById`/
+> `findByEmail`, ADR 008 §4.1) e 3.3.6 (`WorkspaceRepository`/
+> `WorkspacesModule`, `createIndividualWorkspace`/
+> `createBrokerageWorkspace` totalmente atômicos + `findById`, ADR 008
+> §4.2). Todos já existem no código e já estão em `AppModule`. A
+> conexão com Prisma e Redis continua exclusivamente lazy nos testes
+> offline; os testes reais desde a 3.3.4 já exercitam PostgreSQL/
+> PostGIS e Redis de verdade contra o profile padrão do Compose — isso
+> ainda não representa readiness real (isso continua sendo
+> exclusivamente a Tarefa 3.4). 132 testes unitários, 44 testes de
+> integração offline e 23 testes de integração com infraestrutura real
+> confirmados ao final da 3.3.6. **A subtarefa 3.3.7**
+> (`PropertyRepository`/`PropertiesModule`, ADR 008 §4.3) é a próxima
+> da sequência — seu planejamento e a revisão técnica do plano já
+> foram concluídos, mas a implementação continua bloqueada até
+> autorização explícita e separada do responsável pelo projeto. **A
+> subtarefa 3.3.8 não foi iniciada e continua bloqueada.**
 
 ### Decisões de modelagem
 

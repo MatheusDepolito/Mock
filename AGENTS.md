@@ -151,52 +151,63 @@ pareça sugerir implicitamente.
   **A Tarefa 3.3** (`PrismaModule`/`RedisModule`/repositories por
   agregado, ver ADR 007) está **`In Progress`**, executada subtarefa
   por subtarefa (oito no total, definidas na ADR 008 §8), cada uma com
-  autorização explícita própria. **A subtarefa 3.3.1** (`RuntimeConfigModule` e `RedisModule`/`RedisService` com testes offline) está **`Completed`
-  e aprovada**: `RuntimeConfigModule` (único módulo global, fornece
-  `SERVER_CONFIG`), `RedisModule` (estático, não-global) e
-  `RedisService` (composição sobre `ioredis@6.0.0`, conexão lazy,
-  timeouts finitos, erros normalizados via `RedisUnavailableError`,
-  shutdown seguro) já existem no código e já estão importados em
-  `AppModule`. **A integração com o Redis é exclusivamente lazy** —
-  nenhum teste offline abre socket real, e sua mera existência **não
-  representa readiness real** (isso continua sendo exclusivamente a
-  Tarefa 3.4). **A subtarefa 3.3.2** (`PrismaModule` e `PrismaService`
-  com testes offline, conforme ADR 008 §2.2) está **`Completed` e
-  aprovada**: `PrismaService` (`@Injectable()`, estende o `PrismaClient`
-  gerado localmente, implementa `OnModuleDestroy`) injeta
-  `SERVER_CONFIG` e constrói `PrismaPg` usando exclusivamente
-  `config.databaseUrl`; `PrismaModule` (estático, não-global,
-  `providers`/`exports: [PrismaService]`) já existe no código e já está
-  importado em `AppModule`. **A conexão com o Prisma é exclusivamente
-  lazy** — nenhum `OnModuleInit`, nenhum `$connect()` eager, nenhuma
-  query durante o bootstrap, nenhum teste offline abre conexão
-  PostgreSQL real; `onModuleDestroy()` aguarda (`await`)
-  `this.$disconnect()`. Sua mera existência **não representa readiness
-  real** (isso continua sendo exclusivamente a Tarefa 3.4). 59 testes
-  unitários e 34 testes de integração offline confirmados. **Nenhum
-  repository, módulo de domínio, harness de infraestrutura real
-  (`test:integration:infra`/`validate:infra`), conexão real com
-  PostgreSQL/Redis, readiness real, Controller/Service HTTP, endpoint,
-  DTO ou Dockerfile da API existe ainda.** **Somente a subtarefa 3.3.3**
-  (composição offline do `AppModule` —
-  `RuntimeConfigModule`+`PrismaModule`+`RedisModule` já wired,
-  incluindo a prova de instância única de `PrismaService` e
-  `RedisService` no grafo Nest, exatamente conforme ADR 008 §7.2/§8)
-  **está autorizada a começar**; as subtarefas 3.3.4 a 3.3.8 **ainda
-  não estão autorizadas**. **As Tarefas 3.4 a 3.6** (readiness real,
-  Dockerfile da API, validação integrada) **continuam bloqueadas** —
-  cada uma só começa depois que a anterior atender seus critérios de
-  aceite (ver [docs/IMPLEMENTATION_ROADMAP.md](docs/IMPLEMENTATION_ROADMAP.md),
+  autorização explícita própria. **As subtarefas 3.3.1 a 3.3.6 estão
+  `Completed` e aprovadas**: **3.3.1** — `RuntimeConfigModule` (único
+  módulo global, fornece `SERVER_CONFIG`), `RedisModule` (estático,
+  não-global) e `RedisService` (composição sobre `ioredis@6.0.0`,
+  conexão lazy, timeouts finitos, erros normalizados via
+  `RedisUnavailableError`, shutdown seguro); **3.3.2** — `PrismaService`
+  (`@Injectable()`, estende o `PrismaClient` gerado localmente,
+  implementa `OnModuleDestroy`) injeta `SERVER_CONFIG` e constrói
+  `PrismaPg` usando exclusivamente `config.databaseUrl`, e
+  `PrismaModule` (estático, não-global, `providers`/
+  `exports: [PrismaService]`); **3.3.3** — composição offline do
+  `AppModule` (`RuntimeConfigModule`+`PrismaModule`+`RedisModule`
+  wired), incluindo a prova de instância única de `PrismaService`/
+  `RedisService` no grafo Nest, exatamente conforme ADR 008 §7.2/§8;
+  **3.3.4** — harness de infraestrutura real (`apps/api/test/infra/`,
+  target `api:test:integration:infra`, comando raiz
+  `yarn validate:infra`, `TRUNCATE` guardado e execução serial
+  conforme ADR 008 §7.3/§7.5) e os primeiros testes reais contra
+  PostgreSQL/PostGIS e Redis; **3.3.5** — `UserRepository`
+  (`createWithCredential`/`createWithAuthIdentity`/`findById`/
+  `findByEmail`, ADR 008 §4.1) e `UsersModule`; **3.3.6** —
+  `WorkspaceRepository` (`createIndividualWorkspace`/
+  `createBrokerageWorkspace`, ambos totalmente atômicos em uma única
+  transação, mais `findById`, ADR 008 §4.2) e `WorkspacesModule`. Todos
+  esses módulos/repositories já existem no código e já estão
+  importados em `AppModule`. **A conexão com Prisma e Redis continua
+  exclusivamente lazy nos testes offline**; os testes reais criados a
+  partir da 3.3.4 já exercitam PostgreSQL/PostGIS e Redis de verdade
+  contra o profile padrão do Compose — isso **ainda não representa
+  readiness real** (isso continua sendo exclusivamente a Tarefa 3.4).
+  132 testes unitários, 44 testes de integração offline e 23 testes de
+  integração com infraestrutura real confirmados ao final da 3.3.6.
+  **A subtarefa 3.3.7** (`PropertyRepository`/`PropertiesModule`,
+  `createProperty`/`findByIdInWorkspace`/`updatePropertyStatus`, ADR
+  008 §4.3) é a próxima da sequência: **o planejamento e a revisão
+  técnica do plano já foram concluídos, mas a implementação continua
+  bloqueada até autorização explícita e separada do responsável pelo
+  projeto** — concluir o planejamento e a revisão não substitui essa
+  autorização (ver §3 abaixo). **A subtarefa 3.3.8** (validação
+  integrada e fechamento documental) **não foi iniciada e continua
+  bloqueada**. **As Tarefas 3.4 a 3.6** (readiness real, Dockerfile da
+  API, validação integrada) **continuam bloqueadas** — cada uma só
+  começa depois que a anterior atender seus critérios de aceite (ver
+  [docs/IMPLEMENTATION_ROADMAP.md](docs/IMPLEMENTATION_ROADMAP.md),
   Fase 3).
 - Prisma `7.10.0`, `schema.prisma`, a migration inicial e o seed (a
   fundação multi-tenant da ADR 007) já existem e estão validados;
-  `PrismaModule`/`PrismaService` também já existem e estão em
-  `AppModule` (conexão exclusivamente lazy) — mas ainda não existem
-  repositories, conexão runtime real da API com o banco, Dockerfile da
-  API, `apps/worker` ou `apps/web`/frontend neste repositório.
-  PostgreSQL/PostGIS e Redis já existem como containers locais (Docker
-  Compose), mas nenhum código da API abre uma conexão real com eles
-  ainda.
+  `PrismaModule`/`PrismaService`, `RedisModule`/`RedisService`,
+  `UserRepository`/`UsersModule` e `WorkspaceRepository`/
+  `WorkspacesModule` também já existem e já estão em `AppModule` — mas
+  ainda não existe `PropertyRepository`/`PropertiesModule` (3.3.7, não
+  autorizada), nem conexão runtime real da API **em produção** (a
+  conexão real hoje só acontece nos testes de infraestrutura da 3.3.4
+  em diante), Dockerfile da API, `apps/worker` ou `apps/web`/frontend
+  neste repositório. PostgreSQL/PostGIS e Redis já existem como
+  containers locais (Docker Compose) e já são exercitados de verdade
+  pela suíte `yarn validate:infra` desde a 3.3.4.
 - Não crie `apps/web`, `apps/worker`, outras `libs/*` de produto,
   Next.js, Docker, autenticação, domínio de negócio ou qualquer outra
   peça de fases posteriores a Fase 3, e não antecipe entregáveis de

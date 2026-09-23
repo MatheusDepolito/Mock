@@ -900,6 +900,14 @@ criação inicial, transferência de titularidade (`ownerUserId`).
 Agregado: `Property` + `Address`.
 
 - **`createProperty(cmd: CreatePropertyCommand): Promise<PropertyWithAddressResult>`**:
+
+  0. **Guarda de formato, antes de qualquer acesso ao banco** (§7.4):
+     valida os oito campos de `CreatePropertyCommand`/`CreateAddressInput`
+     sujeitos a `CHECK` (`countryCode`, `currency`, `addressLine1`,
+     `addressLine2`, `district`, `regionCode`, `locality`,
+     `postalCode`); qualquer falha lança
+     `PersistenceInvariantError('INVALID_PROPERTY_INPUT')` (§5) antes de
+     abrir a transação.
   1. `workspaceId` sempre explícito (dentro do próprio `cmd`).
   2. Dentro da transação, primeira operação: `SELECT ... FOR UPDATE`
      na linha de `WorkspaceAgent` (ver §6.1) para
@@ -914,6 +922,7 @@ Agregado: `Property` + `Address`.
 country_code, region_code, locality, postal_code,
 ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude,
 created_at, updated_at` — nunca expõe o formato binário do PostGIS.
+
 - **`findByIdInWorkspace(workspaceId: string, id: string): Promise<PropertyWithAddressResult | null>`**
   — se a `Property` existir mas a leitura (`LEFT JOIN`/consulta
   separada) não encontrar `Address`, lança
@@ -927,7 +936,13 @@ created_at, updated_at` — nunca expõe o formato binário do PostGIS.
   — quatro passos, **todos dentro da mesma `prisma.$transaction`**:
   1. CAS via `UPDATE ... RETURNING` (§6): `version = version + 1`,
      `publishedAt`/`archivedAt` computados pelo Repository de acordo com
-     a coerência da ADR 007 — o chamador nunca informa timestamps.
+     a "Máquina de estados de `Property.status`" da ADR 007 — o
+     chamador nunca informa timestamps. Nesta subtarefa, todos os
+     destinos (`DRAFT`/`PUBLISHED`/`ARCHIVED`) são permitidos a partir
+     de qualquer estado atual, inclusive quando o `status` solicitado
+     já é o `status` atual (a operação ainda incrementa `version` e
+     `updatedAt`) — nenhuma transição é rejeitada por
+     `PersistenceInvariantError` nesta subtarefa.
   2. Se o CAS retornar zero linhas, desambiguação (segunda consulta
      somente leitura, ainda dentro da mesma transação): linha ausente →
      `AggregateNotFoundError('PROPERTY_NOT_FOUND')`; linha existe com
@@ -946,6 +961,32 @@ created_at, updated_at` — nunca expõe o formato binário do PostGIS.
      anterior à chamada, nunca ficam "parcialmente aplicados". Esse
      comportamento é exatamente o que a suíte de infraestrutura obrigatória
      do §7.3 prova.
+
+**SQL raw parametrizado — abrangência explícita (microcorreção
+documental)**: a regra "sempre `Prisma.sql`/tagged template, nunca
+`Unsafe`/concatenação" já estava correta em espírito, mas só aparecia
+redigida sob o passo 3 de `createProperty` acima. Ela vale, sem
+exceção, para **todo** ponto de SQL raw deste Repository — os quatro
+listados abaixo e qualquer consulta raw auxiliar que venha a ser
+necessária:
+
+- o `SELECT ... FOR UPDATE` de `WorkspaceAgent` (passo 2 de
+  `createProperty`, §6.1);
+- o `INSERT` de `Address` (passo 3 de `createProperty`);
+- a leitura geoespacial de `Address` (`findByIdInWorkspace` e o passo 3
+  de `updatePropertyStatus`, ambos com `ST_Y`/`ST_X`);
+- o `UPDATE ... RETURNING` do CAS de `Property` (passo 1 de
+  `updatePropertyStatus`, §6).
+
+Em todos esses pontos: usar tagged template do Prisma ou `Prisma.sql`;
+todo valor variável é um parâmetro, nunca texto interpolado; nunca
+`$queryRawUnsafe`; nunca `$executeRawUnsafe`; nunca concatenação de
+string SQL; nunca montagem de SQL com template literal JavaScript
+comum (crase sem `Prisma.sql`); nunca interpolação de nomes de
+coluna/tabela ou valores diretamente no texto SQL. Nenhuma dependência
+nova (ex.: SafeQL) é introduzida para reforçar isso — a disciplina é
+inteiramente de code review/teste (§7.1 já cobre "SQL parametrizado e
+ausência das variantes `Unsafe`" como caso de teste unitário).
 
 **Reatribuição** (`reassignResponsibleAgent`) não é criada nesta
 tarefa — quando existir, reaproveita a mesma checagem com lock de linha
@@ -987,6 +1028,7 @@ export type PersistenceErrorReason =
   | 'DUPLICATE_ROLE_NAME'
   | 'ROLE_NOT_FOUND'
   | 'USER_NOT_FOUND'
+  | 'INVALID_PROPERTY_INPUT'
   | 'PROPERTY_NOT_FOUND'
   | 'PROPERTY_VERSION_CONFLICT'
   | 'PROPERTY_ADDRESS_MISSING'
@@ -1019,6 +1061,47 @@ nativo) quando o erro envolve uma causa original do driver — nunca
 descartado. A mensagem pública (`message`) é sempre um texto estático
 escrito pelo Repository, nunca repassada de `error.message` do driver
 (ver §5.1).
+
+**`INVALID_PROPERTY_INPUT` (microcorreção documental — lacuna fechada
+durante a revisão técnica do plano da subtarefa 3.3.7)**: a revisão
+identificou que o catálogo fechado de `PersistenceErrorReason` nunca
+teve um `reason` para "a guarda leve de formato de `CreatePropertyCommand`/
+`CreateAddressInput` rejeitou a entrada" (§7.4) — nenhum dos `reason`s
+existentes cobre esse caso sem distorcer seu significado documentado
+(`RESPONSIBLE_AGENT_NOT_ACTIVE` é sobre elegibilidade do agente,
+`PROPERTY_ADDRESS_MISSING` é sobre um estado de dado ausente, nenhum
+dos dois é sobre formato de campo de entrada). Semântica fechada deste
+`reason`:
+
+- Usado **exclusivamente** pelas guardas leves de formato de
+  `CreatePropertyCommand`/`CreateAddressInput` (§7.4) — nenhum outro
+  método de nenhum outro Repository o lança.
+- Sempre lançado como `PersistenceInvariantError('...', 'INVALID_PROPERTY_INPUT')`
+  — nunca como `PersistenceConflictError`/`AggregateNotFoundError`/
+  outra subclasse.
+- Lançado **antes** de qualquer acesso ao banco ou montagem de SQL —
+  mesma disciplina das demais invariantes proativas já listadas em
+  §5.1 (`ROLE_REQUIRED`, `DUPLICATE_ROLE_NAME`, `ROLE_NOT_FOUND`,
+  `RESPONSIBLE_AGENT_NOT_ACTIVE`).
+- **Nunca reutiliza** `PROPERTY_ADDRESS_MISSING`,
+  `RESPONSIBLE_AGENT_NOT_ACTIVE` ou `UNEXPECTED_PERSISTENCE_ERROR` — os
+  três continuam com seu significado original, inalterado por esta
+  microcorreção.
+- **Não representa** validação completa de DTO, regra de negócio, nem
+  verificação da existência real de um código ISO 3166-1/4217 (isso
+  continua fora de escopo — ver "Normalização e validação de formato"
+  da ADR 007 e §7.4 abaixo). É estritamente a rejeição de **formato**
+  (comprimento, caixa, ausência de espaço nas bordas, não-vazio) antes
+  de qualquer SQL.
+- `message` é sempre um texto estático controlado pela aplicação (ex.:
+  `'Invalid country code format.'`) — nunca proveniente do Prisma ou do
+  PostgreSQL, mesma disciplina do restante do catálogo (§5.1).
+
+Esta microcorreção altera somente o catálogo de `reason`s desta ADR
+(texto) — a introdução do literal em
+`apps/api/src/persistence/errors.ts` (código) pertence à futura
+implementação autorizada da subtarefa 3.3.7, não a esta alteração
+documental.
 
 #### 5.1 Tradução — só quando o Repository reconhece, com segurança, a operação e a constraint
 
@@ -1179,28 +1262,130 @@ continuam **exatamente** como antes da chamada — provando que o
 `UPDATE` do passo 1 do CAS foi desfeito pelo rollback da transação, não
 deixado "meio aplicado".
 
+**Teste obrigatório — corrida determinística do §6.1 (microcorreção
+documental, revisão técnica do plano da subtarefa 3.3.7)**: a corrida
+descrita em §6.1 precisa de uma prova de que a segunda transação
+**realmente esperou pelo lock** antes de prosseguir — nunca só um
+`sleep` fixo adivinhando um intervalo "provavelmente suficiente".
+Sequência exigida, inteiramente dentro do harness de teste
+(`apps/api/test/infra/`), sem nenhum hook, flag ou método exclusivo de
+teste adicionado ao `PropertyRepository` ou a qualquer código de
+produção:
+
+1. A transação de teste A (aberta diretamente via `PrismaService`, fora
+   do Repository) trava a linha correspondente de `WorkspaceAgent` com
+   `SELECT ... FOR UPDATE` e permanece aberta, sem commit.
+2. A chamada real a `PropertyRepository.createProperty(...)` inicia a
+   transação B, como uma Promise ainda não aguardada.
+3. O teste faz _polling_ curto e de prazo máximo finito (ex.: a cada
+   20–50ms, com um timeout total de poucos segundos) contra a
+   introspecção nativa do PostgreSQL — nunca contra
+   `pg_locks`/`NOT granted` isoladamente:
+
+   ```sql
+   FROM pg_locks WHERE relation = 'workspace_agents'::regclass AND NOT granted
+   ```
+
+   **não é prova suficiente por si só** — uma espera por travamento de
+   linha pode se manifestar como espera por outro tipo de recurso
+   (ex.: espera por transaction ID), não necessariamente como uma
+   entrada `NOT granted` sobre a relação `workspace_agents`. A prova
+   exigida combina `pg_stat_activity.wait_event_type` com
+   `pg_blocking_pids(pid)`: localizar a sessão da transação B em
+   `pg_stat_activity` (escopada ao banco de teste e à consulta
+   característica do lock — ex.: filtrando por `query` contendo o
+   texto do `SELECT ... FOR UPDATE`), confirmar
+   `wait_event_type = 'Lock'`, e confirmar que `pg_blocking_pids(pid)`
+   dessa sessão **contém o PID da transação A**.
+
+4. Só depois dessa confirmação, a transação A atualiza o
+   `WorkspaceAgent` para `REVOKED` (preenchendo `revokedAt`) e confirma
+   a transação.
+5. A transação B retoma e a Promise de `createProperty` rejeita com
+   `PersistenceInvariantError('RESPONSIBLE_AGENT_NOT_ACTIVE')`.
+6. O teste confirma, via `PrismaService` (fora do Repository, a
+   chamada rejeitada de `createProperty` nunca retorna o `id`
+   gerado — não há como usar `findByIdInWorkspace` para provar
+   ausência aqui), que nenhuma escrita ocorreu: consulta a contagem de
+   `Property` filtrando por `workspaceId` + dados identificáveis da
+   própria tentativa (`title`, `responsibleAgentUserId` do `cmd`
+   usado na chamada) e confirma zero linhas; confirma também a
+   ausência de `Address` correspondente — por um `JOIN`/consulta
+   equivalente sobre esse mesmo filtro, ou pela contagem global
+   esperada de `addresses` no teste isolado (a suíte roda serial, com
+   `TRUNCATE` guardado entre testes — ADR 008 §7.5 —, então a
+   contagem total do banco de teste nesse momento é conhecida).
+
+O _polling_ do passo 3 deve ter prazo máximo finito e falhar com
+diagnóstico claro (não travar indefinidamente nem passar
+silenciosamente) se o bloqueio esperado não for observado dentro do
+prazo — isso é código de teste, não uma característica do
+`PropertyRepository` em produção.
+
 #### 7.4 Testes de contrato do schema (bypassam o Repository, deliberadamente)
 
 `apps/api/test/infra/contract/` fala diretamente com
 `PrismaService`/SQL raw, contornando o Repository, para os estados que
 o desenho do Repository já torna inatingíveis pelo caminho normal:
-lifecycle incoerente de `Property`; `version = 0`; formato de
-`countryCode`/`currency`/`addressLine1`/`district`; `AgentLicense` com
-jurisdição/número duplicados por caixa (`citext`); `Address` cross-
-tenant; FK composta `Property → WorkspaceAgent` como defesa em
-profundidade independente da checagem com lock (§6.1); `PROPERTY_ADDRESS_MISSING`
-simulado com uma exclusão direta de `Address` fora do Repository.
-**Nenhum método inseguro é criado no Repository só para permitir esses
-testes.**
+lifecycle incoerente de `Property`; `version = 0`; formato de todos os
+oito campos listados abaixo; `AgentLicense` com jurisdição/número
+duplicados por caixa (`citext`); `Address` cross-tenant; FK composta
+`Property → WorkspaceAgent` como defesa em profundidade independente
+da checagem com lock (§6.1); `PROPERTY_ADDRESS_MISSING` simulado com
+uma exclusão direta de `Address` fora do Repository. **Nenhum método
+inseguro é criado no Repository só para permitir esses testes.**
 
-**Validação de formato antes de escrever**: os campos sensíveis a
-`CHECK` (`countryCode`, `currency`, `addressLine1`/`district` trimados
-e não vazios) são verificados por uma função de guarda leve, colocada
+**Validação de formato antes de escrever — escopo completo
+(microcorreção documental, revisão técnica do plano da subtarefa
+3.3.7)**: a versão anterior desta seção citava só quatro campos
+(`countryCode`, `currency`, `addressLine1`, `district`) — um
+subconjunto estrito dos `CHECK`s de formato que a migration realmente
+aplica sobre `Address`/`Property` (ver ADR 007, "Normalização e
+validação de formato"). Isso contradizia o princípio geral já fixado
+por esta mesma ADR para `UserRepository.email` (§4.1, "Normalização"):
+_"o `CHECK` do banco continua sendo a rede de segurança final, nunca a
+primeira linha de defesa"_. Correção: a guarda leve de aplicação
+**espelha todos os `CHECK`s de formato aplicáveis a `Property` e
+`Address`**, sem exceção — oito campos, não quatro:
+
+| Campo          | Regra da guarda                       | `CHECK` espelhado (ADR 007)        |
+| -------------- | ------------------------------------- | ---------------------------------- |
+| `countryCode`  | Exatamente duas letras maiúsculas     | `addresses_country_code_format`    |
+| `currency`     | Exatamente três letras maiúsculas     | `properties_currency_format`       |
+| `addressLine1` | Trimado e não vazio                   | `addresses_address_line_1_trimmed` |
+| `addressLine2` | Quando informado: trimado e não vazio | `addresses_address_line_2_trimmed` |
+| `district`     | Quando informado: trimado e não vazio | `addresses_district_trimmed`       |
+| `regionCode`   | Trimado e não vazio                   | `addresses_region_code_trimmed`    |
+| `locality`     | Trimado e não vazio                   | `addresses_locality_trimmed`       |
+| `postalCode`   | Trimado e não vazio                   | `addresses_postal_code_trimmed`    |
+
+Todos os oito são verificados por uma função de guarda leve, colocada
 junto dos tipos de comando (§1) — não um schema Zod completo (isso é
 concern de DTO/Controller, fora de escopo) — que lança
-`PersistenceInvariantError` **antes** de qualquer SQL ser montado. É
-essa validação prévia que torna os `CHECK`s de formato inatingíveis
-pelo caminho normal do Repository, motivando o teste de contrato acima.
+`PersistenceInvariantError('...', 'INVALID_PROPERTY_INPUT')` (§5)
+**antes** de qualquer SQL ser montado. É essa validação prévia que
+torna os oito `CHECK`s de formato inatingíveis pelo caminho normal do
+Repository, motivando o teste de contrato acima.
+
+**A guarda valida, nunca normaliza ou modifica**:
+
+- A guarda **não** faz `trim()` automaticamente nos valores — rejeita
+  quando o valor não já está trimado, não corrige silenciosamente.
+- A guarda **não** converte `countryCode`/`currency` para maiúsculas —
+  rejeita quando o valor não já está em maiúsculas.
+- A guarda **não** comprova que o código ISO 3166-1/4217 existe de
+  fato — só formato (comprimento, caixa, ausência de espaço nas
+  bordas, não-vazio), exatamente como os `CHECK`s do banco que ela
+  espelha (ver ADR 007, "Normalização e validação de formato": "nunca
+  a existência real de um código ISO... contra uma tabela de
+  referência").
+- Os `CHECK`s do banco **permanecem como defesa em profundidade** —
+  a guarda de aplicação nunca os torna dispensáveis; eles continuam
+  sendo a rede de segurança final, mesmo que estruturalmente
+  inatingíveis pelo caminho normal do `Repository`.
+- Os testes de contrato (`apps/api/test/infra/contract/`) continuam
+  contornando o `Repository` para provar essas oito constraints
+  diretamente contra o banco.
 
 #### 7.5 Execução serial e isolamento
 
