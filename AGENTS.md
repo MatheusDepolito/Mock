@@ -149,9 +149,9 @@ pareça sugerir implicitamente.
   runtime da API com o banco, readiness real ou Dockerfile da API
   existia ainda — ver abaixo o que a Tarefa 3.3 já entregou desde então.
   **A Tarefa 3.3** (`PrismaModule`/`RedisModule`/repositories por
-  agregado, ver ADR 007) está **`In Progress`**, executada subtarefa
-  por subtarefa (oito no total, definidas na ADR 008 §8), cada uma com
-  autorização explícita própria. **As subtarefas 3.3.1 a 3.3.6 estão
+  agregado, ver ADR 007) está **`Completed`**, executada subtarefa por
+  subtarefa (oito no total, definidas na ADR 008 §8), cada uma aprovada
+  com autorização explícita própria. **As subtarefas 3.3.1 a 3.3.6 estão
   `Completed` e aprovadas**: **3.3.1** — `RuntimeConfigModule` (único
   módulo global, fornece `SERVER_CONFIG`), `RedisModule` (estático,
   não-global) e `RedisService` (composição sobre `ioredis@6.0.0`,
@@ -185,29 +185,39 @@ pareça sugerir implicitamente.
   integração com infraestrutura real confirmados ao final da 3.3.6.
   **A subtarefa 3.3.7** (`PropertyRepository`/`PropertiesModule`,
   `createProperty`/`findByIdInWorkspace`/`updatePropertyStatus`, ADR
-  008 §4.3) é a próxima da sequência: **o planejamento e a revisão
-  técnica do plano já foram concluídos, mas a implementação continua
-  bloqueada até autorização explícita e separada do responsável pelo
-  projeto** — concluir o planejamento e a revisão não substitui essa
-  autorização (ver §3 abaixo). **A subtarefa 3.3.8** (validação
-  integrada e fechamento documental) **não foi iniciada e continua
-  bloqueada**. **As Tarefas 3.4 a 3.6** (readiness real, Dockerfile da
-  API, validação integrada) **continuam bloqueadas** — cada uma só
-  começa depois que a anterior atender seus critérios de aceite (ver
+  008 §4.3) está **`Completed` e aprovada**: implementação completa,
+  commitada isoladamente (`9e0a1dc`, 12 arquivos de código e testes,
+  nenhuma alteração documental no mesmo commit), com revisão técnica
+  final aprovada para commit antes da criação do commit. **A subtarefa
+  3.3.8** (validação integrada e fechamento documental) está
+  **`Completed` e aprovada**: validação de ponta a ponta sem nenhum
+  achado — HEAD e worktree limpo confirmados, `postgres`/`redis`
+  saudáveis, suíte real apontando exclusivamente para `mockp_test`,
+  `yarn validate` e `yarn validate:infra` aprovados de ponta a ponta,
+  composição do `AppModule` conferida, isolamento entre testes offline
+  e reais confirmado, regras de camada do backend (ADR 002) e ausência
+  de alterações no contrato público confirmadas, seguidos deste
+  fechamento documental. **168 testes unitários, 44 testes de
+  integração offline e 52 testes de integração com infraestrutura real
+  confirmados ao final da 3.3.8.** **A Tarefa 3.3 está `Completed`.**
+  **As Tarefas 3.4 a 3.6** (readiness real, Dockerfile da API,
+  validação integrada) **continuam bloqueadas** — cada uma só começa
+  depois que a anterior atender seus critérios de aceite e receber
+  autorização explícita e separada do responsável pelo projeto (ver
   [docs/IMPLEMENTATION_ROADMAP.md](docs/IMPLEMENTATION_ROADMAP.md),
   Fase 3).
 - Prisma `7.10.0`, `schema.prisma`, a migration inicial e o seed (a
   fundação multi-tenant da ADR 007) já existem e estão validados;
   `PrismaModule`/`PrismaService`, `RedisModule`/`RedisService`,
-  `UserRepository`/`UsersModule` e `WorkspaceRepository`/
-  `WorkspacesModule` também já existem e já estão em `AppModule` — mas
-  ainda não existe `PropertyRepository`/`PropertiesModule` (3.3.7, não
-  autorizada), nem conexão runtime real da API **em produção** (a
-  conexão real hoje só acontece nos testes de infraestrutura da 3.3.4
-  em diante), Dockerfile da API, `apps/worker` ou `apps/web`/frontend
-  neste repositório. PostgreSQL/PostGIS e Redis já existem como
-  containers locais (Docker Compose) e já são exercitados de verdade
-  pela suíte `yarn validate:infra` desde a 3.3.4.
+  `UserRepository`/`UsersModule`, `WorkspaceRepository`/
+  `WorkspacesModule` e `PropertyRepository`/`PropertiesModule` (3.3.7)
+  também já existem e já estão em `AppModule` — mas ainda não existe
+  conexão runtime real da API **em produção** (a conexão real hoje só
+  acontece nos testes de infraestrutura da 3.3.4 em diante), Dockerfile
+  da API, `apps/worker` ou `apps/web`/frontend neste repositório.
+  PostgreSQL/PostGIS e Redis já existem como containers locais (Docker
+  Compose) e já são exercitados de verdade pela suíte
+  `yarn validate:infra` desde a 3.3.4.
 - Não crie `apps/web`, `apps/worker`, outras `libs/*` de produto,
   Next.js, Docker, autenticação, domínio de negócio ou qualquer outra
   peça de fases posteriores a Fase 3, e não antecipe entregáveis de

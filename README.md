@@ -16,28 +16,32 @@ existem** no repositório, implementando a modelagem multi-tenant
 (`Accepted` — supersede exclusivamente a modelagem de dados da ADR 006;
 as decisões de infraestrutura/pipeline da ADR 006 continuam válidas),
 validados offline e em banco limpo (auditoria independente aprovada).
-**A Tarefa 3.3 está `In Progress`**, executada subtarefa por subtarefa
-(ADR 008 `Accepted`). **A subtarefa 3.3.1 está `Completed` e aprovada**:
-`RuntimeConfigModule`, `RedisModule` e `RedisService` já existem e
-estão em `AppModule` — a integração com o Redis é exclusivamente lazy
-(nenhum teste offline abre socket real) e ainda não representa
-readiness real. **A subtarefa 3.3.2 está `Completed` e aprovada**:
-`PrismaModule` e `PrismaService` (estende o `PrismaClient` gerado,
-injeta `SERVER_CONFIG`, constrói `PrismaPg` exclusivamente com
-`config.databaseUrl`) já existem e estão em `AppModule` — a conexão
-com o Prisma é exclusivamente lazy (nenhum `$connect()` eager, nenhuma
-query no bootstrap, nenhum teste offline abre conexão PostgreSQL real;
-`onModuleDestroy()` aguarda `$disconnect()`) e ainda não representa
-readiness real (59 testes unitários e 34 testes de integração offline
-confirmados). Só a subtarefa 3.3.3 (composição offline do `AppModule`
-com prova de instância única de `PrismaService`/`RedisService`,
-conforme ADR 008 §7.2/§8) está autorizada a começar; as subtarefas
-3.3.4–3.3.8 ainda não estão autorizadas; as Tarefas 3.4 a 3.6 continuam
-bloqueadas. Nenhum repository, módulo de domínio, harness de
-infraestrutura real, readiness real, Dockerfile da API, worker ou
-frontend existe ainda no repositório. Antes de qualquer novo scaffold
-ou implementação, leia a documentação abaixo — ela é a fonte de
-verdade do projeto.
+**A Tarefa 3.3 está `Completed`**, executada subtarefa por subtarefa
+(ADR 008 `Accepted`), todas as oito subtarefas aprovadas: **3.3.1**
+(`RuntimeConfigModule`/`RedisModule`/`RedisService`, integração com o
+Redis exclusivamente lazy), **3.3.2** (`PrismaModule`/`PrismaService`,
+conexão com o Prisma exclusivamente lazy), **3.3.3** (composição
+offline do `AppModule`, com prova de instância única de
+`PrismaService`/`RedisService` no grafo Nest, conforme ADR 008
+§7.2/§8), **3.3.4** (harness de infraestrutura real em
+`apps/api/test/infra/`, target `api:test:integration:infra`, comando
+raiz `yarn validate:infra`), **3.3.5** (`UserRepository`/
+`UsersModule`), **3.3.6** (`WorkspaceRepository`/`WorkspacesModule`),
+**3.3.7** (`PropertyRepository`/`PropertiesModule`, commit `9e0a1dc`)
+e **3.3.8** (validação integrada e fechamento documental, sem nenhum
+achado). A conexão com Prisma e Redis continua exclusivamente lazy nos
+testes offline; os testes reais desde a 3.3.4 já exercitam
+PostgreSQL/PostGIS e Redis de verdade contra o profile padrão do
+Compose — isso ainda não representa readiness real (isso continua
+sendo exclusivamente a Tarefa 3.4, que **não foi iniciada e depende de
+autorização explícita e separada**). **168 testes unitários, 44 testes
+de integração offline e 52 testes de integração com infraestrutura
+real confirmados ao final da 3.3.8.** As Tarefas 3.4 a 3.6 continuam
+bloqueadas — cada uma só inicia depois que a anterior atender seus
+critérios de aceite e receber autorização própria. Nenhum Dockerfile
+da API, worker ou frontend existe ainda no repositório. Antes de
+qualquer novo scaffold ou implementação, leia a documentação abaixo —
+ela é a fonte de verdade do projeto.
 
 ## Ordem de leitura recomendada
 
@@ -82,36 +86,39 @@ verdade do projeto.
   Prisma, seus arquivos de configuração, `schema.prisma`, migration e
   seed já existem, implementando a modelagem multi-tenant de 15
   entidades da ADR 007, validada offline e em banco limpo (auditoria
-  independente aprovada). Nenhum `PrismaModule`, `PrismaService`,
-  repository, conexão de runtime da API com o banco ou Dockerfile da
-  API existe ainda. **A Tarefa 3.3 está `In Progress`**, planejamento
-  arquitetural concluído e aprovado via
+  independente aprovada). Nenhum Dockerfile da API existe ainda.
+  **A Tarefa 3.3 está `Completed`**, planejamento arquitetural
+  concluído e aprovado via
   [ADR 008](docs/adr/008-runtime-persistence-and-repositories.md)
-  (`Accepted`). **A subtarefa 3.3.1 está `Completed` e aprovada**:
-  `RuntimeConfigModule` (único módulo global, fornece `SERVER_CONFIG`),
-  `RedisModule` (estático, não-global) e `RedisService` (composição
-  sobre `ioredis@6.0.0`, conexão lazy) já existem e estão em
-  `AppModule` — nenhum teste offline abre socket real, e isso ainda não
-  representa readiness real (Tarefa 3.4). **A subtarefa 3.3.2 está
-  `Completed` e aprovada**: `PrismaModule` (estático, não-global) e
-  `PrismaService` (estende o `PrismaClient` gerado, injeta
-  `SERVER_CONFIG`, constrói `PrismaPg` exclusivamente com
-  `config.databaseUrl`) já existem e estão em `AppModule` — a conexão
-  é exclusivamente lazy (nenhum `$connect()` eager, nenhuma query no
-  bootstrap, `onModuleDestroy()` aguarda `$disconnect()`), nenhum teste
-  offline abre conexão PostgreSQL real, e isso ainda não representa
-  readiness real (Tarefa 3.4). Só a subtarefa 3.3.3 (composição offline
-  do `AppModule` com prova de instância única de `PrismaService`/
-  `RedisService`, ADR 008 §7.2/§8) está autorizada a começar; as
-  subtarefas 3.3.4–3.3.8 ainda não estão autorizadas; as Tarefas 3.4 a
-  3.6 continuam bloqueadas.
+  (`Accepted`), executada em oito subtarefas, todas `Completed` e
+  aprovadas: **3.3.1** — `RuntimeConfigModule` (único módulo global,
+  fornece `SERVER_CONFIG`), `RedisModule` (estático, não-global) e
+  `RedisService` (composição sobre `ioredis@6.0.0`, conexão lazy);
+  **3.3.2** — `PrismaModule` (estático, não-global) e `PrismaService`
+  (estende o `PrismaClient` gerado, injeta `SERVER_CONFIG`, constrói
+  `PrismaPg` exclusivamente com `config.databaseUrl`, conexão
+  exclusivamente lazy); **3.3.3** — composição offline do `AppModule`,
+  com prova de instância única de `PrismaService`/`RedisService` no
+  grafo Nest (ADR 008 §7.2/§8); **3.3.4** — harness de infraestrutura
+  real (`apps/api/test/infra/`, target `api:test:integration:infra`,
+  comando raiz `yarn validate:infra`); **3.3.5** — `UserRepository`/
+  `UsersModule`; **3.3.6** — `WorkspaceRepository`/`WorkspacesModule`;
+  **3.3.7** — `PropertyRepository`/`PropertiesModule` (commit
+  `9e0a1dc`); **3.3.8** — validação integrada e fechamento documental,
+  sem nenhum achado. Nenhum dos dois (Prisma/Redis) ainda representa
+  readiness real (Tarefa 3.4, **não iniciada, dependente de
+  autorização própria**); as Tarefas 3.4 a 3.6 continuam bloqueadas.
+  **168 testes unitários, 44 testes de integração offline e 52 testes
+  de integração com infraestrutura real confirmados ao final da
+  3.3.8.**
 - Repositório com workspace Yarn/Nx configurado, o skeleton técnico da
   API NestJS implementado, PostgreSQL/PostGIS + Redis disponíveis via
-  Docker Compose, e Prisma (schema, migration inicial e seed da
-  fundação multi-tenant da ADR 007) já implementado e validado — ainda
-  sem a integração runtime da API com o Prisma (`PrismaModule`,
-  repositories), sem Next.js, sem Dockerfile da API ou libs de produto
-  além de `libs/config`.
+  Docker Compose, Prisma (schema, migration inicial e seed da fundação
+  multi-tenant da ADR 007) implementado e validado, e a integração
+  runtime da API com Prisma/Redis mais os repositories por agregado
+  (`UserRepository`, `WorkspaceRepository`, `PropertyRepository`) já
+  implementados — ainda sem readiness real, sem Next.js, sem
+  Dockerfile da API ou libs de produto além de `libs/config`.
 - Segue [docs/IMPLEMENTATION_ROADMAP.md](docs/IMPLEMENTATION_ROADMAP.md),
   que define o status de cada fase (`Pending`, `In Progress`,
   `Completed`, `Blocked`).

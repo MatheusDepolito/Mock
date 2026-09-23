@@ -61,9 +61,9 @@ do schema `public`, incluindo `spatial_ref_sys_srid_check`, que
 pertence à extensão PostGIS, não ao domínio —, 17 FKs, índices e
 extensões confirmados, provas negativas/positivas em transação com
 rollback) — auditoria independente aprovou o resultado. **A Tarefa 3.3
-está `In Progress`**. O planejamento arquitetural está **concluído e
+está `Completed`**. O planejamento arquitetural está **concluído e
 aprovado**: [ADR 008](adr/008-runtime-persistence-and-repositories.md)
-está `Accepted`. A Tarefa 3.3 é executada subtarefa por subtarefa
+está `Accepted`. A Tarefa 3.3 foi executada subtarefa por subtarefa
 (oito no total, ADR 008 §8). **As subtarefas 3.3.1 a 3.3.6 estão
 `Completed` e aprovadas**: **3.3.1** — `RuntimeConfigModule`,
 `RedisModule` e `RedisService` (integração com o Redis exclusivamente
@@ -86,16 +86,18 @@ transação, mais `findById`, ADR 008 §4.2) e `WorkspacesModule`. Todos
 já existem no código e já estão importados em `AppModule`. Nenhum dos
 dois (Prisma/Redis) ainda representa readiness real — isso continua
 sendo exclusivamente a Tarefa 3.4; nenhum Dockerfile da API existe
-ainda. 132 testes unitários, 44 testes de integração offline e 23
-testes de integração com infraestrutura real confirmados ao final da
-3.3.6. **A subtarefa 3.3.7** (`PropertyRepository`/`PropertiesModule`,
-ADR 008 §4.3) é a próxima da sequência: o planejamento e a revisão
-técnica do plano já foram concluídos, mas **a implementação continua
-bloqueada até autorização explícita e separada do responsável pelo
-projeto**. **A subtarefa 3.3.8 não foi iniciada e continua
-bloqueada**. **As Tarefas 3.4 a 3.6 continuam bloqueadas** — cada uma
-só inicia depois que a anterior atender seus critérios de aceite. As
-Fases 0, 1 e 2 estão `Completed`.
+ainda. **A subtarefa 3.3.7** (`PropertyRepository`/`PropertiesModule`,
+ADR 008 §4.3) está **`Completed` e aprovada** — implementada e
+commitada isoladamente (`9e0a1dc`). **A subtarefa 3.3.8** (validação
+integrada e fechamento documental) está **`Completed` e aprovada** —
+`yarn validate` e `yarn validate:infra` aprovados de ponta a ponta,
+sem nenhum achado. **168 testes unitários, 44 testes de integração
+offline e 52 testes de integração com infraestrutura real confirmados
+ao final da 3.3.8.** **A Tarefa 3.3 está `Completed`.** **As Tarefas
+3.4 a 3.6 continuam bloqueadas** — cada uma só inicia depois que a
+anterior atender seus critérios de aceite e receber autorização
+explícita e separada do responsável pelo projeto. As Fases 0, 1 e 2
+estão `Completed`.
 
 ---
 
@@ -258,20 +260,21 @@ bancos `mockp` e `mockp_test` criados deterministicamente;
 `TEST_DATABASE_URL` exclusiva de testes/scripts. `schema.prisma`, a
 migration inicial e o seed **implementam as 15 entidades multi-tenant
 da ADR 007**, validados offline e em banco limpo — auditoria
-independente aprovou o resultado (ver "3.2" abaixo). Nenhum repository
-ou Dockerfile da API foi criado ainda; readiness (`a API ainda checa
-apenas sua própria inicialização`) permanece exclusivamente Tarefa 3.4.
-**A Tarefa 3.3 está `In Progress`**. Planejamento arquitetural
+independente aprovou o resultado (ver "3.2" abaixo). Nenhum Dockerfile
+da API foi criado ainda; readiness (`a API ainda checa apenas sua
+própria inicialização`) permanece exclusivamente Tarefa 3.4.
+**A Tarefa 3.3 está `Completed`**. Planejamento arquitetural
 **concluído e aprovado**:
 [ADR 008](adr/008-runtime-persistence-and-repositories.md) está
 `Accepted`. **As subtarefas 3.3.1 a 3.3.6 estão `Completed` e
 aprovadas** — ver "3.3" abaixo para o detalhamento de cada uma. **A
-subtarefa 3.3.7** (`PropertyRepository`/`PropertiesModule`) teve seu
-planejamento e revisão técnica concluídos, mas **a implementação
-continua bloqueada até autorização explícita e separada**; **a
-subtarefa 3.3.8 não foi iniciada e continua bloqueada**. **As Tarefas
-3.4 a 3.6 continuam bloqueadas** — cada uma só inicia depois que a
-anterior atender seus critérios de aceite.
+subtarefa 3.3.7** (`PropertyRepository`/`PropertiesModule`) está
+**`Completed` e aprovada** — implementada e commitada isoladamente
+(`9e0a1dc`). **A subtarefa 3.3.8** (validação integrada e fechamento
+documental) está **`Completed` e aprovada**. **As Tarefas 3.4 a 3.6
+continuam bloqueadas** — cada uma só inicia depois que a anterior
+atender seus critérios de aceite e receber autorização explícita e
+separada do responsável pelo projeto.
 
 **Objetivo**: provisionar a infraestrutura local (profile padrão) e
 modelar o núcleo de dados inicial.
@@ -340,7 +343,7 @@ modelar o núcleo de dados inicial.
   exclusivo do agregado `Workspace`, não um agregado próprio) e
   `PropertyRepository` (`Address` pertence ao agregado `Property`).
   Toda operação tenant-scoped exige `workspaceId` explícito no
-  repository. **`In Progress`** (Tarefa 3.2 concluída). Planejamento
+  repository. **`Completed`** (Tarefa 3.2 concluída). Planejamento
   arquitetural **concluído e aprovado**:
   [ADR 008](adr/008-runtime-persistence-and-repositories.md) está
   `Accepted`, incluindo `RuntimeConfigModule` (único módulo global),
@@ -407,12 +410,27 @@ modelar o núcleo de dados inicial.
     testes de integração offline e 23 testes de integração com
     infraestrutura real.
   - **3.3.7 — `PropertyRepository`/`PropertiesModule`** (ADR 008 §4.3):
-    **planejamento e revisão técnica do plano concluídos** — a
-    implementação **continua bloqueada até autorização explícita e
-    separada** do responsável pelo projeto; concluir o planejamento e a
-    revisão não substitui essa autorização.
-  - **3.3.8 — Validação integrada e fechamento posterior**: **não
-    iniciada, bloqueada** até a 3.3.7 ser implementada e aprovada.
+    **`Completed`** — aprovada tecnicamente. Implementação completa:
+    `createProperty` (guarda de formato + transação com `SELECT`/
+    `FOR UPDATE` sobre `WorkspaceAgent`, `INSERT` de `Property` via
+    Prisma Client e `INSERT` de `Address` via SQL raw parametrizado),
+    `findByIdInWorkspace` e `updatePropertyStatus` (CAS via `UPDATE`/
+    `WHERE version = $expected`, máquina de estados de timestamps
+    conforme ADR 007), com testes offline, reais e de contrato para os
+    `CHECK`s de formato/coerência e as FKs compostas de tenant. Commit
+    isolado (`9e0a1dc`, 12 arquivos de código e testes), com revisão
+    técnica final aprovada para commit antes da criação do commit.
+  - **3.3.8 — Validação integrada e fechamento documental**:
+    **`Completed`** — aprovada tecnicamente. Validação de ponta a ponta
+    sem nenhum achado: HEAD e worktree limpo confirmados, `postgres`/
+    `redis` saudáveis, suíte real apontando exclusivamente para
+    `mockp_test`, `yarn validate` e `yarn validate:infra` aprovados,
+    composição do `AppModule`, isolamento entre testes offline e reais,
+    regras de camada (ADR 002) e ausência de alterações no contrato
+    público confirmados, seguidos deste fechamento documental.
+    **Contagem confirmada ao final da 3.3.8**: 168 testes unitários, 44
+    testes de integração offline e 52 testes de integração com
+    infraestrutura real. **A Tarefa 3.3 está `Completed`.**
 - **3.4 — Readiness real e testes de falha das dependências**:
   atualizar `GET /api/v1/health/ready` para checar PostgreSQL/PostGIS e
   Redis; testes de integração cobrindo o caminho feliz e a falha de

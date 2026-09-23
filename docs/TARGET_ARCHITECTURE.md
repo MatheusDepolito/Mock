@@ -510,11 +510,10 @@ adição exige revisão desta seção (e da ADR 007) antes da implementação.
   pertencem ao repository desse agregado, garantidas dentro da mesma
   transação Prisma.
 
-> **Estado de implementação**: de `UserRepository`,
-> `WorkspaceRepository` e `PropertyRepository`, os dois primeiros já
-> existem no código — `PropertyRepository` ainda não. A Tarefa 3.3
+> **Estado de implementação**: `UserRepository`, `WorkspaceRepository`
+> e `PropertyRepository` já existem no código. A Tarefa 3.3
 > (Fase 3, ver [docs/IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md))
-> está `In Progress`, planejamento arquitetural concluído e aprovado
+> está `Completed`, planejamento arquitetural concluído e aprovado
 > via [ADR 008](adr/008-runtime-persistence-and-repositories.md)
 > (`Accepted`). **As subtarefas 3.3.1 a 3.3.6 estão `Completed` e
 > aprovadas**: 3.3.1 (`RuntimeConfigModule`/`RedisModule`/
@@ -530,19 +529,23 @@ adição exige revisão desta seção (e da ADR 007) antes da implementação.
 > `findByEmail`, ADR 008 §4.1) e 3.3.6 (`WorkspaceRepository`/
 > `WorkspacesModule`, `createIndividualWorkspace`/
 > `createBrokerageWorkspace` totalmente atômicos + `findById`, ADR 008
-> §4.2). Todos já existem no código e já estão em `AppModule`. A
-> conexão com Prisma e Redis continua exclusivamente lazy nos testes
-> offline; os testes reais desde a 3.3.4 já exercitam PostgreSQL/
-> PostGIS e Redis de verdade contra o profile padrão do Compose — isso
-> ainda não representa readiness real (isso continua sendo
-> exclusivamente a Tarefa 3.4). 132 testes unitários, 44 testes de
-> integração offline e 23 testes de integração com infraestrutura real
-> confirmados ao final da 3.3.6. **A subtarefa 3.3.7**
-> (`PropertyRepository`/`PropertiesModule`, ADR 008 §4.3) é a próxima
-> da sequência — seu planejamento e a revisão técnica do plano já
-> foram concluídos, mas a implementação continua bloqueada até
-> autorização explícita e separada do responsável pelo projeto. **A
-> subtarefa 3.3.8 não foi iniciada e continua bloqueada.**
+> §4.2). **A subtarefa 3.3.7 está `Completed` e aprovada**:
+> `PropertyRepository`/`PropertiesModule` (`createProperty`/
+> `findByIdInWorkspace`/`updatePropertyStatus`, ADR 008 §4.3),
+> implementada e commitada isoladamente (`9e0a1dc`). **A subtarefa
+> 3.3.8 está `Completed` e aprovada**: validação integrada de ponta a
+> ponta sem nenhum achado (`yarn validate`/`yarn validate:infra`,
+> composição do `AppModule`, isolamento entre testes offline e reais,
+> regras de camada ADR 002, ausência de alterações no contrato
+> público) e este fechamento documental. Todos os repositories/módulos
+> já existem no código e já estão em `AppModule`. A conexão com Prisma
+> e Redis continua exclusivamente lazy nos testes offline; os testes
+> reais desde a 3.3.4 já exercitam PostgreSQL/PostGIS e Redis de
+> verdade contra o profile padrão do Compose — isso ainda não
+> representa readiness real (isso continua sendo exclusivamente a
+> Tarefa 3.4). **168 testes unitários, 44 testes de integração offline
+> e 52 testes de integração com infraestrutura real confirmados ao
+> final da 3.3.8.**
 
 ### Decisões de modelagem
 
