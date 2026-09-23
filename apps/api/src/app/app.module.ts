@@ -10,6 +10,7 @@ import { ProblemDetailsFilter } from '../common/problem-details.filter';
 import { getRequestId } from '../common/request-id';
 import { RuntimeConfigModule } from '../common/runtime-config.module';
 import { PrismaModule } from '../prisma/prisma.module';
+import { PropertiesModule } from '../properties/properties.module';
 import { RedisModule } from '../redis/redis.module';
 import { UsersModule } from '../users/users.module';
 import { WorkspacesModule } from '../workspaces/workspaces.module';
@@ -93,6 +94,12 @@ export class AppModule {
         // itself (see workspaces.module.ts) — precondition checks on
         // User/AgentProfile go through PrismaService directly.
         WorkspacesModule,
+        // Third domain module (Tarefa 3.3.7) — declares/exports only
+        // PropertyRepository, no Controller. Never imports
+        // UsersModule/WorkspacesModule itself (see properties.module.ts)
+        // — the WorkspaceAgent lock/check goes through PrismaService
+        // directly, inside PropertyRepository's own transaction.
+        PropertiesModule,
       ],
       providers: [
         { provide: APP_GUARD, useClass: ThrottlerGuard },
