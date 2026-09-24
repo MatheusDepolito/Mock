@@ -1,0 +1,40 @@
+# Build context for apps/api/Dockerfile is the monorepo root. Only what
+# the Dockerfile's own COPY instructions name is ever actually copied
+# into an image — this file just keeps the context sent to the Docker
+# daemon small and keeps secrets/local-only artifacts out of it.
+
+# Version control and editor/IDE metadata
+.git
+.github
+.vscode
+.idea
+
+# Environment files — never sent to a Docker build context
+.env
+.env.*
+!.env.example
+
+# Dependencies and build/test outputs — the image builds its own inside
+# the container; none of this is ever read from the host
+node_modules
+dist
+coverage
+.nx
+.yarn/cache
+.yarn/install-state.gz
+
+# Local infra state and logs
+*.log
+npm-debug.log*
+
+# Docs and local tooling not needed to build or run the image — a
+# blanket "*.md" is deliberately avoided: apps/api/Dockerfile's build
+# stage does `COPY libs/config/*.md`, matching that project's own build
+# assets (libs/config/package.json, nx.targets.build.options.assets), and
+# a glob matching zero files would fail the build.
+docs
+.husky
+
+# OS/editor cruft
+.DS_Store
+Thumbs.db

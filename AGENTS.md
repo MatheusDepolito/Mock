@@ -237,9 +237,40 @@ redis: 'up' }`; falha de qualquer dependência retorna `503` em
   correta e liveness `200` durante cada indisponibilidade, e recuperação
   para `200` após cada restart; ambos os containers foram restaurados
   saudáveis ao final. **A Tarefa 3.4 está `Completed`.**
-  **As Tarefas 3.5 e 3.6** (Dockerfile da API, validação integrada)
-  **continuam bloqueadas** — cada uma só começa depois que a anterior
-  atender seus critérios de aceite e receber autorização explícita e
+  **A Tarefa 3.5** (Dockerfile da API) está **`Completed` e aprovada
+  tecnicamente**: [apps/api/Dockerfile](apps/api/Dockerfile)
+  multi-stage (`build`/`runtime`), imagem-base fixada
+  (`node:24.18.0-bookworm-slim`) e Yarn `4.12.0` (via Corepack) nos dois
+  stages, contexto de build na raiz do monorepo, `HUSKY=0` no
+  `yarn install --immutable`, Prisma Client gerado e API compilada via
+  `yarn nx run api:build` sem exigir `DATABASE_URL` no build, stage
+  final rodando como usuário não-root (`node`), sem depender de
+  `node_modules`/arquivos do host, com a lista mínima de arquivos Prisma
+  da ADR 006 (nunca `prisma.test.config.ts` nem testes), `CMD` iniciando
+  somente `node dist/apps/api/src/main.js` (sem migration automática no
+  boot), e [.dockerignore](.dockerignore) correspondente. Validado:
+  `yarn validate` aprovado; build real da imagem a partir da raiz;
+  container iniciado contra o `postgres`/`redis` locais já existentes
+  (via `host.docker.internal`, sem parar/recriar nenhum dos dois) com
+  `GET /api/v1/health/live` e `GET /api/v1/health/ready` respondendo
+  `200`/saudável; usuário não-root confirmado (`whoami` → `node`);
+  ausência de `prisma.test.config.ts` e de qualquer fonte TypeScript não
+  compilado na imagem confirmada; `/proc/1/cmdline` confirmado como
+  exatamente `node dist/apps/api/src/main.js`, sem wrapper de migration;
+  comando explícito `yarn workspace api prisma migrate deploy --config
+prisma.migrate.config.ts` executado dentro da imagem **somente**
+  contra `mockp_test` (host e nome do banco confirmados antes),
+  idempotente (`No pending migrations to apply`); container de teste
+  encerrado ao final, sem alterar o profile `full` do Compose. Duas
+  lacunas factuais da ADR 006 foram corrigidas durante a validação (não
+  são mudanças de decisão): o caminho real do `CMD` é
+  `dist/apps/api/src/main.js` (não `dist/apps/api/main.js`); e o cache
+  do Corepack, por padrão isolado por `$HOME`, precisou de
+  `COREPACK_HOME` fixo e de `/app` com posse ajustada para `node` para
+  que nenhuma chamada de rede/erro de permissão ocorresse em runtime —
+  ver ADR 006, seção "Dockerfile da API e Prisma". **A Tarefa 3.6**
+  (validação integrada e fechamento documental) **continua bloqueada**
+  — só começa quando receber, ela própria, autorização explícita e
   separada do responsável pelo projeto (ver
   [docs/IMPLEMENTATION_ROADMAP.md](docs/IMPLEMENTATION_ROADMAP.md),
   Fase 3).
@@ -255,10 +286,12 @@ redis: 'up' }`; falha de qualquer dependência retorna `503` em
   `UserRepository`/`WorkspaceRepository`/`PropertyRepository` via HTTP
   ainda (isso pertence a fases posteriores), então esses repositories
   continuam exercitados apenas pelos testes (offline e reais desde a
-  3.3.4). Nenhum Dockerfile da API, `apps/worker` ou `apps/web`/frontend
-  existe ainda neste repositório. PostgreSQL/PostGIS e Redis já existem
-  como containers locais (Docker Compose) e já são exercitados de
-  verdade pela suíte `yarn validate:infra` desde a 3.3.4.
+  3.3.4). O Dockerfile da API já existe desde a Tarefa 3.5
+  ([apps/api/Dockerfile](apps/api/Dockerfile)); `apps/worker` e
+  `apps/web`/frontend continuam não existindo neste repositório.
+  PostgreSQL/PostGIS e Redis já existem como containers locais (Docker
+  Compose) e já são exercitados de verdade pela suíte
+  `yarn validate:infra` desde a 3.3.4.
 - Não crie `apps/web`, `apps/worker`, outras `libs/*` de produto,
   Next.js, Docker, autenticação, domínio de negócio ou qualquer outra
   peça de fases posteriores a Fase 3, e não antecipe entregáveis de

@@ -86,7 +86,9 @@ transação, mais `findById`, ADR 008 §4.2) e `WorkspacesModule`. Todos
 já existem no código e já estão importados em `AppModule`. Até aqui,
 nenhum dos dois (Prisma/Redis) representava readiness real por si só —
 isso passou a ser exclusivamente a Tarefa 3.4 (ver fechamento abaixo);
-nenhum Dockerfile da API existe ainda. **A subtarefa 3.3.7**
+até este ponto da 3.3, nenhum Dockerfile da API existia ainda — isso
+passou a ser exclusivamente a Tarefa 3.5 (ver fechamento abaixo; não é
+mais o estado atual). **A subtarefa 3.3.7**
 (`PropertyRepository`/`PropertiesModule`, ADR 008 §4.3) está
 **`Completed` e aprovada** — implementada e commitada isoladamente
 (`9e0a1dc`). **A subtarefa 3.3.8** (validação integrada e fechamento
@@ -111,11 +113,33 @@ validação operacional manual (parada/recuperação individual de
 os containers restaurados saudáveis). Risco residual aceito: o timeout
 do probe não cancela necessariamente uma tentativa física de conexão
 PostgreSQL ainda pendente em falha extrema de rede; a configuração
-compartilhada do `PrismaService` não foi alterada. **As Tarefas 3.5 e
-3.6 continuam bloqueadas** — cada uma só inicia depois que a anterior
-atender seus critérios de aceite e receber autorização explícita e
-separada do responsável pelo projeto. As Fases 0, 1 e 2 estão
-`Completed`.
+compartilhada do `PrismaService` não foi alterada. **A Tarefa 3.5**
+(Dockerfile da API) está **`Completed` e aprovada tecnicamente**:
+`apps/api/Dockerfile` multi-stage (imagem-base e Yarn fixados nos dois
+stages, conforme ADR 006, "Dockerfile da API e Prisma"), usuário
+não-root no stage final, sem depender de `node_modules`/arquivos do
+host, `CMD` iniciando somente `node dist/apps/api/src/main.js` (sem
+migration automática), com `.dockerignore` correspondente. Validado:
+`yarn validate` aprovado; build real da imagem a partir da raiz do
+monorepo; API iniciando a partir da imagem com
+`GET /api/v1/health/live`/`GET /api/v1/health/ready` respondendo `200`
+contra o `postgres`/`redis` locais já existentes (sem pará-los ou
+recriá-los); usuário não-root confirmado; ausência de
+`prisma.test.config.ts` e de qualquer fonte TypeScript não compilado na
+imagem confirmada; ausência de migration automática no boot confirmada
+via `/proc/1/cmdline`; comando explícito
+`yarn workspace api prisma migrate deploy --config prisma.migrate.config.ts`
+executado dentro da imagem exclusivamente contra `mockp_test` (host e
+nome do banco confirmados antes), de forma idempotente (`No pending
+migrations to apply`); container de teste encerrado ao final, sem
+alterar o profile `full` do Compose. Duas lacunas factuais da ADR 006
+foram corrigidas durante a validação (a decisão em si não mudou): o
+caminho real do `CMD` é `dist/apps/api/src/main.js`, e o cache do
+Corepack precisou de `COREPACK_HOME` fixo e de `/app` com posse
+ajustada para o usuário `node`, para que nenhuma chamada de rede nem
+erro de permissão ocorresse em runtime. **A Tarefa 3.6 continua
+bloqueada** — só inicia com autorização explícita e separada do
+responsável pelo projeto. As Fases 0, 1 e 2 estão `Completed`.
 
 ---
 
@@ -278,8 +302,10 @@ bancos `mockp` e `mockp_test` criados deterministicamente;
 `TEST_DATABASE_URL` exclusiva de testes/scripts. `schema.prisma`, a
 migration inicial e o seed **implementam as 15 entidades multi-tenant
 da ADR 007**, validados offline e em banco limpo — auditoria
-independente aprovou o resultado (ver "3.2" abaixo). Nenhum Dockerfile
-da API foi criado ainda. **A Tarefa 3.3 está `Completed`**.
+independente aprovou o resultado (ver "3.2" abaixo). Até o final da
+Tarefa 3.2, nenhum Dockerfile da API havia sido criado ainda — isso não
+é mais o estado atual (ver "3.5" abaixo). **A Tarefa 3.3 está
+`Completed`**.
 Planejamento arquitetural **concluído e aprovado**:
 [ADR 008](adr/008-runtime-persistence-and-repositories.md) está
 `Accepted`. **As subtarefas 3.3.1 a 3.3.6 estão `Completed` e
@@ -291,9 +317,11 @@ documental) está **`Completed` e aprovada**. **A Tarefa 3.4**
 (readiness real e testes de falha das dependências) está **`Completed`
 e aprovada tecnicamente** — `GET /api/v1/health/ready` já checa
 PostgreSQL/PostGIS e Redis de verdade (ver "3.4" abaixo para o
-detalhamento). **As Tarefas 3.5 e 3.6 continuam bloqueadas** — cada uma
-só inicia depois que a anterior atender seus critérios de aceite e
-receber autorização explícita e separada do responsável pelo projeto.
+detalhamento). **A Tarefa 3.5** (Dockerfile da API) está **`Completed`
+e aprovada tecnicamente** — `apps/api/Dockerfile` já existe, builda com
+sucesso e a API já inicia a partir da imagem gerada (ver "3.5" abaixo
+para o detalhamento). **A Tarefa 3.6 continua bloqueada** — só inicia
+com autorização explícita e separada do responsável pelo projeto.
 
 **Objetivo**: provisionar a infraestrutura local (profile padrão) e
 modelar o núcleo de dados inicial.
@@ -492,10 +520,38 @@ modelar o núcleo de dados inicial.
   ainda pendente em uma falha extrema de rede (fechar essa lacuna
   exigiria alterar a configuração compartilhada do `PrismaService`, o
   que não foi autorizado nesta tarefa).
-- **3.5 — Dockerfile da API**: criado **depois** de Prisma estar
-  integrado (3.2/3.3), incluindo geração do Prisma Client e migrations
-  dentro da imagem, sem depender de `node_modules` do host; builda com
-  sucesso e a API inicia a partir da imagem gerada.
+- **3.5 — Dockerfile da API**: **`Completed`** — aprovada tecnicamente.
+  `apps/api/Dockerfile` multi-stage (`build`/`runtime`), conforme
+  [ADR 006](adr/006-persistence-and-local-infrastructure.md)
+  ("Dockerfile da API e Prisma"): imagem-base fixada
+  (`node:24.18.0-bookworm-slim`) e Yarn `4.12.0` (via Corepack) nos dois
+  stages; contexto de build na raiz do monorepo; `HUSKY=0` no
+  `yarn install --immutable`; Prisma Client gerado e API compilada via
+  `yarn nx run api:build`, sem exigir `DATABASE_URL` no build; stage
+  final rodando como usuário não-root (`node`), sem depender de
+  `node_modules`/arquivos do host, com a lista mínima de arquivos Prisma
+  da ADR 006 (nunca `prisma.test.config.ts` nem testes); `CMD` iniciando
+  somente `node dist/apps/api/src/main.js`, sem migration automática no
+  boot; `.dockerignore` correspondente na raiz. Validado: `yarn validate`
+  aprovado; build real da imagem a partir da raiz; container iniciado
+  contra o `postgres`/`redis` locais já existentes (via
+  `host.docker.internal`, sem parar/recriar nenhum dos dois) com
+  `GET /api/v1/health/live`/`GET /api/v1/health/ready` respondendo `200`;
+  usuário não-root confirmado (`whoami` → `node`); ausência de
+  `prisma.test.config.ts` e de qualquer fonte TypeScript não compilado
+  na imagem confirmada; ausência de migration automática no boot
+  confirmada via `/proc/1/cmdline`; comando explícito
+  `yarn workspace api prisma migrate deploy --config prisma.migrate.config.ts`
+  executado dentro da imagem exclusivamente contra `mockp_test` (host e
+  nome do banco confirmados antes), idempotente (`No pending migrations
+to apply`); container de teste encerrado ao final, sem alterar o
+  profile `full` do Compose. Durante a validação, duas lacunas factuais
+  da ADR 006 foram corrigidas (a decisão em si não mudou): o caminho
+  real do `CMD` é `dist/apps/api/src/main.js`, não
+  `dist/apps/api/main.js`; e o cache do Corepack, isolado por `$HOME`
+  por padrão, precisou de `COREPACK_HOME` fixo e de `/app` com posse
+  ajustada para `node`, para que nenhuma chamada de rede nem erro de
+  permissão ocorresse em runtime — ver ADR 006 para o texto corrigido.
 - **3.6 — Validação integrada e fechamento documental**: checklist de
   ponta a ponta desta fase (Compose sobe, migration aplica, seed roda,
   readiness reflete falha real, Dockerfile builda e inicia), ADR 006
@@ -508,9 +564,9 @@ modelar o núcleo de dados inicial.
   com extensão PostGIS) e Redis, com health checks e volumes nomeados.
 - Dockerfile de `apps/api` (versão de imagem-base fixada, usuário
   não-root quando suportado, sem depender de arquivos não copiados ou
-  de `node_modules` do host) — construído e validado nesta fase; usado
-  depois pelo profile `full`, cuja execução conjunta é validada na
-  Fase 9.
+  de `node_modules` do host) — construído e validado nesta fase
+  (Tarefa 3.5, `Completed`); usado depois pelo profile `full`, cuja
+  execução conjunta é validada na Fase 9.
 - Schema Prisma com as 15 entidades definidas pela
   [ADR 007](adr/007-multi-tenant-workspace-foundation.md) (`Accepted`,
   autoridade da modelagem — supersede exclusivamente a modelagem de
@@ -535,7 +591,9 @@ modelar o núcleo de dados inicial.
 - `docker compose up` (profile padrão) sobe PostGIS e Redis com
   sucesso, com health checks passando.
 - A imagem do Dockerfile de `apps/api` builda com sucesso, e a API
-  inicia corretamente a partir dessa imagem (não apenas via `nx serve`).
+  inicia corretamente a partir dessa imagem (não apenas via `nx serve`)
+  — confirmado na Tarefa 3.5, `Completed`, com liveness/readiness
+  respondendo `200` a partir do container.
 - Migration aplica sem erros em ambiente limpo.
 - Seed roda de forma idempotente e determinística.
 - Índice GiST presente na coluna geoespacial de `Address`.
@@ -554,10 +612,12 @@ modelar o núcleo de dados inicial.
   conforme a [ADR 006](adr/006-persistence-and-local-infrastructure.md).
 - Readiness da API reflete a saúde real das dependências
   (PostgreSQL/PostGIS e Redis) — **atendido pela Tarefa 3.4,
-  `Completed`**. Os demais critérios desta fase (Dockerfile da API,
-  validação integrada de ponta a ponta) permanecem pendentes das
-  Tarefas 3.5/3.6, ainda bloqueadas — a Fase 3 como um todo continua
-  `In Progress`.
+  `Completed`**.
+- Dockerfile de `apps/api` builda com sucesso e a API inicia a partir
+  da imagem gerada — **atendido pela Tarefa 3.5, `Completed`**. O
+  critério restante desta fase (validação integrada de ponta a ponta)
+  permanece pendente da Tarefa 3.6, ainda bloqueada — a Fase 3 como um
+  todo continua `In Progress`.
 
 ---
 

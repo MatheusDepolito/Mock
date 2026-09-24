@@ -41,12 +41,17 @@ database: 'up', redis: 'up' }`; falha de qualquer dependência retorna
 unitários, 49 testes de integração offline e 53 testes de integração
 com infraestrutura real confirmados ao final da 3.4**, incluindo
 validação operacional manual (parada/recuperação individual de
-`redis`/`postgres`, com `503`/`200` e liveness `200` confirmados). As
-Tarefas 3.5 e 3.6 continuam bloqueadas — cada uma só inicia depois que
-a anterior atender seus critérios de aceite e receber autorização
-própria. Nenhum Dockerfile da API, worker ou frontend existe ainda no
-repositório. Antes de qualquer novo scaffold ou implementação, leia a
-documentação abaixo — ela é a fonte de verdade do projeto.
+`redis`/`postgres`, com `503`/`200` e liveness `200` confirmados).
+**A Tarefa 3.5** (Dockerfile da API) está **`Completed` e aprovada
+tecnicamente**: [apps/api/Dockerfile](apps/api/Dockerfile) multi-stage,
+usuário não-root, sem depender de `node_modules`/arquivos do host,
+validado com build real da imagem, inicialização da API a partir dela
+com liveness/readiness saudáveis contra o `postgres`/`redis` locais, e
+execução explícita e idempotente de `migrate deploy` contra
+`mockp_test`. A Tarefa 3.6 continua bloqueada — só inicia com
+autorização própria. Nenhum Dockerfile de worker ou frontend existe
+ainda no repositório. Antes de qualquer novo scaffold ou implementação,
+leia a documentação abaixo — ela é a fonte de verdade do projeto.
 
 ## Ordem de leitura recomendada
 
@@ -91,7 +96,7 @@ documentação abaixo — ela é a fonte de verdade do projeto.
   Prisma, seus arquivos de configuração, `schema.prisma`, migration e
   seed já existem, implementando a modelagem multi-tenant de 15
   entidades da ADR 007, validada offline e em banco limpo (auditoria
-  independente aprovada). Nenhum Dockerfile da API existe ainda.
+  independente aprovada).
   **A Tarefa 3.3 está `Completed`**, planejamento arquitetural
   concluído e aprovado via
   [ADR 008](docs/adr/008-runtime-persistence-and-repositories.md)
@@ -116,21 +121,31 @@ documentação abaixo — ela é a fonte de verdade do projeto.
   tecnicamente**: `GET /api/v1/health/ready` agora checa PostgreSQL/
   PostGIS e Redis de verdade, com `200`/`checks` quando saudável e
   `503`/`SERVICE_UNAVAILABLE` (sem `checks`) na falha de qualquer
-  dependência; `GET /api/v1/health/live` permanece independente. As
-  Tarefas 3.5 e 3.6 continuam bloqueadas. **180 testes unitários, 49
-  testes de integração offline e 53 testes de integração com
-  infraestrutura real confirmados ao final da 3.4**, incluindo
-  validação operacional manual de parada/recuperação individual de
-  `redis`/`postgres`.
+  dependência; `GET /api/v1/health/live` permanece independente.
+  **180 testes unitários, 49 testes de integração offline e 53 testes
+  de integração com infraestrutura real confirmados ao final da 3.4**,
+  incluindo validação operacional manual de parada/recuperação
+  individual de `redis`/`postgres`. **A Tarefa 3.5 está `Completed` e
+  aprovada tecnicamente**: [apps/api/Dockerfile](apps/api/Dockerfile)
+  multi-stage (`node:24.18.0-bookworm-slim`, Yarn `4.12.0` fixados),
+  usuário não-root, sem depender de `node_modules`/arquivos do host,
+  `CMD` iniciando somente `node dist/apps/api/src/main.js` (sem
+  migration automática), com [.dockerignore](.dockerignore)
+  correspondente. Validado: build real da imagem, API iniciando a
+  partir dela com liveness/readiness `200` contra o `postgres`/`redis`
+  locais já existentes, ausência de `prisma.test.config.ts` e de fonte
+  TypeScript na imagem, e `migrate deploy` explícito rodado dentro da
+  imagem somente contra `mockp_test` (idempotente). A Tarefa 3.6
+  continua bloqueada — só inicia com autorização própria.
 - Repositório com workspace Yarn/Nx configurado, o skeleton técnico da
   API NestJS implementado, PostgreSQL/PostGIS + Redis disponíveis via
   Docker Compose, Prisma (schema, migration inicial e seed da fundação
   multi-tenant da ADR 007) implementado e validado, e a integração
   runtime da API com Prisma/Redis mais os repositories por agregado
   (`UserRepository`, `WorkspaceRepository`, `PropertyRepository`) já
-  implementados, com readiness real desde a Tarefa 3.4 — ainda sem
-  Next.js, sem Dockerfile da API ou libs de produto além de
-  `libs/config`.
+  implementados, com readiness real desde a Tarefa 3.4 e Dockerfile da
+  API validado desde a Tarefa 3.5 — ainda sem Next.js ou libs de
+  produto além de `libs/config`.
 - Segue [docs/IMPLEMENTATION_ROADMAP.md](docs/IMPLEMENTATION_ROADMAP.md),
   que define o status de cada fase (`Pending`, `In Progress`,
   `Completed`, `Blocked`).

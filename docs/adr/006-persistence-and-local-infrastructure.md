@@ -727,13 +727,29 @@ seja realmente executável sem rede e sem nenhum arquivo do host:
      — necessário porque o comando explícito de deploy
      (`yarn workspace api prisma migrate deploy ...`) precisa do
      binário `yarn` disponível **neste** stage também, não só no de
-     build; como a versão (`4.12.0`) é a mesma e a resolução acontece
-     inteiramente durante o build da imagem, nenhuma rede é acessada
-     quando o container roda.
+     build. A resolução da release do Yarn acontece inteiramente
+     durante o build da imagem, mas o cache de download do Corepack é
+     por `$HOME` por padrão — como este passo roda como `root` (antes
+     do `USER node` do passo 2), o cache fica em `/root/...` por
+     padrão, invisível ao usuário `node`. Para que nenhuma rede seja
+     de fato acessada quando o container roda (mesmo na primeira
+     invocação de `yarn` como `node`), o Dockerfile fixa
+     `ENV COREPACK_HOME=<caminho fixo, ex.: /opt/corepack>` **antes**
+     deste `RUN`, tornando o mesmo cache visível a ambos os usuários
+     (permissões padrão de diretório já bastam para leitura por outro
+     usuário — não é necessário `chown`).
   2. Cria/usa um usuário não-root (reaproveita o usuário `node`,
      uid 1000, já presente na imagem oficial `-slim`, ou cria um
      usuário dedicado equivalente) e roda como esse usuário a partir
-     daqui (`USER node`).
+     daqui (`USER node`). Como `WORKDIR /app` cria esse diretório como
+     `root:root`, e o comando de deploy do passo seguinte precisa criar
+     o estado local do Yarn (`/app/.yarn/...`) diretamente sob `/app`,
+     o Dockerfile ajusta a posse de `/app` para `node:node` (um
+     `chown` do diretório em si — não recursivo, já que cada arquivo
+     copiado no passo 3 abaixo já recebe o dono correto
+     individualmente) antes de trocar para `USER node`. Sem isso, o
+     comando de deploy falha com `EACCES` ao tentar criar esse
+     diretório como o usuário não-root.
   3. `WORKDIR /app`. Copia do stage `build`, e **só** do stage
      `build` (nunca do host): `package.json` e `yarn.lock` da raiz,
      `.yarnrc.yml`, `apps/api/package.json`, `libs/config/package.json`
@@ -741,12 +757,22 @@ seja realmente executável sem rede e sem nenhum arquivo do host:
      para o `yarn workspace api ...` do comando de deploy resolver
      corretamente qual diretório é o workspace `api`), `node_modules/`
      completo (produção, já incluindo `prisma` — ver abaixo),
-     `dist/apps/api` (build da API), `apps/api/src/generated/prisma-client`
-     (Client já gerado — nunca regerado em runtime), e a lista mínima
-     de arquivos Prisma abaixo. **Não** copia `apps/api/prisma.test.config.ts`
-     (arquivo de teste, sem uso em produção) nem `apps/api/src`/
-     `apps/api/test` (fonte TypeScript não compilado, desnecessário em
-     runtime).
+     `dist/apps/api` (build da API — o `tsc` compila toda a árvore de
+     `apps/api/src`, então o Prisma Client gerado, que vive em
+     `apps/api/src/generated/prisma-client`, já sai compilado dentro de
+     `dist/apps/api` junto com o resto; **não há passo de cópia
+     separado** para ele), `libs/config/dist` (o `package.json` de
+     `@mockp/config` aponta seu campo `exports."./server"` para
+     `./dist/src/server/index.js`, resolvido **relativo à própria
+     `libs/config/`** — como `node_modules/@mockp/config` é o link
+     simbólico do workspace apontando para `libs/config/`, esse
+     `dist/` precisa existir fisicamente ali dentro da imagem final,
+     ou qualquer `import`/`require` de `@mockp/config/server` — usado
+     por `main.ts` e por todo módulo que lê `SERVER_CONFIG` — falha
+     logo na inicialização), e a lista mínima de arquivos Prisma
+     abaixo. **Não** copia `apps/api/prisma.test.config.ts` (arquivo de
+     teste, sem uso em produção) nem `apps/api/src`/`apps/api/test`
+     (fonte TypeScript não compilado, desnecessário em runtime).
 
      **Lista mínima de arquivos Prisma copiados para o stage final**
      (todos necessários para `yarn workspace api prisma migrate deploy
@@ -784,8 +810,11 @@ seja realmente executável sem rede e sem nenhum arquivo do host:
      `migrate deploy` a partir da própria imagem de produção sem uma
      segunda imagem "de ferramentas" e sem acesso à rede em tempo de
      deploy.
-- **`CMD` padrão**: `["node", "dist/apps/api/main.js"]` — inicia
-  **somente** o processo Node da API. Nenhum `ENTRYPOINT`/script de
+- **`CMD` padrão**: `["node", "dist/apps/api/src/main.js"]` — inicia
+  **somente** o processo Node da API. O caminho carrega o segmento
+  `src/` porque é onde o `tsc` efetivamente emite o resultado da
+  compilação de `apps/api/src/**/*.ts` (confirmado no build real; não
+  `dist/apps/api/main.js` diretamente). Nenhum `ENTRYPOINT`/script de
   boot roda `migrate deploy` implicitamente antes de subir o servidor;
   isso é verificado pela ausência de qualquer `ENTRYPOINT` que não seja
   o `node` direto, e por não haver `postStart`/hook equivalente.

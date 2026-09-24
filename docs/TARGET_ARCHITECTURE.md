@@ -562,7 +562,21 @@ adição exige revisão desta seção (e da ADR 007) antes da implementação.
 > residual aceito nesta tarefa: o timeout do probe não cancela
 > necessariamente uma tentativa física de conexão PostgreSQL ainda
 > pendente em uma falha extrema de rede; a configuração compartilhada do
-> `PrismaService` não foi alterada.
+> `PrismaService` não foi alterada. **A Tarefa 3.5** (Dockerfile da API)
+> está **`Completed` e aprovada tecnicamente**:
+> [apps/api/Dockerfile](../apps/api/Dockerfile) multi-stage, conforme a
+> especificação de
+> [ADR 006](adr/006-persistence-and-local-infrastructure.md) ("Dockerfile
+> da API e Prisma") — usuário não-root, sem depender de
+> `node_modules`/arquivos do host, `CMD` iniciando somente
+> `node dist/apps/api/src/main.js`, sem migration automática no boot.
+> Validado com build real da imagem, inicialização da API a partir dela
+> com `GET /api/v1/health/live`/`GET /api/v1/health/ready` respondendo
+> `200` contra o `postgres`/`redis` locais já existentes, ausência de
+> `prisma.test.config.ts` e de qualquer fonte TypeScript não compilado
+> na imagem, e execução explícita e idempotente de
+> `yarn workspace api prisma migrate deploy --config prisma.migrate.config.ts`
+> dentro da imagem, exclusivamente contra `mockp_test`.
 
 ### Decisões de modelagem
 
@@ -652,9 +666,19 @@ adição exige revisão desta seção (e da ADR 007) antes da implementação.
   containers no profile `full` do Docker Compose, reunindo Dockerfiles
   já validados isoladamente nas fases anteriores.
 
-> Nesta etapa apenas a decisão é documentada — nenhum Dockerfile ou
-> `docker-compose.yml` é criado ainda (ver
-> [docs/IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md)).
+> **Estado de implementação**: esta seção, escrita na Fase 0, originalmente
+> documentava só a decisão — na época, nenhum Dockerfile nem
+> `docker-compose.yml` existia ainda. Isso não é mais o estado atual:
+> `docker-compose.yml` (profile padrão, Tarefa 3.1) e
+> [apps/api/Dockerfile](../apps/api/Dockerfile) (Tarefa 3.5) já existem,
+> criados e validados exatamente conforme a política acima — cada um na
+> fase em que sua aplicação foi construída. `apps/worker` e `apps/web`
+> ainda não têm Dockerfile próprio, pendentes das Fases 4 e 7
+> respectivamente (ver
+> [docs/IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md)). A decisão
+> em si — Dockerfile por aplicação, criado e validado isoladamente na
+> fase em que a aplicação nasce, com a execução conjunta reservada para
+> a Fase 9 — permanece inalterada.
 
 ## 13. Estratégia de testes
 
