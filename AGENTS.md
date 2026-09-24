@@ -115,7 +115,9 @@ pareça sugerir implicitamente.
   Details, correlation ID, CORS, Helmet, rate limiting) e `libs/config`
   com o entrypoint server-only (`@mockp/config/server`) já estão
   implementados e com revisão técnica aprovada.
-- **Fase 3 — Docker, PostGIS, Redis e Prisma**: `In Progress`. As
+- **Fase 3 — Docker, PostGIS, Redis e Prisma**: `Completed` — última
+  fase concluída do roadmap; nenhuma fase está `In Progress` no
+  momento. A Fase 4 permanece `Pending` e não foi iniciada. As
   Tarefas 3.0 (abertura documental e especificação técnica), 3.1
   (Docker Compose com PostGIS e Redis) e **3.2** (Prisma, schema,
   migration inicial e seed) estão **`Completed`** e aprovadas —
@@ -269,11 +271,45 @@ prisma.migrate.config.ts` executado dentro da imagem **somente**
   `COREPACK_HOME` fixo e de `/app` com posse ajustada para `node` para
   que nenhuma chamada de rede/erro de permissão ocorresse em runtime —
   ver ADR 006, seção "Dockerfile da API e Prisma". **A Tarefa 3.6**
-  (validação integrada e fechamento documental) **continua bloqueada**
-  — só começa quando receber, ela própria, autorização explícita e
-  separada do responsável pelo projeto (ver
-  [docs/IMPLEMENTATION_ROADMAP.md](docs/IMPLEMENTATION_ROADMAP.md),
-  Fase 3).
+  (validação integrada e fechamento documental) está **`Completed` e
+  aprovada tecnicamente**, com o checklist de ponta a ponta da Fase 3
+  aprovado sem nenhum item pendente ou bloqueado:
+  - **Provas novas desta rodada**: `docker compose ps` confirmou
+    `postgres`/`redis` saudáveis, sem parar ou reiniciar nenhum dos
+    dois; a imagem de `apps/api` foi reconstruída a partir da raiz do
+    monorepo (manifest idêntico ao build da 3.5 — build reprodutível) e
+    iniciada em um container novo e temporário, com
+    `GET /api/v1/health/live`/`GET /api/v1/health/ready` respondendo
+    `200`, usuário `node` confirmado, e `/proc/1/cmdline` confirmando
+    ausência de migration automática no boot;
+    `db:migrate:deploy:test`/`db:seed:test` executados contra
+    `mockp_test` de forma idempotente (`No pending migrations to
+apply` / `Seed complete: 2 role(s) in the catalog`); índice GiST em
+    `addresses.location` confirmado via `pg_indexes`; as 15 tabelas de
+    domínio da ADR 007 confirmadas em `mockp_test` via `\dt`, sem
+    nenhuma tabela fora do núcleo revisado; `yarn validate` e
+    `yarn validate:infra` reaprovados de ponta a ponta (mesmas
+    contagens da 3.4 — 180 testes unitários, 49 de integração offline,
+    53 de integração real; nenhum teste novo nesta tarefa). O container
+    de teste temporário foi encerrado ao final; nenhum volume foi
+    recriado ou removido, nenhuma dependência foi parada manualmente
+    nesta rodada, e o profile `full` não foi executado.
+  - **Provas históricas reaproveitadas, não repetidas**: migration
+    aplicada em banco limpo (Tarefa 3.2, volume PostgreSQL recriado do
+    zero) e a queda real de PostgreSQL/Redis fazendo
+    `GET /api/v1/health/ready` responder `503` (Tarefa 3.4, validação
+    operacional manual, parada/recuperação individual de cada serviço).
+  - **Divergência histórica sinalizada, não corrigida na ADR 006**: a
+    ADR 006 contém referências ao catálogo original de **4 papéis
+    globais** (`RoleName { CUSTOMER AGENT MANAGER ADMIN }`), parte da
+    modelagem de dados que a ADR 007 supersede explicitamente. O seed
+    atual, com **2 papéis globais** (`CUSTOMER`, `ADMIN`), está correto
+    e reflete a ADR 007 — as menções a "4 papéis" na ADR 006 são
+    registro histórico da decisão anterior, não o contrato atual, e a
+    ADR 006 **não foi alterada** nesta rodada; permanece `Accepted`.
+    **A Tarefa 3.6 está `Completed`. A Fase 3 — Docker, PostGIS, Redis e
+    Prisma — está `Completed`**, a última fase concluída do roadmap. A
+    Fase 4 permanece `Pending` e não foi iniciada.
 - Prisma `7.10.0`, `schema.prisma`, a migration inicial e o seed (a
   fundação multi-tenant da ADR 007) já existem e estão validados;
   `PrismaModule`/`PrismaService`, `RedisModule`/`RedisService`,

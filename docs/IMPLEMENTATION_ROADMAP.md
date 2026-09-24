@@ -38,7 +38,9 @@ Regras de controle:
 
 ## Fase corrente
 
-**Fase 3 — Docker, PostGIS, Redis e Prisma**: `In Progress`. As
+**Fase 3 — Docker, PostGIS, Redis e Prisma**: `Completed` — última
+fase concluída do roadmap; nenhuma fase está `In Progress` no momento;
+a Fase 4 permanece `Pending` e não foi iniciada. As
 Tarefas 3.0 (abertura documental e especificação técnica), 3.1 (Docker
 Compose com PostGIS e Redis) e **3.2** (Prisma, schema, migration
 inicial e seed) estão **`Completed`** e aprovadas —
@@ -137,9 +139,39 @@ foram corrigidas durante a validação (a decisão em si não mudou): o
 caminho real do `CMD` é `dist/apps/api/src/main.js`, e o cache do
 Corepack precisou de `COREPACK_HOME` fixo e de `/app` com posse
 ajustada para o usuário `node`, para que nenhuma chamada de rede nem
-erro de permissão ocorresse em runtime. **A Tarefa 3.6 continua
-bloqueada** — só inicia com autorização explícita e separada do
-responsável pelo projeto. As Fases 0, 1 e 2 estão `Completed`.
+erro de permissão ocorresse em runtime. **A Tarefa 3.6** (validação
+integrada e fechamento documental) está **`Completed` e aprovada
+tecnicamente**: checklist de ponta a ponta da Fase 3 aprovado sem
+nenhum item pendente ou bloqueado. **Provas novas desta rodada**:
+`postgres`/`redis` saudáveis via `docker compose ps`, sem parar ou
+reiniciar nenhum dos dois; imagem de `apps/api` reconstruída a partir
+da raiz do monorepo (manifest idêntico ao build da 3.5 — build
+reprodutível) e iniciada em um container novo e temporário, com
+liveness/readiness `200`, usuário `node` e ausência de migration
+automática (`/proc/1/cmdline`) reconfirmados;
+`db:migrate:deploy:test`/`db:seed:test` executados contra `mockp_test`
+de forma idempotente (`No pending migrations to apply` / `Seed
+complete: 2 role(s) in the catalog`); índice GiST em
+`addresses.location` confirmado via `pg_indexes`; as 15 tabelas de
+domínio da ADR 007 confirmadas em `mockp_test` via `\dt`; `yarn
+validate` e `yarn validate:infra` reaprovados de ponta a ponta (mesmas
+contagens da 3.4). O container de teste foi encerrado ao final; nenhum
+volume foi recriado, nenhuma dependência foi parada manualmente nesta
+rodada, e o profile `full` não foi executado. **Provas históricas
+reaproveitadas, não repetidas**: migration em banco limpo (Tarefa 3.2)
+e a queda real de PostgreSQL/Redis fazendo o readiness responder `503`
+(Tarefa 3.4, validação operacional manual). **Divergência histórica
+sinalizada, não corrigida na ADR 006**: a ADR 006 registra um catálogo
+original de 4 papéis globais (`RoleName { CUSTOMER AGENT MANAGER
+ADMIN }`), parte da modelagem de dados que a ADR 007 supersede
+explicitamente — o seed atual, com 2 papéis globais (`CUSTOMER`,
+`ADMIN`), está correto e reflete a ADR 007; as menções a "4 papéis" na
+ADR 006 são registro histórico, não o contrato atual, e a ADR 006 não
+foi alterada nesta rodada, permanece `Accepted`. **A Tarefa 3.6 está
+`Completed`. A Fase 3 — Docker, PostGIS, Redis e Prisma — está
+`Completed`**, a última fase concluída do roadmap. As Fases 0, 1 e 2
+também estão `Completed`. A Fase 4 permanece `Pending` e não foi
+iniciada.
 
 ---
 
@@ -285,9 +317,10 @@ obrigatórias, sem endpoints de negócio.
 
 ## Fase 3 — Docker, PostGIS, Redis e Prisma
 
-**Status**: In Progress — Tarefa 3.0 (abertura documental e
-especificação técnica), Tarefa 3.1 (Docker Compose com PostGIS e
-Redis) e **Tarefa 3.2** (Prisma, schema, migration inicial e seed)
+**Status**: Completed — última fase concluída do roadmap; nenhuma fase
+está `In Progress`; a Fase 4 permanece `Pending`. Tarefa 3.0 (abertura
+documental e especificação técnica), Tarefa 3.1 (Docker Compose com
+PostGIS e Redis) e **Tarefa 3.2** (Prisma, schema, migration inicial e seed)
 **concluídas e aprovadas** via
 [ADR 006](adr/006-persistence-and-local-infrastructure.md) e
 [ADR 007](adr/007-multi-tenant-workspace-foundation.md) (ambas
@@ -320,8 +353,10 @@ PostgreSQL/PostGIS e Redis de verdade (ver "3.4" abaixo para o
 detalhamento). **A Tarefa 3.5** (Dockerfile da API) está **`Completed`
 e aprovada tecnicamente** — `apps/api/Dockerfile` já existe, builda com
 sucesso e a API já inicia a partir da imagem gerada (ver "3.5" abaixo
-para o detalhamento). **A Tarefa 3.6 continua bloqueada** — só inicia
-com autorização explícita e separada do responsável pelo projeto.
+para o detalhamento). **A Tarefa 3.6** (validação integrada e
+fechamento documental) está **`Completed` e aprovada tecnicamente** —
+checklist de ponta a ponta da Fase 3 aprovado sem nenhum item pendente
+(ver "3.6" abaixo para o detalhamento). **A Fase 3 está `Completed`.**
 
 **Objetivo**: provisionar a infraestrutura local (profile padrão) e
 modelar o núcleo de dados inicial.
@@ -552,11 +587,48 @@ to apply`); container de teste encerrado ao final, sem alterar o
   por padrão, precisou de `COREPACK_HOME` fixo e de `/app` com posse
   ajustada para `node`, para que nenhuma chamada de rede nem erro de
   permissão ocorresse em runtime — ver ADR 006 para o texto corrigido.
-- **3.6 — Validação integrada e fechamento documental**: checklist de
-  ponta a ponta desta fase (Compose sobe, migration aplica, seed roda,
-  readiness reflete falha real, Dockerfile builda e inicia), ADR 006
-  permanece `Accepted` (nunca reaberta como `Proposed` sem motivo), e
-  atualização de README/roadmap para `Completed` na mesma alteração.
+- **3.6 — Validação integrada e fechamento documental**: **`Completed`**
+  — aprovada tecnicamente. Checklist de ponta a ponta desta fase
+  verificado sem nenhum item pendente ou bloqueado:
+  - **Compose sobe**: `docker compose up` do profile padrão já
+    comprovado na Tarefa 3.1 (evidência histórica); `docker compose ps`
+    confirmou nesta rodada que `postgres`/`redis` permanecem saudáveis,
+    sem parar ou reiniciar nenhum dos dois (prova nova).
+  - **Migration aplica**: `db:migrate:deploy:test` executado contra
+    `mockp_test`, idempotente (`No pending migrations to apply` — prova
+    nova); migration em banco limpo permanece evidência histórica da
+    Tarefa 3.2, não repetida nesta rodada.
+  - **Seed roda**: `db:seed:test` executado contra `mockp_test`,
+    idempotente (`Seed complete: 2 role(s) in the catalog` — prova
+    nova).
+  - **Readiness reflete falha real**: evidência histórica da Tarefa 3.4
+    (validação operacional manual, parada/recuperação individual de
+    `redis`/`postgres`) — reaproveitada, não repetida nesta rodada.
+  - **Dockerfile builda e inicia**: imagem reconstruída a partir da
+    raiz do monorepo (manifest idêntico ao build da 3.5 — build
+    reprodutível) e iniciada em um container novo e temporário, com
+    liveness/readiness `200`, usuário `node` e ausência de migration
+    automática (`/proc/1/cmdline`) reconfirmados (prova nova); container
+    de teste encerrado ao final.
+  - Adicionalmente, confirmados nesta rodada: índice GiST em
+    `addresses.location` (via `pg_indexes`) e as 15 tabelas de domínio
+    da ADR 007 (via `\dt` em `mockp_test`), sem nenhuma tabela fora do
+    núcleo revisado; `yarn validate` e `yarn validate:infra` reaprovados
+    de ponta a ponta (mesmas contagens da 3.4 — nenhum teste novo nesta
+    tarefa).
+  - **ADR 006 permanece `Accepted`** (nunca reaberta como `Proposed`,
+    não alterada nesta tarefa). **Divergência histórica sinalizada**: a
+    ADR 006 registra um catálogo original de 4 papéis globais
+    (`RoleName { CUSTOMER AGENT MANAGER ADMIN }`), parte da modelagem de
+    dados que a ADR 007 supersede explicitamente — o seed atual, com 2
+    papéis globais (`CUSTOMER`, `ADMIN`), está correto e reflete a ADR
+    007; as menções a "4 papéis" na ADR 006 são registro histórico, não
+    o contrato atual.
+  - **README/roadmap atualizados para `Completed` na mesma alteração**
+    (esta).
+  - Nenhum volume foi recriado ou removido, nenhuma dependência foi
+    parada manualmente nesta rodada, `db:reset` não foi usado, `mockp`
+    não foi tocado, e o profile `full` não foi executado.
 
 **Entregáveis**:
 
@@ -614,10 +686,11 @@ to apply`); container de teste encerrado ao final, sem alterar o
   (PostgreSQL/PostGIS e Redis) — **atendido pela Tarefa 3.4,
   `Completed`**.
 - Dockerfile de `apps/api` builda com sucesso e a API inicia a partir
-  da imagem gerada — **atendido pela Tarefa 3.5, `Completed`**. O
-  critério restante desta fase (validação integrada de ponta a ponta)
-  permanece pendente da Tarefa 3.6, ainda bloqueada — a Fase 3 como um
-  todo continua `In Progress`.
+  da imagem gerada — **atendido pela Tarefa 3.5, `Completed`**.
+- Validação integrada de ponta a ponta desta fase, sem nenhum item
+  pendente ou bloqueado — **atendido pela Tarefa 3.6, `Completed`**.
+  **A Fase 3 como um todo está `Completed`** — última fase concluída do
+  roadmap; a Fase 4 permanece `Pending` e não foi iniciada.
 
 ---
 

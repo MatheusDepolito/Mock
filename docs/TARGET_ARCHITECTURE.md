@@ -576,7 +576,23 @@ adição exige revisão desta seção (e da ADR 007) antes da implementação.
 > `prisma.test.config.ts` e de qualquer fonte TypeScript não compilado
 > na imagem, e execução explícita e idempotente de
 > `yarn workspace api prisma migrate deploy --config prisma.migrate.config.ts`
-> dentro da imagem, exclusivamente contra `mockp_test`.
+> dentro da imagem, exclusivamente contra `mockp_test`. **A Tarefa 3.6**
+> (validação integrada e fechamento documental) está **`Completed` e
+> aprovada tecnicamente**: checklist de ponta a ponta da Fase 3
+> aprovado sem nenhum item pendente, com provas novas desta rodada
+> (`postgres`/`redis` saudáveis sem reinício; imagem reconstruída a
+> partir da raiz com build reprodutível; container novo com
+> liveness/readiness `200`, usuário não-root e ausência de migration
+> automática reconfirmados; `migrate deploy`/seed idempotentes contra
+> `mockp_test`; índice GiST em `addresses.location` e as 15 tabelas da
+> ADR 007 confirmados via consulta direta) somadas a provas históricas
+> reaproveitadas, não repetidas (migration em banco limpo da Tarefa 3.2;
+> queda real de PostgreSQL/Redis da Tarefa 3.4). A ADR 006 registra um
+> catálogo histórico de 4 papéis globais, parte da modelagem superseded
+> pela ADR 007 — o seed atual, com 2 papéis (`CUSTOMER`/`ADMIN`), reflete
+> a ADR 007 e está correto; a ADR 006 não foi alterada, permanece
+> `Accepted`. **A Fase 3 está `Completed`** — ver
+> [docs/IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md).
 
 ### Decisões de modelagem
 

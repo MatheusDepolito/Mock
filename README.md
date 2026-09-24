@@ -5,8 +5,10 @@ corretoras.
 
 O workspace Yarn/Nx, `libs/config` e o skeleton técnico da API NestJS
 (`apps/api`) já estão implementados (Fases 0 a 2, `Completed`). A Fase 3
-(persistência e infraestrutura local) está `In Progress`: a
-especificação técnica (Tarefa 3.0), o Docker Compose com PostGIS e
+(persistência e infraestrutura local) está **`Completed`** — última
+fase concluída do roadmap; nenhuma fase está `In Progress` no momento,
+e a Fase 4 permanece `Pending`, não iniciada. A especificação técnica
+(Tarefa 3.0), o Docker Compose com PostGIS e
 Redis (Tarefa 3.1) e a **Tarefa 3.2** (Prisma, schema, migration
 inicial e seed) estão **`Completed`** e aprovadas. **Prisma `7.10.0`,
 seus arquivos de configuração, `schema.prisma`, migration e seed já
@@ -48,10 +50,23 @@ usuário não-root, sem depender de `node_modules`/arquivos do host,
 validado com build real da imagem, inicialização da API a partir dela
 com liveness/readiness saudáveis contra o `postgres`/`redis` locais, e
 execução explícita e idempotente de `migrate deploy` contra
-`mockp_test`. A Tarefa 3.6 continua bloqueada — só inicia com
-autorização própria. Nenhum Dockerfile de worker ou frontend existe
-ainda no repositório. Antes de qualquer novo scaffold ou implementação,
-leia a documentação abaixo — ela é a fonte de verdade do projeto.
+`mockp_test`. **A Tarefa 3.6** (validação integrada e fechamento
+documental) está **`Completed` e aprovada tecnicamente**: checklist de
+ponta a ponta da Fase 3 aprovado sem nenhum item pendente — provas
+novas desta rodada (Compose saudável, rebuild reprodutível da imagem,
+container novo com liveness/readiness `200`, `migrate deploy`/seed
+idempotentes contra `mockp_test`, índice GiST e as 15 tabelas da ADR
+007 confirmados) somadas a provas históricas reaproveitadas, não
+repetidas (migration em banco limpo da 3.2; queda real de
+PostgreSQL/Redis da 3.4). A ADR 006 contém referências históricas a um
+catálogo de **4 papéis globais**, superseded pela ADR 007 — o seed
+atual, com **2 papéis** (`CUSTOMER`/`ADMIN`), é o que está correto; a
+ADR 006 não foi alterada. **A Fase 3 — Docker, PostGIS, Redis e Prisma
+— está `Completed`**, a última fase concluída do roadmap. Nenhum
+Dockerfile de worker ou frontend existe ainda no repositório; a Fase 4
+permanece `Pending` e não foi iniciada. Antes de qualquer novo scaffold
+ou implementação, leia a documentação abaixo — ela é a fonte de verdade
+do projeto.
 
 ## Ordem de leitura recomendada
 
@@ -80,8 +95,10 @@ leia a documentação abaixo — ela é a fonte de verdade do projeto.
   somente o skeleton técnico da API (`apps/api`) e `libs/config`
   (entrypoint server-only) — sem persistência, sem worker, sem web, sem
   autenticação e sem domínio de negócio.
-- **Fase corrente**: Fase 3 — Docker, PostGIS, Redis e Prisma —
-  **In Progress**. As Tarefas 3.0 (abertura documental e especificação
+- **Fase corrente (última concluída)**: Fase 3 — Docker, PostGIS, Redis
+  e Prisma — **`Completed`**. Nenhuma fase está `In Progress` no
+  momento; a Fase 4 permanece `Pending` e não foi iniciada. As Tarefas
+  3.0 (abertura documental e especificação
   técnica), 3.1 (Docker Compose com PostGIS e Redis) e **3.2** (Prisma,
   schema, migration inicial e seed) estão **`Completed`** e aprovadas —
   [ADR 006](docs/adr/006-persistence-and-local-infrastructure.md) e
@@ -135,8 +152,24 @@ leia a documentação abaixo — ela é a fonte de verdade do projeto.
   partir dela com liveness/readiness `200` contra o `postgres`/`redis`
   locais já existentes, ausência de `prisma.test.config.ts` e de fonte
   TypeScript na imagem, e `migrate deploy` explícito rodado dentro da
-  imagem somente contra `mockp_test` (idempotente). A Tarefa 3.6
-  continua bloqueada — só inicia com autorização própria.
+  imagem somente contra `mockp_test` (idempotente). **A Tarefa 3.6 está
+  `Completed` e aprovada tecnicamente**: checklist de ponta a ponta da
+  Fase 3 aprovado sem nenhum item pendente — provas novas desta rodada
+  (`postgres`/`redis` saudáveis sem reinício, rebuild reprodutível da
+  imagem, container novo com `200`/liveness/readiness, usuário não-root
+  e ausência de migration automática reconfirmados, `migrate deploy`/
+  seed idempotentes contra `mockp_test`, índice GiST em
+  `addresses.location` e as 15 tabelas da ADR 007 confirmados via
+  consulta direta, `yarn validate`/`yarn validate:infra` reaprovados)
+  somadas a provas históricas reaproveitadas, não repetidas (migration
+  em banco limpo da Tarefa 3.2; queda real de PostgreSQL/Redis da
+  Tarefa 3.4). **Divergência histórica sinalizada**: a ADR 006 registra
+  um catálogo original de 4 papéis globais, parte da modelagem que a
+  ADR 007 supersede — o seed atual, com 2 papéis (`CUSTOMER`/`ADMIN`),
+  reflete a ADR 007 e está correto; a ADR 006 não foi alterada,
+  permanece `Accepted`. **A Fase 3 — Docker, PostGIS, Redis e Prisma —
+  está `Completed`**, a última fase concluída do roadmap. A Fase 4
+  permanece `Pending` e não foi iniciada.
 - Repositório com workspace Yarn/Nx configurado, o skeleton técnico da
   API NestJS implementado, PostgreSQL/PostGIS + Redis disponíveis via
   Docker Compose, Prisma (schema, migration inicial e seed da fundação
