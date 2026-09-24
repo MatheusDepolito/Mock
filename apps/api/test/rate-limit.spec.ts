@@ -1,6 +1,8 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
 import type { INestApplication } from '@nestjs/common';
+import { PrismaService } from '../src/prisma/prisma.service';
+import { RedisService } from '../src/redis/redis.service';
 import { createTestApp } from './support/create-test-app';
 
 describe('Rate limiting', () => {
@@ -44,9 +46,27 @@ describe('Rate limiting', () => {
     let app: INestApplication;
 
     beforeAll(async () => {
+      // GET /api/v1/health/ready now actually calls PrismaService/
+      // RedisService (Tarefa 3.4) — mocked healthy here so this suite stays
+      // fully offline while still exercising the real @SkipThrottle()
+      // exemption below.
       ({ app } = await createTestApp({
         configOverrides: { rateLimit: { limit: 2, ttlMs: 5000 } },
         includeTestingSupport: true,
+        overrideProviders: (builder) =>
+          builder
+            .overrideProvider(PrismaService)
+            .useValue({
+              $transaction: vi.fn((fn: (tx: unknown) => unknown) =>
+                fn({
+                  $queryRaw: vi
+                    .fn()
+                    .mockResolvedValue([{ postgisVersion: '3.6 USE_GEOS=1' }]),
+                }),
+              ),
+            })
+            .overrideProvider(RedisService)
+            .useValue({ ping: vi.fn().mockResolvedValue('PONG') }),
       }));
     });
 

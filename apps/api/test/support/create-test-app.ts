@@ -1,4 +1,4 @@
-import { Test } from '@nestjs/testing';
+import { Test, type TestingModuleBuilder } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
 import { Logger } from 'nestjs-pino';
 import type { DestinationStream } from 'pino';
@@ -39,6 +39,19 @@ export interface CreateTestAppOptions {
    * needs the `/__test__/*` routes must opt in here.
    */
   includeTestingSupport?: boolean;
+  /**
+   * Overrides Nest providers on the compiled module graph before
+   * `.compile()` — e.g.
+   * `builder.overrideProvider(PrismaService).useValue(fake)`. Test-only
+   * hook; `AppModule.forRoot()` itself is never touched. Introduced for
+   * Tarefa 3.4 so HTTP tests of `/api/v1/health/ready` can replace
+   * `PrismaService`/`RedisService` with deterministic fakes and keep
+   * `api:test:integration` fully offline, instead of relying on those
+   * services' real (but lazy) connections never being dialed — which
+   * stops being true once readiness actually calls them. See
+   * docs/adr/008-runtime-persistence-and-repositories.md (§2.4).
+   */
+  overrideProviders?: (builder: TestingModuleBuilder) => TestingModuleBuilder;
 }
 
 export async function createTestApp(
@@ -53,7 +66,7 @@ export async function createTestApp(
     },
   };
 
-  const moduleRef = await Test.createTestingModule({
+  const builder = Test.createTestingModule({
     imports: [
       AppModule.forRoot(
         config,
@@ -61,7 +74,11 @@ export async function createTestApp(
       ),
       ...(options.includeTestingSupport ? [TestingModule] : []),
     ],
-  }).compile();
+  });
+
+  const moduleRef = await (
+    options.overrideProviders?.(builder) ?? builder
+  ).compile();
 
   const app = moduleRef.createNestApplication();
 

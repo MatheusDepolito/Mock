@@ -130,17 +130,22 @@ documentação:
 - `GET /api/v1/health/live` — confirma **somente que o processo está
   vivo** (não verifica nenhuma dependência externa).
 - `GET /api/v1/health/ready` — confirma que as **dependências
-  obrigatórias** da aplicação estão prontas. O que conta como
-  "dependência obrigatória" muda ao longo do roadmap: durante a Fase 2
-  e até a conclusão da Tarefa 3.3 (inclusive), antes de existir
-  qualquer verificação real de infraestrutura externa, readiness
-  verifica **somente** a inicialização da própria aplicação — isso
-  continua valendo mesmo depois que `PrismaModule`/`RedisModule`
-  existirem no código (Tarefa 3.3), já que sua existência não implica
-  checagem de readiness. A verificação real de PostgreSQL/PostGIS e
-  Redis será introduzida especificamente pela **Tarefa 3.4** da Fase 3,
-  não antes. Falha de qualquer dependência retorna `503` com corpo em
-  Problem Details e `code: SERVICE_UNAVAILABLE`.
+  obrigatórias** da aplicação estão prontas. Da Fase 2 até a conclusão
+  da Tarefa 3.3 (inclusive), antes de existir qualquer verificação real
+  de infraestrutura externa, readiness verificava **somente** a
+  inicialização da própria aplicação — isso continuou valendo mesmo
+  depois que `PrismaModule`/`RedisModule` passaram a existir no código
+  (Tarefa 3.3), já que sua existência não implicava checagem de
+  readiness. **Desde a Tarefa 3.4** (`Completed`), readiness verifica de
+  verdade PostgreSQL/PostGIS (uma consulta `PostGIS_Version()` dentro de
+  uma transação com `set_config('statement_timeout', ..., true)`
+  parametrizado, via `PrismaService`) e Redis (`RedisService.ping()`).
+  Saudável, responde `200` com
+  `checks: { application: 'up', database: 'up', redis: 'up' }`. Falha de
+  qualquer dependência retorna `503` com corpo em Problem Details,
+  `code: SERVICE_UNAVAILABLE`, sem o campo `checks`, com `detail`
+  estático identificando qual dependência falhou. `GET /api/v1/health/live`
+  permanece independente de ambas as dependências em qualquer fase.
 - Swagger UI em `/docs`.
 - OpenAPI JSON em `/docs-json`.
 
@@ -541,11 +546,23 @@ adição exige revisão desta seção (e da ADR 007) antes da implementação.
 > já existem no código e já estão em `AppModule`. A conexão com Prisma
 > e Redis continua exclusivamente lazy nos testes offline; os testes
 > reais desde a 3.3.4 já exercitam PostgreSQL/PostGIS e Redis de
-> verdade contra o profile padrão do Compose — isso ainda não
-> representa readiness real (isso continua sendo exclusivamente a
-> Tarefa 3.4). **168 testes unitários, 44 testes de integração offline
-> e 52 testes de integração com infraestrutura real confirmados ao
-> final da 3.3.8.**
+> verdade contra o profile padrão do Compose. **168 testes unitários, 44
+> testes de integração offline e 52 testes de integração com
+> infraestrutura real confirmados ao final da 3.3.8.** **A Tarefa 3.4**
+> (readiness real e testes de falha das dependências) está **`Completed`
+> e aprovada tecnicamente**: `GET /api/v1/health/ready` passou a checar
+> PostgreSQL/PostGIS e Redis de verdade (ver seção 4), reaproveitando
+> `PrismaService`/`RedisService` sem alterar sua configuração
+> compartilhada — nenhum Repository de infraestrutura foi criado.
+> **180 testes unitários, 49 testes de integração offline e 53 testes
+> de integração com infraestrutura real confirmados ao final da 3.4**,
+> incluindo um teste real do `set_config` parametrizado e validação
+> operacional manual (parada/recuperação individual de `redis`/
+> `postgres`, com `503`/`200` e liveness `200` confirmados). Risco
+> residual aceito nesta tarefa: o timeout do probe não cancela
+> necessariamente uma tentativa física de conexão PostgreSQL ainda
+> pendente em uma falha extrema de rede; a configuração compartilhada do
+> `PrismaService` não foi alterada.
 
 ### Decisões de modelagem
 

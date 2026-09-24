@@ -19,7 +19,7 @@ export class HealthController {
 
   @Get('ready')
   @ApiOkResponse({ type: HealthReadyResponseDto })
-  ready(): HealthReadyResponseDto {
+  async ready(): Promise<HealthReadyResponseDto> {
     return this.healthService.checkReady();
   }
 }

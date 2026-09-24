@@ -83,21 +83,39 @@ PostgreSQL/PostGIS e Redis; **3.3.5** — `UserRepository`
 `WorkspaceRepository` (`createIndividualWorkspace`/
 `createBrokerageWorkspace`, ambos totalmente atômicos em uma única
 transação, mais `findById`, ADR 008 §4.2) e `WorkspacesModule`. Todos
-já existem no código e já estão importados em `AppModule`. Nenhum dos
-dois (Prisma/Redis) ainda representa readiness real — isso continua
-sendo exclusivamente a Tarefa 3.4; nenhum Dockerfile da API existe
-ainda. **A subtarefa 3.3.7** (`PropertyRepository`/`PropertiesModule`,
-ADR 008 §4.3) está **`Completed` e aprovada** — implementada e
-commitada isoladamente (`9e0a1dc`). **A subtarefa 3.3.8** (validação
-integrada e fechamento documental) está **`Completed` e aprovada** —
-`yarn validate` e `yarn validate:infra` aprovados de ponta a ponta,
-sem nenhum achado. **168 testes unitários, 44 testes de integração
-offline e 52 testes de integração com infraestrutura real confirmados
-ao final da 3.3.8.** **A Tarefa 3.3 está `Completed`.** **As Tarefas
-3.4 a 3.6 continuam bloqueadas** — cada uma só inicia depois que a
-anterior atender seus critérios de aceite e receber autorização
-explícita e separada do responsável pelo projeto. As Fases 0, 1 e 2
-estão `Completed`.
+já existem no código e já estão importados em `AppModule`. Até aqui,
+nenhum dos dois (Prisma/Redis) representava readiness real por si só —
+isso passou a ser exclusivamente a Tarefa 3.4 (ver fechamento abaixo);
+nenhum Dockerfile da API existe ainda. **A subtarefa 3.3.7**
+(`PropertyRepository`/`PropertiesModule`, ADR 008 §4.3) está
+**`Completed` e aprovada** — implementada e commitada isoladamente
+(`9e0a1dc`). **A subtarefa 3.3.8** (validação integrada e fechamento
+documental) está **`Completed` e aprovada** — `yarn validate` e
+`yarn validate:infra` aprovados de ponta a ponta, sem nenhum achado.
+**168 testes unitários, 44 testes de integração offline e 52 testes de
+integração com infraestrutura real confirmados ao final da 3.3.8.**
+**A Tarefa 3.3 está `Completed`.** **A Tarefa 3.4** (readiness real e
+testes de falha das dependências) está **`Completed` e aprovada
+tecnicamente**: `GET /api/v1/health/ready` agora checa PostgreSQL/
+PostGIS (via `PrismaService`, transação com `set_config('statement_timeout',
+..., true)` parametrizado seguido de `PostGIS_Version()`) e Redis (via
+`RedisService.ping()`) — `200` com `checks: { application: 'up',
+database: 'up', redis: 'up' }` quando saudável; `503` em Problem
+Details, `code: SERVICE_UNAVAILABLE`, sem `checks`, na falha de
+qualquer dependência. `GET /api/v1/health/live` permanece
+independente. **180 testes unitários, 49 testes de integração offline e
+53 testes de integração com infraestrutura real confirmados ao final da
+3.4**, incluindo um teste real do `set_config` parametrizado e
+validação operacional manual (parada/recuperação individual de
+`redis`/`postgres`, com `503`/`200` e liveness `200` confirmados; ambos
+os containers restaurados saudáveis). Risco residual aceito: o timeout
+do probe não cancela necessariamente uma tentativa física de conexão
+PostgreSQL ainda pendente em falha extrema de rede; a configuração
+compartilhada do `PrismaService` não foi alterada. **As Tarefas 3.5 e
+3.6 continuam bloqueadas** — cada uma só inicia depois que a anterior
+atender seus critérios de aceite e receber autorização explícita e
+separada do responsável pelo projeto. As Fases 0, 1 e 2 estão
+`Completed`.
 
 ---
 
@@ -261,20 +279,21 @@ bancos `mockp` e `mockp_test` criados deterministicamente;
 migration inicial e o seed **implementam as 15 entidades multi-tenant
 da ADR 007**, validados offline e em banco limpo — auditoria
 independente aprovou o resultado (ver "3.2" abaixo). Nenhum Dockerfile
-da API foi criado ainda; readiness (`a API ainda checa apenas sua
-própria inicialização`) permanece exclusivamente Tarefa 3.4.
-**A Tarefa 3.3 está `Completed`**. Planejamento arquitetural
-**concluído e aprovado**:
+da API foi criado ainda. **A Tarefa 3.3 está `Completed`**.
+Planejamento arquitetural **concluído e aprovado**:
 [ADR 008](adr/008-runtime-persistence-and-repositories.md) está
 `Accepted`. **As subtarefas 3.3.1 a 3.3.6 estão `Completed` e
 aprovadas** — ver "3.3" abaixo para o detalhamento de cada uma. **A
 subtarefa 3.3.7** (`PropertyRepository`/`PropertiesModule`) está
 **`Completed` e aprovada** — implementada e commitada isoladamente
 (`9e0a1dc`). **A subtarefa 3.3.8** (validação integrada e fechamento
-documental) está **`Completed` e aprovada**. **As Tarefas 3.4 a 3.6
-continuam bloqueadas** — cada uma só inicia depois que a anterior
-atender seus critérios de aceite e receber autorização explícita e
-separada do responsável pelo projeto.
+documental) está **`Completed` e aprovada**. **A Tarefa 3.4**
+(readiness real e testes de falha das dependências) está **`Completed`
+e aprovada tecnicamente** — `GET /api/v1/health/ready` já checa
+PostgreSQL/PostGIS e Redis de verdade (ver "3.4" abaixo para o
+detalhamento). **As Tarefas 3.5 e 3.6 continuam bloqueadas** — cada uma
+só inicia depois que a anterior atender seus critérios de aceite e
+receber autorização explícita e separada do responsável pelo projeto.
 
 **Objetivo**: provisionar a infraestrutura local (profile padrão) e
 modelar o núcleo de dados inicial.
@@ -360,8 +379,9 @@ modelar o núcleo de dados inicial.
     normalizados via `RedisUnavailableError`, shutdown seguro) já
     existem no código e já estão importados em `AppModule`. A
     integração com o Redis é **exclusivamente lazy** — nenhum teste
-    offline abre socket real, e sua existência **não representa
-    readiness real** (isso continua sendo exclusivamente a Tarefa 3.4).
+    offline abre socket real, e sua existência sozinha **não representava
+    readiness real** (isso passou a ser coberto pela Tarefa 3.4,
+    `Completed` — ver abaixo).
   - **3.3.2 — `PrismaModule`/`PrismaService` + testes offline**:
     **`Completed`** — aprovada tecnicamente. `PrismaService`
     (`@Injectable()`, estende o `PrismaClient` gerado localmente,
@@ -373,8 +393,8 @@ modelar o núcleo de dados inicial.
     nenhum `$connect()` eager, nenhuma query durante o bootstrap,
     nenhum teste offline abre conexão PostgreSQL real;
     `onModuleDestroy()` aguarda (`await`) `this.$disconnect()`. Sua
-    existência **não representa readiness real** (isso continua sendo
-    exclusivamente a Tarefa 3.4).
+    existência sozinha **não representava readiness real** (isso passou
+    a ser coberto pela Tarefa 3.4, `Completed` — ver abaixo).
   - **3.3.3 — Composição offline do `AppModule`**: **`Completed`** —
     aprovada tecnicamente. Composição somente com módulos já
     funcionais — `RuntimeConfigModule` + `PrismaModule` + `RedisModule`
@@ -432,9 +452,46 @@ modelar o núcleo de dados inicial.
     testes de integração offline e 52 testes de integração com
     infraestrutura real. **A Tarefa 3.3 está `Completed`.**
 - **3.4 — Readiness real e testes de falha das dependências**:
-  atualizar `GET /api/v1/health/ready` para checar PostgreSQL/PostGIS e
-  Redis; testes de integração cobrindo o caminho feliz e a falha de
-  cada dependência (`503` + `code: SERVICE_UNAVAILABLE`).
+  **`Completed`** — aprovada tecnicamente. `GET /api/v1/health/ready`
+  passou a checar PostgreSQL/PostGIS (via `PrismaService`, em uma
+  transação com `set_config('statement_timeout', ..., true)`
+  parametrizado seguido de `PostGIS_Version()`, validando que o
+  resultado é uma string não vazia) e Redis (via `RedisService.ping()`,
+  reaproveitado sem alteração), com as duas checagens iniciadas em
+  paralelo e agregadas via `Promise.allSettled`. Saudável, responde
+  `200` com `checks: { application: 'up', database: 'up', redis: 'up' }`;
+  falha de qualquer dependência responde `503` em Problem Details,
+  `code: SERVICE_UNAVAILABLE`, sem o campo `checks`, com `detail`
+  estático identificando qual dependência falhou (nunca o erro bruto,
+  `cause`, URL ou credenciais — inclusive nos logs, que registram só o
+  nome lógico do check). `GET /api/v1/health/live` permanece
+  independente de ambas. `HealthModule` passou a
+  `imports: [PrismaModule, RedisModule]` (ADR 008 §2.4); nenhum
+  Repository de infraestrutura foi criado, e a configuração
+  compartilhada do `PrismaService` não foi alterada. Testes: unitários e
+  de integração offline cobrindo sucesso, falha individual de cada
+  dependência, resultado de PostGIS inválido, falha dupla, ausência de
+  `checks` no `503`, correlation ID e isenção de rate limiting, todos
+  com `PrismaService`/`RedisService` mockados via um novo hook
+  `overrideProviders` em `create-test-app.ts` — `api:test:integration`
+  continua 100% offline. Teste de integração real (`yarn validate:infra`)
+  cobrindo o caminho feliz contra PostgreSQL/PostGIS e Redis reais,
+  confirmando que a forma parametrizada de `set_config` funciona.
+  **180 testes unitários, 49 testes de integração offline e 53 testes de
+  integração com infraestrutura real confirmados ao final da 3.4.** Além
+  dos testes automatizados, validação operacional manual autorizada
+  separadamente confirmou, contra a API local: parar `redis` →
+  `503`/`SERVICE_UNAVAILABLE` (`detail` identificando Redis) e liveness
+  `200`; reiniciar `redis` → `200` novamente; parar `postgres` → mesmo
+  padrão, `detail` identificando PostgreSQL; reiniciar `postgres` → `200`
+  novamente — nunca os dois parados ao mesmo tempo, nunca
+  `docker compose down`/`down -v`, ambos restaurados saudáveis ao final.
+  **Risco residual aceito nesta tarefa**: o timeout do probe (`maxWait`/
+  `statement_timeout`) garante um prazo finito de resposta, mas não
+  cancela necessariamente uma tentativa física de conexão PostgreSQL
+  ainda pendente em uma falha extrema de rede (fechar essa lacuna
+  exigiria alterar a configuração compartilhada do `PrismaService`, o
+  que não foi autorizado nesta tarefa).
 - **3.5 — Dockerfile da API**: criado **depois** de Prisma estar
   integrado (3.2/3.3), incluindo geração do Prisma Client e migrations
   dentro da imagem, sem depender de `node_modules` do host; builda com
@@ -467,10 +524,11 @@ modelar o núcleo de dados inicial.
 - Repository por agregado (ex.: `Property` + `Address` no mesmo
   repository), não um repository por tabela.
 - Migration inicial e seed mínimo determinístico.
-- `GET /api/v1/health/ready` atualizado para verificar PostgreSQL/
-  PostGIS e Redis (substituindo a checagem apenas de inicialização da
-  Fase 2); falha de qualquer dependência retorna `503` com Problem
-  Details e `code: SERVICE_UNAVAILABLE`.
+- `GET /api/v1/health/ready` verificando PostgreSQL/PostGIS e Redis de
+  verdade (substituindo a checagem apenas de inicialização da Fase 2) —
+  `Completed` na Tarefa 3.4; falha de qualquer dependência retorna `503`
+  com Problem Details e `code: SERVICE_UNAVAILABLE`, sem o campo
+  `checks`.
 
 **Validações**:
 
@@ -482,7 +540,9 @@ modelar o núcleo de dados inicial.
 - Seed roda de forma idempotente e determinística.
 - Índice GiST presente na coluna geoespacial de `Address`.
 - Derrubar PostgreSQL ou Redis faz `GET /api/v1/health/ready` responder
-  `503` com `code: SERVICE_UNAVAILABLE`.
+  `503` com `code: SERVICE_UNAVAILABLE` — confirmado na Tarefa 3.4 tanto
+  por testes offline (mocks) quanto por validação operacional manual
+  (parada/recuperação individual de cada serviço contra a API local).
 
 **Critérios de aceite**:
 
@@ -492,8 +552,12 @@ modelar o núcleo de dados inicial.
   da modelagem), sem nenhuma entidade de negócio fora do núcleo
   revisado. Infraestrutura, Prisma/configuração e pipeline continuam
   conforme a [ADR 006](adr/006-persistence-and-local-infrastructure.md).
-- Readiness da API passa a refletir a saúde real das dependências
-  (PostgreSQL/PostGIS e Redis).
+- Readiness da API reflete a saúde real das dependências
+  (PostgreSQL/PostGIS e Redis) — **atendido pela Tarefa 3.4,
+  `Completed`**. Os demais critérios desta fase (Dockerfile da API,
+  validação integrada de ponta a ponta) permanecem pendentes das
+  Tarefas 3.5/3.6, ainda bloqueadas — a Fase 3 como um todo continua
+  `In Progress`.
 
 ---
 
