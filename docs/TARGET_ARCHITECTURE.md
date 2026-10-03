@@ -686,11 +686,14 @@ adição exige revisão desta seção (e da ADR 007) antes da implementação.
 > documentava só a decisão — na época, nenhum Dockerfile nem
 > `docker-compose.yml` existia ainda. Isso não é mais o estado atual:
 > `docker-compose.yml` (profile padrão, Tarefa 3.1) e
-> [apps/api/Dockerfile](../apps/api/Dockerfile) (Tarefa 3.5) já existem,
-> criados e validados exatamente conforme a política acima — cada um na
-> fase em que sua aplicação foi construída. `apps/worker` e `apps/web`
-> ainda não têm Dockerfile próprio, pendentes das Fases 4 e 7
-> respectivamente (ver
+> [apps/api/Dockerfile](../apps/api/Dockerfile) (Tarefa 3.5, ajustado
+> na 4.6-A para o grafo atual de workspaces) e
+> [apps/worker/Dockerfile](../apps/worker/Dockerfile) (Tarefa 4.6-B,
+> validado com build real, consumo real de `system.ping` no container
+> e `SIGTERM` real em Linux) já existem, criados e validados conforme
+> a política acima — cada um na fase em que sua aplicação foi
+> construída. Somente `apps/web` ainda não tem Dockerfile próprio,
+> pendente da Fase 7 (ver
 > [docs/IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md)). A decisão
 > em si — Dockerfile por aplicação, criado e validado isoladamente na
 > fase em que a aplicação nasce, com a execução conjunta reservada para

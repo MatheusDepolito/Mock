@@ -87,7 +87,7 @@ function validateDatabaseUrl(value: string, ctx: z.RefinementCtx): void {
   }
 }
 
-function validateRedisUrl(value: string, ctx: z.RefinementCtx): void {
+export function validateRedisUrl(value: string, ctx: z.RefinementCtx): void {
   let url: URL;
 
   try {

@@ -8,6 +8,11 @@
       "types": "./src/server/index.ts",
       "development": "./src/server/index.ts",
       "default": "./dist/src/server/index.js"
+    },
+    "./worker": {
+      "types": "./src/worker/index.ts",
+      "development": "./src/worker/index.ts",
+      "default": "./dist/src/worker/index.js"
     }
   },
   "nx": {

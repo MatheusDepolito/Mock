@@ -38,9 +38,14 @@ Regras de controle:
 
 ## Fase corrente
 
-**Fase 3 — Docker, PostGIS, Redis e Prisma**: `Completed` — última
-fase concluída do roadmap; nenhuma fase está `In Progress` no momento;
-a Fase 4 permanece `Pending` e não foi iniciada. As
+**Fase 4 — Worker e BullMQ**: `Completed` — última fase concluída;
+**nenhuma fase está `In Progress`** neste momento (a Fase 5 está
+`Pending`, não iniciada). Ver seção própria da Fase 4 abaixo para o
+detalhamento subtarefa por subtarefa (4.1 a 4.7 `Completed` e
+aprovadas).
+
+**Fase 3 — Docker, PostGIS, Redis e Prisma**: `Completed` — anterior
+à Fase 4, que também está `Completed`. As
 Tarefas 3.0 (abertura documental e especificação técnica), 3.1 (Docker
 Compose com PostGIS e Redis) e **3.2** (Prisma, schema, migration
 inicial e seed) estão **`Completed`** e aprovadas —
@@ -169,9 +174,10 @@ explicitamente — o seed atual, com 2 papéis globais (`CUSTOMER`,
 ADR 006 são registro histórico, não o contrato atual, e a ADR 006 não
 foi alterada nesta rodada, permanece `Accepted`. **A Tarefa 3.6 está
 `Completed`. A Fase 3 — Docker, PostGIS, Redis e Prisma — está
-`Completed`**, a última fase concluída do roadmap. As Fases 0, 1 e 2
-também estão `Completed`. A Fase 4 permanece `Pending` e não foi
-iniciada.
+`Completed`**. As Fases 0, 1 e 2 também estão `Completed`. **A Fase 4 —
+Worker e BullMQ — está `Completed`**: as subtarefas 4.1 a 4.7 estão
+`Completed` e aprovadas. Ver a seção própria da Fase 4 para o
+detalhamento.
 
 ---
 
@@ -317,8 +323,8 @@ obrigatórias, sem endpoints de negócio.
 
 ## Fase 3 — Docker, PostGIS, Redis e Prisma
 
-**Status**: Completed — última fase concluída do roadmap; nenhuma fase
-está `In Progress`; a Fase 4 permanece `Pending`. Tarefa 3.0 (abertura
+**Status**: Completed — anterior à Fase 4, que também está
+`Completed` (ver seção própria). Tarefa 3.0 (abertura
 documental e especificação técnica), Tarefa 3.1 (Docker Compose com
 PostGIS e Redis) e **Tarefa 3.2** (Prisma, schema, migration inicial e seed)
 **concluídas e aprovadas** via
@@ -689,17 +695,430 @@ to apply`); container de teste encerrado ao final, sem alterar o
   da imagem gerada — **atendido pela Tarefa 3.5, `Completed`**.
 - Validação integrada de ponta a ponta desta fase, sem nenhum item
   pendente ou bloqueado — **atendido pela Tarefa 3.6, `Completed`**.
-  **A Fase 3 como um todo está `Completed`** — última fase concluída do
-  roadmap; a Fase 4 permanece `Pending` e não foi iniciada.
+  **A Fase 3 como um todo está `Completed`** — anterior à Fase 4, que
+  também está `Completed` (subtarefas 4.1 a 4.7 `Completed` e
+  aprovadas — ver seção própria abaixo).
 
 ---
 
 ## Fase 4 — Worker e BullMQ
 
-**Status**: Pending
+**Status**: Completed. As subtarefas 4.1 a 4.7 estão `Completed` e
+aprovadas (detalhamento abaixo). Nenhuma fase está `In Progress`; a
+Fase 5 permanece `Pending`.
 
 **Objetivo**: validar a separação entre API e worker através de um job
 puramente técnico, sem expor esse fluxo via HTTP.
+
+**Subtarefas**:
+
+- **4.1 — `libs/queue` e `@mockp/config/worker`**: `Completed` —
+  aprovada. `libs/queue` (package-based, sem `project.json`, mesmo
+  padrão de `libs/config`) com `SYSTEM_QUEUE_NAME` (`'system'`),
+  `SYSTEM_PING_JOB_NAME` (`'system.ping'`), `SYSTEM_PING_JOB_OPTIONS`
+  (retry finito: `attempts: 3`, backoff exponencial de `1000`ms) e
+  `SystemPingJobPayload` (`publishedAt`, `requestId` sempre presente)
+  — nenhuma dependência de NestJS/Express, nenhum `QueueModule`. Novo
+  entrypoint `@mockp/config/worker` (`WorkerConfig`/`workerEnvSchema`:
+  somente `NODE_ENV`/`LOG_LEVEL`/`REDIS_URL`, reaproveitando a
+  validação de `REDIS_URL` já existente em `@mockp/config/server`).
+  Versões exatas fixadas (sem `^`/`~`): `bullmq@6.3.9`,
+  `@nestjs/bullmq@12.0.0` (peer dependencies compatíveis, confirmado
+  via `yarn npm info` — a defasagem que se cogitava entre as duas libs
+  não existe na versão atual), `ioredis@6.0.0` (já usada pela API
+  desde a Fase 3).
+- **4.2 — Skeleton de `apps/worker`**: `Completed` — aprovada.
+  `apps/worker` (hand-authored, mesmo padrão de `apps/api`/
+  `libs/config`, sem gerador Nx) com `main.ts`
+  (`NestFactory.createApplicationContext`, nunca `app.listen()`, já
+  que o worker nunca aceita tráfego HTTP) e `AppModule` mínimo
+  (`RuntimeConfigModule`+`LoggerModule` próprios do worker; nenhum
+  `ThrottlerModule`/CORS/Helmet/Swagger). `nx run worker:build`/
+  `worker:serve` confirmados. Teste de graceful shutdown implementado
+  em duas provas complementares, decisão tomada nesta subtarefa após
+  um achado de plataforma: no Windows, `child.kill('SIGTERM'/'SIGINT')`
+  termina o processo abruptamente (`TerminateProcess`) sem entregar o
+  sinal ao handler JS — confirmado isoladamente, não é defeito do
+  código. Por isso: (1) um teste in-process (`app.close()`,
+  cross-platform, mesmo padrão de `apps/api/test/shutdown.spec.ts`)
+  prova que os hooks de lifecycle resolvem sem erro; (2) um teste de
+  processo real (spawn + `SIGTERM`) prova que o processo termina dentro
+  de um prazo finito, com a limitação de plataforma documentada no
+  próprio teste — a prova completa de `SIGTERM` real (processo
+  containerizado, Linux) fica exclusivamente para a Tarefa 4.6. Isolamento de
+  import confirmado: nenhuma linha em `apps/worker/src/**`/
+  `apps/worker/test/**` importa `apps/api/src/**`.
+- **4.3 — Conexão Redis própria do worker e `SystemPingProcessor`**:
+  `Completed` — aprovada. `apps/worker/src/queue/queue-redis.module.ts`
+  (instância `ioredis` própria do worker, `maxRetriesPerRequest: null`
+  — requisito documentado do BullMQ, o oposto do
+  `maxRetriesPerRequest: 1` do `RedisService` da API, que nem existe
+  em `apps/worker` e nunca é reaproveitado — ver
+  docs/adr/006-persistence-and-local-infrastructure.md §3.2);
+  `system-ping.processor.ts` (`@Processor(SYSTEM_QUEUE_NAME)` via
+  `@nestjs/bullmq`, estende `WorkerHost`); `system-ping.module.ts`
+  (wiring via `BullModule.forRootAsync`+`registerQueue`).
+  `apps/worker/package.json` sem `@prisma/client`/`prisma`/
+  `@prisma/adapter-pg`/`pg`. **Duas lacunas identificadas nesta
+  subtarefa foram corrigidas depois, na Tarefa 4.5** (ver abaixo, não
+  reabrem o status `Completed` desta): (1) o processor usava
+  `logger.log(mensagem, contexto)`/`logger.error(mensagem, contexto)`
+  — a chamada mensagem-primeiro que o `nestjs-pino` descarta
+  silenciosamente, e o caminho de erro ainda incluía o `Error` bruto no
+  contexto; (2) `SystemPingModule` ainda não estava importado em
+  `AppModule.forRoot()` do worker. **Achado que mudou o plano de
+  execução, não a decisão técnica**: `@nestjs/bullmq@12.0.0` fecha
+  automaticamente o `Worker` do BullMQ no shutdown sempre sem `force`
+  (`worker.close()`), o que trava indefinidamente quando o Redis está
+  inacessível — confirmado isoladamente (fora do Nest) e no
+  código-fonte da lib. Por isso, o wiring de `SystemPingModule` em
+  `AppModule.forRoot()` foi adiado desta subtarefa para a Tarefa 4.5,
+  validado contra Redis real via `yarn validate:infra` — decisão
+  registrada aqui, executada lá.
+- **4.4 — Comando interno da API que publica `system.ping`**:
+  `Completed` — aprovada. `apps/api/src/queue/queue-redis.module.ts`
+  (conexão `ioredis` própria da API para o producer, mesmo motivo da
+  4.3, nunca reaproveita `RedisService`) com
+  `QueueRedisConnectionCloser` (`@Injectable() implements
+OnApplicationShutdown`, dono explícito do encerramento gracioso dessa
+  conexão — só chama `quit()` quando `status === 'ready'`, sob timeout
+  de 2s, com fallback para `disconnect()` síncrono; nunca loga a razão
+  da falha, `cause` ou objeto `Error`, só uma mensagem estática fixa —
+  a ordem em que o `Queue` do BullMQ fecha antes desta conexão é uma
+  suposição de design a confirmar em execução real, não uma garantia
+  absoluta); `system-ping.publisher.ts` (`SystemPingPublisher`,
+  `@InjectQueue`, `publish(requestId = randomUUID())` chama
+  `queue.add(SYSTEM_PING_JOB_NAME, payload, SYSTEM_PING_JOB_OPTIONS)`,
+  loga `jobId`/`requestId` via chamada **objeto-primeiro** do Logger —
+  necessário porque o `nestjs-pino` descarta silenciosamente um objeto
+  passado como _segundo_ argumento de `Logger.log(msg, obj)` quando o
+  logger é instanciado com contexto próprio (`new Logger(ClassName)`);
+  achado confirmado contra a serialização JSON real do Pino, não só
+  contra os argumentos de um spy — um teste dedicado prova isso com um
+  `Test.createTestingModule` real, sem mockar `Logger`);
+  `system-ping-producer.module.ts`/`system-ping-command.module.ts`
+  (módulo mínimo — só `RuntimeConfigModule`+`LoggerModule`+producer,
+  nunca o `AppModule.forRoot()` completo da API HTTP);
+  `system-ping.command.ts` (`NestFactory.createApplicationContext`,
+  nunca `app.listen()`, nunca `process.exit()`). Novo alvo Nx
+  `queue:smoke:system-ping` (`tsx --tsconfig tsconfig.app.json`, fora
+  de `yarn validate`/`yarn validate:infra`). **Validado com Redis real
+  do Compose local** (containers `postgres`/`redis` saudáveis, sem
+  parar/recriar nenhum dos dois): execução única, saída do processo em
+  prazo finito (código `0`), sem `process.exit()` forçado; confirmado
+  por inspeção direta do Redis (somente leitura — `--scan`/`HGETALL`,
+  nunca `FLUSHDB`/`KEYS *`) e pelo log estruturado real: exatamente um
+  job `system.ping` criado por execução, payload com `requestId`/
+  `publishedAt`, `attempts: 3` e backoff exponencial de `1000`ms
+  batendo com `SYSTEM_PING_JOB_OPTIONS`. **Nenhum processamento do job
+  foi exigido ou provado nesta subtarefa** — à época da 4.4, o consumidor ainda não
+  está ligado ao `AppModule` do worker (ver 4.3); essa prova pertence à
+  Tarefa 4.5. O job de cada execução real foi removido apenas via
+  `queue.getJob(id).remove()` (API do BullMQ) depois de registrar a
+  evidência — nunca limpeza de fila inteira, nunca job pré-existente
+  tocado. Nenhum endpoint HTTP, rota ou entrada OpenAPI/Swagger criada
+  para `system.ping`.
+- **4.5 — Teste automatizado de ponta a ponta em `yarn validate:infra`**:
+  `Completed` — aprovada tecnicamente. Três entregas principais:
+  - **Correção do logging do `SystemPingProcessor`** (pontos de revisão
+    registrados na 4.3): `logger.log(mensagem, contexto)`/
+    `logger.error(mensagem, contexto)` (mensagem-primeiro, perdida
+    silenciosamente pelo `nestjs-pino`) substituídos pela chamada
+    **objeto-primeiro** (`logger.log(contexto, mensagem)`), mesmo
+    padrão já corrigido na 4.4 para `SystemPingPublisher`. O caminho de
+    erro (`logger.error(contexto, 'Failed to process system.ping
+job')`) não inclui mais o `Error` bruto, `message` nem `cause` — só o
+    mesmo contexto seguro (`requestId`/`publishedAt`/`jobId`); o erro
+    continua sendo relançado para o BullMQ aplicar retry. Prova real de
+    serialização adicionada (`Test.createTestingModule`+Pino real, sem
+    mockar `Logger`, mesmo padrão da 4.4): confirma `requestId`/`jobId`
+    como campos de topo no JSON real, não só como argumentos de um spy.
+  - **`SystemPingModule` agora importado em `AppModule.forRoot()`** do
+    worker — o `setInterval` interino da 4.2 foi removido (o `Worker`
+    real do BullMQ mantém o processo vivo sozinho). Só depois disso o
+    worker passou a consumir jobs de verdade.
+  - **`QueueRedisConnectionCloser` do worker** (novo,
+    `apps/worker/src/queue/queue-redis-connection.closer.ts`, mesmo
+    padrão do já existente na API desde a 4.4): investigação confirmou
+    que nem `Queue.onApplicationShutdown` do `@nestjs/bullmq` (só
+    desconecta se `forceDisconnectOnShutdown`, nunca o padrão) nem
+    `BullExplorer.onApplicationShutdown` (só fecha o `Worker`, nunca a
+    conexão externa) fechavam a conexão `ioredis` própria do worker —
+    confirmado com um teste que captura a conexão via DI e observa
+    `status` permanecer `'ready'` após `app.close()` sem essa classe.
+    Com a correção, `apps/worker/test/infra/shutdown.spec.ts` prova
+    `status === 'end'` depois de `app.close()` — não só que a promise
+    resolveu. Log de erro do listener de erro do `QueueRedisModule`
+    também corrigido para objeto-primeiro (preserva o campo `code`).
+  - **Teste E2E real** (`apps/api/test/infra/queue/system-ping.infra.spec.ts`):
+    publica via `SystemPingPublisher` real (o mesmo producer da API),
+    worker real spawnado como processo separado, consome via Redis do
+    Compose; confirma payload, `jobId`, `requestId` propagado (log real
+    - estado `completed` do job). **Isolamento**: fila `system` operada
+      num banco lógico Redis dedicado (`/1` na URL, `SELECT 1`) —
+      reservado **por convenção**, não por garantia técnica (Redis não
+      impõe ACL entre bancos lógicos do mesmo servidor). Por isso, antes
+      de iniciar o worker, uma verificação **somente leitura e
+      fail-closed** (`assertReadyForIsolatedRun`) confirma que
+      `REDIS_URL` aponta para um host local e que a fila `system` nesse
+      banco não tem nenhum job pendente (`waiting`/`waiting-children`/
+      `active`/`delayed`/`prioritized`) — se encontrar algo, recusa
+      iniciar o worker com uma mensagem sanitizada (só contagens
+      agregadas, nunca a URL), sem processar nem remover nada de
+      terceiros. Comprovado empiricamente: um job decoy inserido
+      manualmente no banco 1 fez o teste falhar em ~150ms, antes de
+      sequer criar o processo do worker, e o decoy permaneceu intocado.
+      Limpeza restrita ao job criado por esta própria execução
+      (`queue.getJob(id)`→`remove()`→reverificação de ausência), em
+      `finally`, mesmo quando uma asserção falha antes; falha de limpeza
+      vira falha do teste, reportando só o `jobId`, nunca `Error` bruto
+      nem URL, e nunca mascara uma falha de asserção anterior.
+  - **Prova de retry/backoff separada**
+    (`apps/api/test/infra/queue/system-ping-retry.infra.spec.ts`): um
+    `Queue`/`Worker` criados só para este teste, numa fila com nome
+    exclusivo (`system-ping-retry-test-<uuid>`, nunca `system`),
+    usando as mesmas `SYSTEM_PING_JOB_OPTIONS` de produção, com um
+    handler que falha de propósito nas primeiras tentativas e sucede na
+    última — sem `failFirstNAttempts`, sem gate por `NODE_ENV`, sem
+    nenhum mecanismo de falha no processor/payload de produção. Os
+    atrasos medidos são comparados contra o valor exato que a fórmula
+    de backoff exponencial do BullMQ prevê para `1000`ms/`attempts: 3`
+    (`[1000, 2000]`ms), com tolerância — não mais uma comparação frouca
+    "cada atraso maior que o anterior". Limpeza (`worker.close(true)`,
+    `queue.obliterate()`, `queue.close()`, verificação de chaves
+    remanescentes) com cada etapa isolada em seu próprio `try/catch`:
+    uma falha em qualquer uma nunca impede as seguintes, e
+    `connection.disconnect()` roda sempre, de forma incondicional;
+    falhas de limpeza são reportadas juntas, de forma sanitizada, nunca
+    silenciadas.
+  - **Resultados**: `yarn validate` (offline) permanece 100% offline —
+    `worker:test:integration` roda com zero arquivos
+    ("No test files found, exiting with code 0"), já que os testes de
+    shutdown do worker migraram para `apps/worker/test/infra/`
+    (precisam de Redis real, dado que `AppModule` agora inclui o
+    `Worker` de verdade); `api:test` **192** testes unitários,
+    `worker:test` **15** (11 novos do `QueueRedisConnectionCloser` do
+    worker + 4 do processor, incluindo a prova de serialização real);
+    `api:test:integration` **49** (inalterado). `yarn validate:infra`:
+    `api:test:integration:infra` **55 testes/13 arquivos** (53
+    anteriores + E2E + retry), `worker:test:integration:infra`
+    (novo alvo Nx, também adicionado ao script raiz) **2 testes/2
+    arquivos**. Na última rodada de validação, os containers
+    `postgres`/`redis` já existentes estavam parados e foram iniciados
+    com `docker compose start` (sem recriação, sem `down`, sem perda de
+    volumes) e terminaram saudáveis; nenhum foi recriado ou removido;
+    nenhum processo Node órfão; nenhuma chave
+    residual em `bull:system:*` (nenhum dos dois bancos) nem
+    `bull:system-ping-retry-test-*` após as execuções.
+  - **Dois riscos residuais distintos, não resolvidos nesta subtarefa**:
+    (1) a isolação por banco lógico é convencional, não uma garantia
+    técnica — uma execução concorrente desta mesma suíte, ou um
+    producer real apontando deliberadamente para o banco 1, ainda
+    poderiam colidir com o guard fail-closed (documentado no código;
+    aceitável para `yarn validate:infra` local, single-machine); (2) a
+    prova de `SIGTERM` real entregue a um processo containerizado em
+    Linux continua pendente à época da 4.5 — no Windows, `child.kill('SIGTERM')`
+    termina o processo abruptamente (`TerminateProcess`) sem entregar o
+    sinal ao handler JS (achado da 4.2, reconfirmado aqui), então
+    `apps/worker/test/infra/shutdown-process.spec.ts` só prova que o
+    processo termina dentro de um prazo finito nesta plataforma — a
+    prova completa ficou para a Tarefa 4.6 (worker containerizado,
+    Linux), **entregue na 4.6-B** (ver abaixo).
+- **4.6 — Dockerfile do worker**: `Completed` — aprovada tecnicamente,
+  entregue em duas partes distintas, cada uma com autorização própria:
+  - **4.6-A — Ajuste do Dockerfile da API**
+    ([apps/api/Dockerfile](../apps/api/Dockerfile)): a API passou a
+    depender de `@mockp/queue` na 4.4, e o `yarn.lock` passou a
+    registrar os workspaces `apps/worker` e `libs/queue`; o Dockerfile
+    da 3.5 só copiava o `package.json` de `apps/api` e `libs/config`,
+    então o build da imagem da API estava **quebrado desde a 4.4**
+    (defeito latente — a imagem não havia sido reconstruída desde a
+    3.5). Confirmado em cópias isoladas fora do repositório, com Yarn
+    4.12.0: só `api`+`config` falha (`@mockp/queue@workspace:*:
+Workspace not found`); `api`+`config`+`queue` também falha (o
+    lockfile seria modificado, `worker` removido); o grafo completo de
+    quatro workspaces passa. Ajuste: `apps/worker/package.json` e
+    `libs/queue/package.json` copiados no stage `build` antes de `yarn
+install --immutable` e também no stage `runtime`; fontes
+    (`tsconfig*.json`, `src`, `*.md` — asset do build) de `libs/queue`
+    copiadas no stage `build`; `libs/queue/dist` copiado no stage
+    `runtime` (o `exports.default` de `@mockp/queue` aponta para
+    `./dist/src/index.js`). Validado: `docker build` a partir da raiz;
+    container temporário contra `mockp_test`/Redis com `GET
+/api/v1/health/live` e `GET /api/v1/health/ready` respondendo
+    `200` (`application`/`database`/`redis` = `up`); usuário `node`;
+    `/proc/1/cmdline` = `node dist/apps/api/src/main.js` (sem
+    migration no boot); `@mockp/queue` resolvendo para
+    `/app/libs/queue/dist/src/index.js`; ausência de
+    `prisma.test.config.ts` na imagem; comando explícito `yarn
+workspace api prisma migrate deploy --config
+prisma.migrate.config.ts` dentro da imagem, somente contra
+    `mockp_test`, idempotente (`No pending migrations to apply`).
+    Container removido ao final; `postgres`/`redis` nunca parados.
+  - **4.6-B — Dockerfile do worker**
+    ([apps/worker/Dockerfile](../apps/worker/Dockerfile)): multi-stage
+    (`build`/`runtime`), mesma imagem-base fixada
+    (`node:24.18.0-bookworm-slim`) e Yarn `4.12.0` via Corepack
+    (`COREPACK_HOME` fixo) do Dockerfile da API, contexto na raiz do
+    monorepo, `HUSKY=0`, usuário final não-root (`node`). O stage
+    `build` copia o grafo completo de `package.json` (os quatro
+    workspaces — sem isso `--immutable` falha, como na 4.6-A) e só as
+    fontes de `worker`, `libs/config` e `libs/queue`; compila via `yarn
+nx run worker:build`. O stage `runtime` leva `node_modules`
+    completo, `libs/config/dist`, `libs/queue/dist` e
+    `dist/apps/worker`; nenhuma fonte de `apps/api`. `CMD` é `node
+dist/apps/worker/src/main.js` (caminho real confirmado no build —
+    o `CMD` inicial, sem `src/`, estava errado e foi corrigido antes da
+    validação), sem migration no boot. **O `node_modules` completo
+    inclui pacotes Prisma/`pg` inertes na imagem** — escolha aprovada
+    por simplicidade, espelhando a API, deixando a otimização (`yarn
+workspaces focus --production`) para depois; não se alega ausência
+    física desses pacotes. O que **é** provado: o worker não importa
+    nem acessa Prisma/banco — nenhum `require` de `prisma`/`pg`/
+    `apps/api` em `dist`/`libs/*/dist` (só menções em comentários),
+    nenhum `import` equivalente nas fontes do worker, e um teste de
+    carga real no container (902 módulos em cache após carregar o
+    `AppModule` e `@nestjs/bullmq`, zero deles Prisma, `apps/api` ou
+    `pg`). Validado: build real da imagem; preflight fail-closed
+    somente leitura antes de iniciar o container (mesmo `run_id` do
+    Redis lido do host e de um container via `host.docker.internal`,
+    ambos no banco lógico `1`; fila `system` sem nenhum job em
+    `waiting`/`waiting-children`/`active`/`delayed`/`prioritized` e sem
+    nenhuma chave além de `bull:system:events`/`meta`/`id`, resto de
+    execuções anteriores); worker no container (`Worker started`)
+    consumiu de verdade um `system.ping` publicado pelo comando interno
+    da API no host — mesmo `requestId` e `jobId` nos logs do producer e
+    do container, job `completed` no Redis. **SIGTERM real em Linux**:
+    `docker stop --time 10` terminou em 478 ms com `ExitCode=0`,
+    `OOMKilled=false`, `State.Error` vazio; saída graciosa,
+    distinguível de SIGKILL (137, só após o prazo de 10 s), sem
+    `--init`; a conexão Redis do worker sumiu do `CLIENT LIST` (3
+    clientes → 1), evidência complementar apenas. Cleanup restrito ao
+    que o teste criou (o job e o container nomeado; nunca `FLUSHDB`/
+    `KEYS *`/`obliterate`/`docker compose down`). `postgres`/`redis`
+    saudáveis o tempo todo, nunca parados/recriados. A imagem de teste
+    `mockp-worker:4.6-test` (262.045.633 bytes de conteúdo; ~1,31 GB em
+    disco no Docker Desktop) **foi mantida**, assim como
+    `mockp-api:4.6a-test`. `yarn validate` (offline) e `yarn
+validate:infra` (55 testes/13 arquivos na API, 2 testes/2 arquivos
+    no worker) aprovados; nenhum teste novo nesta subtarefa.
+  - **Riscos residuais da 4.6**: (1) `host.docker.internal` só existe
+    no Docker Desktop — outro ambiente exigiria outro caminho; (2) o
+    isolamento por banco lógico `1` segue sendo convenção, não garantia
+    técnica (risco da 4.5, mitigado pelo preflight, não eliminado); (3)
+    o grafo completo de workspaces agora está duplicado nos Dockerfiles
+    da API e do worker — um novo workspace exigirá ajustar os dois; (4)
+    imagem grande por causa do `node_modules` completo; (5)
+    **divergência factual da ADR 006 apenas reportada, não
+    corrigida**: a seção "Dockerfile da API e Prisma" lista só
+    `libs/config` na cópia de workspaces, sem `libs/queue`/
+    `apps/worker` — a ADR **não foi alterada**, permanece `Accepted`;
+    (6) o Dockerfile do worker não foi exercitado via Compose `full`
+    (Fase 9).
+- **4.7 — Validação integrada e fechamento documental**: `Completed` —
+  aprovada tecnicamente. Executada em duas etapas com autorizações
+  distintas (validação com efeitos locais controlados; depois este
+  fechamento documental), sem commit.
+  - **Evidências novas desta rodada** (executadas na 4.7, nunca só
+    reaproveitadas): `git diff --check` limpo; `yarn validate` com
+    cache do Nx **desligado** (todos os alvos reexecutados) aprovado —
+    testes unitários `api` 192, `worker` 15, `config` 41, `queue` 2;
+    integração offline da API 49 (13 arquivos), `worker:test:integration`
+    sem arquivos (esperado desde a 4.5); `yarn validate:infra`
+    aprovado — `db:migrate:deploy:test` sem pendências, seed idempotente
+    (2 papéis), `api:test:integration:infra` 55 testes/13 arquivos e
+    `worker:test:integration:infra` 2 testes/2 arquivos. Verificações
+    estáticas: nenhum import entre `apps/api` e `apps/worker` além de
+    `libs/queue`/`libs/config`; nenhum `import`/`require` de Prisma,
+    `pg` ou `apps/api` em `apps/worker`, `libs/queue`,
+    `libs/config/src/worker` nem nos `dist` compilados; os únicos
+    controllers de `apps/api/src` são os de health (nenhum controller
+    em `queue/` nem em `apps/worker`, e o `AppModule` da API não
+    importa módulo de fila); varredura de segredos nos arquivos novos e
+    nos dois Dockerfiles sem achados. **Sem endpoint nem entrada
+    Swagger para `system.ping`**: `apps/api/test/swagger.spec.ts`
+    (aprovado) afirma que o documento lista exatamente
+    `/api/v1/health/live` e `/api/v1/health/ready`, e o `/docs-json` da
+    API rodando na imagem reconstruída listou apenas essas duas rotas —
+    verificação feita contra o Swagger gerado em runtime, sem pressupor
+    um `openapi.json` versionado (nenhum existe neste repositório
+    ainda; pertence à Fase 5). Ciclo completo de imagens com **tags
+    novas** (`mockp-api:4.7-test`, `mockp-worker:4.7-test`; as tags
+    anteriores `4.6-test`, `4.6a-test`, `tarefa-3.5` e `tarefa-3.6`
+    preservadas; tamanhos só informativos: API 262.100.714 B, worker
+    262.045.633 B, sem igualdade de tamanho/manifest como critério):
+    preflight fail-closed somente leitura (mesmo `run_id` do Redis pelos
+    caminhos do host e do container, banco lógico `1`, fila `system`
+    sem job pendente e sem chave além das de infraestrutura) antes de
+    qualquer escrita; API na imagem com `live`/`ready` `200`, usuário
+    `node`, cmdline sem migration, `@mockp/queue` resolvendo em
+    `/app/libs/queue/dist/src/index.js`, sem `prisma.test.config.ts`;
+    worker na imagem (usuário `node`, `CMD` `node
+dist/apps/worker/src/main.js`, 902 módulos carregados e nenhum de
+    Prisma/`apps/api`/`pg`); worker em container consumiu o job `14`
+    publicado do host pelo comando interno, com o mesmo `requestId` nos
+    dois lados e o job `completed` no Redis; **SIGTERM real em Linux**:
+    `docker stop --time 10` em 488 ms, `ExitCode=0`,
+    `OOMKilled=false`, sem erro, sem `--init`, sem `SIGKILL`, e
+    `CLIENT LIST` de 3 para 1 apenas como evidência complementar.
+    Cleanup restrito ao que a execução criou (job `14`, removido só
+    após conferir o `requestId`, e os containers nomeados e
+    rotulados); `postgres`/`redis` nunca iniciados, parados ou
+    recriados por esta tarefa. **Verificação de identidade do banco,
+    refeita**: o `migrate deploy` da imagem da API contra `mockp_test`
+    executado na primeira passagem não teve, antes da escrita, a
+    consulta da conexão real; ele foi repetido (idempotente, "No
+    pending migrations to apply") só depois de verificar, sem expor
+    credenciais, host `host.docker.internal`, porta `5432`, banco
+    `mockp_test` e, na conexão real, `current_database()` =
+    `mockp_test` com o mesmo `system_identifier` do `postgres` do
+    Compose; `_prisma_migrations` em `mockp_test` conferida (1/1).
+    A chave `bull:system:stalled-check`, vista no banco 1 após o
+    `validate:infra`, foi tratada como chave de controle do `Worker` do
+    BullMQ (gravada com `SET … PX`, confirmado no código-fonte da
+    lib); na etapa de validação ela foi aceita na allowlist do
+    preflight sem inspecionar `TYPE`/`PTTL` na hora, e só depois se
+    confirmou que expirou sozinha (`TYPE=none`) — registro de rigor,
+    sem efeito no resultado, já que `waiting`/`active`/`delayed`/
+    `prioritized` e as demais listas de jobs estavam em 0.
+  - **Evidências históricas reaproveitadas, não repetidas**: achado de
+    plataforma de que no Windows o SIGTERM não chega ao handler JS
+    (4.2); execução do job decoy que fez o guard fail-closed recusar
+    (4.5 — o teste automatizado do guard e a prova de retry/backoff
+    rodaram de novo dentro do `validate:infra`, mas o decoy manual não
+    foi repetido); migration em banco limpo (3.2); queda real de
+    PostgreSQL/Redis fazendo `ready` responder `503` (3.4).
+  - **Correlation ID — o que esta fase comprova e o que não**:
+    comprovado, no comando interno `queue:smoke:system-ping`, o
+    `requestId` (UUID gerado pelo comando) desde o payload do job até o
+    log do `SystemPingProcessor`, inclusive com o worker dentro do
+    container. **Não comprovado**: a propagação do header `X-Request-Id`
+    de uma requisição HTTP até um job — nenhum endpoint HTTP enfileira
+    jobs nesta fase, por critério de aceite; o middleware de
+    `X-Request-Id` é coberto apenas pelos testes do skeleton da API
+    (`request-id.spec.ts`, `logging.spec.ts`, `health.spec.ts`), sem
+    elo com a fila. Esse elo só poderá ser provado por uma fase futura
+    que introduza um fluxo real de enfileiramento a partir de uma
+    requisição.
+  - **Riscos residuais da Fase 4**: (1) o isolamento por banco lógico
+    `1` é convencional, não uma garantia técnica — o preflight mitiga,
+    não elimina uma execução concorrente; (2) `host.docker.internal`
+    só existe no Docker Desktop; (3) o grafo de workspaces está
+    duplicado nos Dockerfiles da API e do worker; (4) imagens grandes
+    por causa do `node_modules` completo (pacotes Prisma/`pg` inertes
+    no worker); (5) o Dockerfile do worker não foi exercitado via
+    Compose `full` (Fase 9); (6) a ADR 006 segue com a divergência
+    factual apenas reportada (a seção "Dockerfile da API e Prisma" lista
+    só `libs/config`, sem `libs/queue`/`apps/worker`) — **a ADR não foi
+    alterada**, permanece `Accepted`; (7) a propagação de `X-Request-Id`
+    HTTP → job segue não comprovada. A nota factual da seção 12 de
+    `docs/TARGET_ARCHITECTURE.md` foi corrigida nesta mesma alteração
+    (só o estado de implementação do Dockerfile do worker; a decisão
+    arquitetural permanece inalterada).
+  - **Fechamento**: **a Fase 4 — Worker e BullMQ — está `Completed`**.
+    Nenhuma fase está `In Progress` neste momento; **a Fase 5 —
+    OpenAPI e api-client — permanece `Pending`, sem nenhuma
+    implementação iniciada**, e só começa com autorização explícita.
 
 **Entregáveis**:
 

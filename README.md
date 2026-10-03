@@ -5,9 +5,17 @@ corretoras.
 
 O workspace Yarn/Nx, `libs/config` e o skeleton técnico da API NestJS
 (`apps/api`) já estão implementados (Fases 0 a 2, `Completed`). A Fase 3
-(persistência e infraestrutura local) está **`Completed`** — última
-fase concluída do roadmap; nenhuma fase está `In Progress` no momento,
-e a Fase 4 permanece `Pending`, não iniciada. A especificação técnica
+(persistência e infraestrutura local) está **`Completed`**. **A Fase 4
+(worker e BullMQ) está `Completed`** — última fase concluída; nenhuma
+fase está `In Progress` e a Fase 5 (OpenAPI e api-client) está
+`Pending`, não iniciada. As subtarefas 4.1 a 4.7 estão `Completed` e
+aprovadas (`libs/queue`, `apps/worker` — com o consumidor ligado ao
+seu `AppModule` e validado de ponta a ponta contra Redis real —, o
+comando interno da API que publica `system.ping`, o Dockerfile do
+worker com o ajuste do Dockerfile da API, e a validação integrada com
+fechamento documental). Ver
+[docs/IMPLEMENTATION_ROADMAP.md](docs/IMPLEMENTATION_ROADMAP.md), Fase
+4, para o detalhamento. A especificação técnica
 (Tarefa 3.0), o Docker Compose com PostGIS e
 Redis (Tarefa 3.1) e a **Tarefa 3.2** (Prisma, schema, migration
 inicial e seed) estão **`Completed`** e aprovadas. **Prisma `7.10.0`,
@@ -62,10 +70,22 @@ PostgreSQL/Redis da 3.4). A ADR 006 contém referências históricas a um
 catálogo de **4 papéis globais**, superseded pela ADR 007 — o seed
 atual, com **2 papéis** (`CUSTOMER`/`ADMIN`), é o que está correto; a
 ADR 006 não foi alterada. **A Fase 3 — Docker, PostGIS, Redis e Prisma
-— está `Completed`**, a última fase concluída do roadmap. Nenhum
-Dockerfile de worker ou frontend existe ainda no repositório; a Fase 4
-permanece `Pending` e não foi iniciada. Antes de qualquer novo scaffold
-ou implementação, leia a documentação abaixo — ela é a fonte de verdade
+— está `Completed`**. **A Fase 4 — Worker e BullMQ — está
+`Completed`**: `apps/worker` já existe e já consome `system.ping` de
+verdade (subtarefas 4.1 a 4.3, mais o wiring de `SystemPingModule` a
+`AppModule.forRoot()` na 4.5), o comando interno da API que publica
+`system.ping` já existe (subtarefa 4.4) — sem nenhum endpoint HTTP
+para esse fluxo — e um teste de ponta a ponta real (API → Redis →
+worker), mais uma prova separada de retry/backoff, confirmam o fluxo
+completo contra o Compose local (subtarefa 4.5, `Completed`). O
+Dockerfile do worker ([apps/worker/Dockerfile](apps/worker/Dockerfile))
+existe desde a Tarefa 4.6 (`Completed`): consumo real de `system.ping`
+no container e `SIGTERM` real em Linux (saída `0` em 478 ms, sem
+`SIGKILL`) comprovados; o Dockerfile da API foi ajustado na 4.6-A para
+o grafo atual de quatro workspaces (incluindo `@mockp/queue`). A
+Tarefa 4.7 repetiu a validação integrada e fechou a fase. Nenhum
+Dockerfile de frontend existe ainda. Antes de qualquer novo scaffold ou
+implementação, leia a documentação abaixo — ela é a fonte de verdade
 do projeto.
 
 ## Ordem de leitura recomendada
@@ -95,9 +115,8 @@ do projeto.
   somente o skeleton técnico da API (`apps/api`) e `libs/config`
   (entrypoint server-only) — sem persistência, sem worker, sem web, sem
   autenticação e sem domínio de negócio.
-- **Fase corrente (última concluída)**: Fase 3 — Docker, PostGIS, Redis
-  e Prisma — **`Completed`**. Nenhuma fase está `In Progress` no
-  momento; a Fase 4 permanece `Pending` e não foi iniciada. As Tarefas
+- **Última fase concluída antes da corrente**: Fase 3 — Docker,
+  PostGIS, Redis e Prisma — **`Completed`**. As Tarefas
   3.0 (abertura documental e especificação
   técnica), 3.1 (Docker Compose com PostGIS e Redis) e **3.2** (Prisma,
   schema, migration inicial e seed) estão **`Completed`** e aprovadas —
@@ -168,8 +187,76 @@ do projeto.
   ADR 007 supersede — o seed atual, com 2 papéis (`CUSTOMER`/`ADMIN`),
   reflete a ADR 007 e está correto; a ADR 006 não foi alterada,
   permanece `Accepted`. **A Fase 3 — Docker, PostGIS, Redis e Prisma —
-  está `Completed`**, a última fase concluída do roadmap. A Fase 4
-  permanece `Pending` e não foi iniciada.
+  está `Completed`**.
+- **Fase corrente**: Fase 4 — Worker e BullMQ — **`Completed`** (última
+  fase concluída; nenhuma fase `In Progress`; a Fase 5 está `Pending`,
+  sem nenhuma implementação iniciada). As
+  subtarefas **4.1** (`libs/queue` — `SYSTEM_QUEUE_NAME`,
+  `SYSTEM_PING_JOB_NAME`, `SYSTEM_PING_JOB_OPTIONS`,
+  `SystemPingJobPayload` — e o novo entrypoint `@mockp/config/worker`;
+  versões exatas fixadas: `bullmq@6.3.9`, `@nestjs/bullmq@12.0.0`,
+  `ioredis@6.0.0`), **4.2** (skeleton de `apps/worker`, hand-authored,
+  `NestFactory.createApplicationContext`, sem `app.listen()`) e **4.3**
+  (conexão `ioredis` própria do worker — `maxRetriesPerRequest: null`,
+  nunca `RedisService` — e `SystemPingProcessor` via `@nestjs/bullmq`)
+  estão **`Completed`** e aprovadas. **A subtarefa 4.4** (comando
+  interno da API que publica `system.ping`, `apps/api/src/queue/**`,
+  alvo Nx `queue:smoke:system-ping`, nunca um endpoint HTTP) também
+  está **`Completed`** e aprovada, validada com Redis real do Compose
+  local: exatamente um job por execução, payload (`requestId`/
+  `publishedAt`) e opções (`attempts: 3`, backoff exponencial de
+  `1000`ms) confirmados por inspeção direta do Redis e pelo log
+  estruturado real, saída do processo em prazo finito sem
+  `process.exit()`. **A subtarefa 4.5 (teste de ponta a ponta em
+  `yarn validate:infra`) está `Completed` e aprovada tecnicamente**:
+  `SystemPingModule` agora está importado em `AppModule.forRoot()` do
+  worker (o `setInterval` interino da 4.2 foi removido); o logging do
+  `SystemPingProcessor` foi corrigido para a chamada objeto-primeiro
+  (sem serializar `Error` bruto no caminho de erro); um
+  `QueueRedisConnectionCloser` próprio do worker fecha de verdade a
+  conexão `ioredis` no shutdown (provado por `status === 'end'`, não só
+  por `app.close()` resolver). Um teste E2E real publica via
+  `SystemPingPublisher`, um worker real consome via Redis do Compose, e
+  confirma payload/`requestId`/estado `completed` — isolado num banco
+  lógico Redis dedicado (reservado por convenção, não por garantia
+  técnica), com uma verificação somente leitura e fail-closed antes de
+  iniciar o worker (recusa rodar se já houver job pendente, sem
+  processar nem remover nada de terceiros). Uma prova separada
+  confirma retry/backoff com fila e worker exclusivos do teste, nunca
+  a fila `system`, comparando os atrasos medidos contra o valor exato
+  da fórmula de backoff exponencial do BullMQ. `yarn validate`
+  permanece 100% offline; `yarn validate:infra` cobre os dois testes
+  reais novos. Dois riscos residuais foram registrados à época, documentados no
+  roadmap: isolamento por convenção (não ACL) entre bancos lógicos do
+  Redis (segue valendo), e a prova de `SIGTERM` real em
+  Linux/container, **entregue depois pela Tarefa 4.6** (`Completed`:
+  4.6-A ajusta o Dockerfile da API para os quatro workspaces e
+  `@mockp/queue`; 4.6-B cria o Dockerfile do worker, com consumo real
+  de `system.ping` e `SIGTERM` em Linux com saída `0` em 478 ms, sem
+  `--init` nem `SIGKILL`; o `node_modules` completo inclui pacotes
+  Prisma inertes, sem import/acesso a banco pelo worker; a imagem de
+  teste foi mantida; a divergência factual da ADR 006 foi apenas
+  reportada). **A subtarefa 4.7 (validação integrada e fechamento
+  documental) está `Completed`**: evidências novas desta rodada —
+  `yarn validate` com cache do Nx desligado, `yarn validate:infra`
+  (55 testes na API e 2 no worker), ciclo completo de imagens com tags
+  novas, consumo real de `system.ping` no container e `SIGTERM` real em
+  Linux com saída `0` em 488 ms, sem `--init` nem `SIGKILL`, além de
+  `migrate deploy` repetido após verificação sanitizada de que a
+  conexão real aponta para `mockp_test` no `postgres` do Compose; as
+  provas da 4.2, 4.5, 3.2 e 3.4 (SIGTERM no Windows, job decoy, banco
+  limpo, queda de dependências) são históricas, reaproveitadas, não
+  repetidas. A fase comprovou o `requestId` do comando interno até o
+  log do worker — **não** a propagação de `X-Request-Id` de uma
+  requisição HTTP até um job (nenhum endpoint HTTP enfileira jobs).
+  Riscos residuais: isolamento por banco lógico convencional;
+  `host.docker.internal` só no Docker Desktop; grafo de workspaces
+  duplicado nos dois Dockerfiles; imagens grandes com pacotes Prisma
+  inertes no worker; Dockerfile do worker não exercitado no Compose
+  `full` (Fase 9); divergência factual da ADR 006 só reportada, sem
+  alteração. Ver
+  [docs/IMPLEMENTATION_ROADMAP.md](docs/IMPLEMENTATION_ROADMAP.md),
+  Fase 4, para o detalhamento completo.
 - Repositório com workspace Yarn/Nx configurado, o skeleton técnico da
   API NestJS implementado, PostgreSQL/PostGIS + Redis disponíveis via
   Docker Compose, Prisma (schema, migration inicial e seed da fundação
@@ -177,8 +264,12 @@ do projeto.
   runtime da API com Prisma/Redis mais os repositories por agregado
   (`UserRepository`, `WorkspaceRepository`, `PropertyRepository`) já
   implementados, com readiness real desde a Tarefa 3.4 e Dockerfile da
-  API validado desde a Tarefa 3.5 — ainda sem Next.js ou libs de
-  produto além de `libs/config`.
+  API validado desde a Tarefa 3.5; `apps/worker` e `libs/queue` já
+  existem e o worker já consome `system.ping` de verdade, validado
+  contra Redis real (Fase 4, `Completed`); `apps/worker/Dockerfile`
+  existe e foi validado na Tarefa 4.6 (`Completed`) — ainda sem
+  Next.js e sem libs de produto além de `libs/config`/`libs/queue`; a
+  Fase 5 permanece `Pending`.
 - Segue [docs/IMPLEMENTATION_ROADMAP.md](docs/IMPLEMENTATION_ROADMAP.md),
   que define o status de cada fase (`Pending`, `In Progress`,
   `Completed`, `Blocked`).

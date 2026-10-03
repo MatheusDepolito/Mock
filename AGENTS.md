@@ -115,10 +115,9 @@ pareça sugerir implicitamente.
   Details, correlation ID, CORS, Helmet, rate limiting) e `libs/config`
   com o entrypoint server-only (`@mockp/config/server`) já estão
   implementados e com revisão técnica aprovada.
-- **Fase 3 — Docker, PostGIS, Redis e Prisma**: `Completed` — última
-  fase concluída do roadmap; nenhuma fase está `In Progress` no
-  momento. A Fase 4 permanece `Pending` e não foi iniciada. As
-  Tarefas 3.0 (abertura documental e especificação técnica), 3.1
+- **Fase 3 — Docker, PostGIS, Redis e Prisma**: `Completed` — anterior
+  à Fase 4, que também está `Completed` (ver abaixo).
+  As Tarefas 3.0 (abertura documental e especificação técnica), 3.1
   (Docker Compose com PostGIS e Redis) e **3.2** (Prisma, schema,
   migration inicial e seed) estão **`Completed`** e aprovadas —
   [ADR 006](docs/adr/006-persistence-and-local-infrastructure.md) e
@@ -308,8 +307,8 @@ apply` / `Seed complete: 2 role(s) in the catalog`); índice GiST em
     registro histórico da decisão anterior, não o contrato atual, e a
     ADR 006 **não foi alterada** nesta rodada; permanece `Accepted`.
     **A Tarefa 3.6 está `Completed`. A Fase 3 — Docker, PostGIS, Redis e
-    Prisma — está `Completed`**, a última fase concluída do roadmap. A
-    Fase 4 permanece `Pending` e não foi iniciada.
+    Prisma — está `Completed`**. **A Fase 4 — Worker e BullMQ — está
+    `Completed`** (ver bullet próprio abaixo).
 - Prisma `7.10.0`, `schema.prisma`, a migration inicial e o seed (a
   fundação multi-tenant da ADR 007) já existem e estão validados;
   `PrismaModule`/`PrismaService`, `RedisModule`/`RedisService`,
@@ -323,17 +322,109 @@ apply` / `Seed complete: 2 role(s) in the catalog`); índice GiST em
   ainda (isso pertence a fases posteriores), então esses repositories
   continuam exercitados apenas pelos testes (offline e reais desde a
   3.3.4). O Dockerfile da API já existe desde a Tarefa 3.5
-  ([apps/api/Dockerfile](apps/api/Dockerfile)); `apps/worker` e
-  `apps/web`/frontend continuam não existindo neste repositório.
-  PostgreSQL/PostGIS e Redis já existem como containers locais (Docker
-  Compose) e já são exercitados de verdade pela suíte
-  `yarn validate:infra` desde a 3.3.4.
-- Não crie `apps/web`, `apps/worker`, outras `libs/*` de produto,
-  Next.js, Docker, autenticação, domínio de negócio ou qualquer outra
-  peça de fases posteriores a Fase 3, e não antecipe entregáveis de
-  fases futuras, mesmo que solicitado de forma implícita por uma
-  tarefa, a menos que essa tarefa autorize explicitamente o avanço de
-  fase.
+  ([apps/api/Dockerfile](apps/api/Dockerfile)); PostgreSQL/PostGIS e
+  Redis já existem como containers locais (Docker Compose) e já são
+  exercitados de verdade pela suíte `yarn validate:infra` desde a
+  3.3.4.
+- **Fase 4 — Worker e BullMQ**: `Completed` — última fase concluída;
+  nenhuma fase está `In Progress`. As subtarefas 4.1
+  (`libs/queue` e `@mockp/config/worker`), 4.2 (skeleton de
+  `apps/worker`), 4.3 (conexão Redis própria do worker e
+  `SystemPingProcessor`, via `@nestjs/bullmq`) e 4.4 (comando interno
+  da API que publica `system.ping`, `apps/api/src/queue/**`, alvo Nx
+  `queue:smoke:system-ping`, nunca um endpoint HTTP) estão
+  **`Completed`** e aprovadas. **A subtarefa 4.5 (teste de ponta a
+  ponta em `yarn validate:infra`) também está `Completed` e aprovada
+  tecnicamente**: `SystemPingModule` **agora está importado em
+  `AppModule.forRoot()`** do worker (o `setInterval` interino da 4.2
+  foi removido — o `Worker` real do BullMQ mantém o processo vivo
+  sozinho); o logging do `SystemPingProcessor` foi corrigido para a
+  chamada objeto-primeiro (mesmo padrão da 4.4), com o caminho de erro
+  não serializando mais o `Error` bruto; um `QueueRedisConnectionCloser`
+  próprio do worker (mesmo padrão do da API) fecha de verdade a conexão
+  `ioredis` do worker no shutdown — provado por um teste que observa
+  `status === 'end'`, não só que `app.close()` resolveu. O teste E2E
+  real (`apps/api/test/infra/queue/system-ping.infra.spec.ts`) publica
+  via `SystemPingPublisher` real, um worker real (processo separado)
+  consome via Redis do Compose, e confirma payload/`requestId`/estado
+  `completed` — isolado num banco lógico Redis dedicado (`/1`,
+  reservado por convenção, não por garantia técnica), com uma
+  verificação **somente leitura e fail-closed** antes de iniciar o
+  worker (recusa rodar se a fila `system` desse banco já tiver job
+  pendente, sem processar nem remover nada de terceiros — comprovado
+  com um job decoy). Uma prova separada
+  (`system-ping-retry.infra.spec.ts`) confirma retry/backoff com
+  `Queue`/`Worker` exclusivos do teste, numa fila com nome único,
+  nunca a fila `system`, comparando os atrasos medidos contra o valor
+  exato da fórmula de backoff exponencial do BullMQ. Limpeza sempre
+  restrita ao que o próprio teste criou, nunca `FLUSHDB`/`KEYS *`/
+  `obliterate` na fila compartilhada. `yarn validate` continua 100%
+  offline; `yarn validate:infra` cobre os dois testes reais novos.
+  **Dois riscos residuais distintos permanecem**: (1) o isolamento por
+  banco lógico é convencional, não uma garantia técnica — uma execução
+  concorrente ou um producer real apontando deliberadamente para o
+  banco 1 ainda poderiam colidir com o guard; (2) a prova de `SIGTERM`
+  real entregue a um processo containerizado em Linux estava pendente
+  à época da 4.5 — no Windows o sinal não chega ao handler JS (achado
+  da 4.2) — e foi entregue na Tarefa 4.6 (ver abaixo).
+  **A subtarefa 4.6 (Dockerfile do worker) está `Completed` e aprovada
+  tecnicamente**, em duas partes distintas: **4.6-A** — ajuste do
+  [apps/api/Dockerfile](apps/api/Dockerfile) para o grafo atual de
+  quatro workspaces e `@mockp/queue` (o build da imagem da API estava
+  quebrado desde a 4.4 por `yarn install --immutable`), com rebuild,
+  `live`/`ready` `200`, usuário `node`, sem migration no boot e
+  `migrate deploy` explícito idempotente contra `mockp_test`
+  validados; **4.6-B** — [apps/worker/Dockerfile](apps/worker/Dockerfile)
+  multi-stage, não-root, com build real, consumo real de `system.ping`
+  dentro do container (preflight fail-closed: mesma instância Redis,
+  banco lógico 1, sem jobs preexistentes) e `SIGTERM` real em Linux com
+  saída `0` em 478 ms, sem `--init` e sem `SIGKILL`. O `node_modules`
+  completo da imagem do worker inclui pacotes Prisma inertes (sem
+  import/acesso a banco pelo worker, provado); a imagem de teste foi
+  mantida. A divergência factual da ADR 006 (seção "Dockerfile da API e
+  Prisma" lista só `libs/config`) foi apenas reportada — a ADR não foi
+  alterada. Riscos residuais: `host.docker.internal` só no Docker
+  Desktop; isolamento por banco lógico segue convencional; grafo de
+  workspaces duplicado nos dois Dockerfiles; imagem grande.
+  **A subtarefa 4.7 (validação integrada e fechamento documental) está
+  `Completed` e aprovada tecnicamente.** Evidências **novas** da
+  rodada: `yarn validate` com cache do Nx desligado (`api` 192,
+  `worker` 15, `config` 41, `queue` 2 testes unitários; 49 de
+  integração offline na API) e `yarn validate:infra` (55 testes na API,
+  2 no worker) aprovados; greps de imports cruzados/Prisma/segredos
+  limpos; nenhum endpoint nem entrada Swagger para `system.ping`
+  (`swagger.spec.ts` e o `/docs-json` da imagem reconstruída listam só
+  os dois endpoints de health; nenhum `openapi.json` versionado é
+  pressuposto); ciclo completo de imagens (API e worker, tags novas
+  `4.7-test`, anteriores preservadas) com preflight fail-closed (mesma
+  instância Redis, banco 1), consumo real de `system.ping` no container
+  e `SIGTERM` real em Linux com saída `0` em 488 ms, sem `--init` e sem
+  `SIGKILL`; `migrate deploy` repetido contra `mockp_test` só depois
+  de verificar, sem expor credenciais, `current_database()` e
+  `system_identifier` pela conexão real (a primeira passagem não teve
+  essa consulta prévia). Evidências **históricas** reaproveitadas, não
+  repetidas: SIGTERM no Windows (4.2), job decoy do guard (4.5), banco
+  limpo (3.2) e queda de dependências (3.4). **Correlation ID**: a
+  fase comprovou o `requestId` do comando interno até o worker, **não**
+  a propagação de `X-Request-Id` HTTP até um job (nenhum endpoint HTTP
+  enfileira jobs). Riscos residuais: isolamento por banco lógico
+  convencional; `host.docker.internal` só no Docker Desktop; grafo de
+  workspaces duplicado nos Dockerfiles; imagens grandes com pacotes
+  Prisma inertes no worker; Dockerfile do worker não exercitado no
+  Compose `full` (Fase 9); divergência factual da ADR 006 apenas
+  reportada, ADR inalterada. **A Fase 4 está `Completed`; nenhuma fase
+  está `In Progress`; a Fase 5 — OpenAPI e api-client — permanece
+  `Pending`, sem implementação iniciada.**
+  `apps/web` continua não existindo neste repositório.
+  Ver [docs/IMPLEMENTATION_ROADMAP.md](docs/IMPLEMENTATION_ROADMAP.md),
+  Fase 4, para o detalhamento completo subtarefa por subtarefa.
+- Não crie `apps/web`, outras `libs/*` de produto, Next.js,
+  autenticação, domínio de negócio ou qualquer outra peça de fases
+  posteriores à Fase 4, e não antecipe entregáveis de fases futuras
+  (incluindo qualquer implementação da Fase 5 — OpenAPI e api-client,
+  `Pending`, a próxima do roadmap), mesmo que solicitado de forma
+  implícita por uma tarefa, a menos que essa tarefa autorize
+  explicitamente o avanço.
 - Não crie commits, branches, remotes ou publique nada, a menos que a
   tarefa autorize explicitamente essa ação.
 

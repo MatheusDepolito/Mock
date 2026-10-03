@@ -158,13 +158,24 @@
           "command": "prisma migrate reset --config prisma.migrate.config.ts",
           "cwd": "apps/api"
         }
+      },
+      "queue:smoke:system-ping": {
+        "executor": "nx:run-commands",
+        "cache": false,
+        "options": {
+          "command": "tsx --tsconfig tsconfig.app.json src/queue/system-ping.command.ts",
+          "cwd": "apps/api"
+        }
       }
     }
   },
   "dependencies": {
     "@mockp/config": "workspace:*",
+    "@mockp/queue": "workspace:*",
+    "@nestjs/bullmq": "12.0.0",
     "@prisma/adapter-pg": "7.10.0",
     "@prisma/client": "7.10.0",
+    "bullmq": "6.3.9",
     "ioredis": "6.0.0",
     "pg": "8.23.0",
     "prisma": "7.10.0"

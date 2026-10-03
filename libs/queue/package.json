@@ -1,0 +1,44 @@
+{
+  "name": "@mockp/queue",
+  "version": "0.0.1",
+  "private": true,
+  "type": "commonjs",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "development": "./src/index.ts",
+      "default": "./dist/src/index.js"
+    }
+  },
+  "nx": {
+    "name": "queue",
+    "sourceRoot": "libs/queue/src",
+    "projectType": "library",
+    "targets": {
+      "build": {
+        "executor": "@nx/js:tsc",
+        "outputs": [
+          "{options.outputPath}"
+        ],
+        "options": {
+          "outputPath": "libs/queue/dist",
+          "main": "libs/queue/src/index.ts",
+          "tsConfig": "libs/queue/tsconfig.build.json",
+          "assets": [
+            "libs/queue/*.md"
+          ]
+        }
+      },
+      "typecheck": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "tsc -b tsconfig.json",
+          "cwd": "libs/queue"
+        }
+      }
+    }
+  },
+  "dependencies": {
+    "tslib": "2.8.1"
+  }
+}
