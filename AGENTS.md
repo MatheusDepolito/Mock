@@ -426,8 +426,9 @@ apply` / `Seed complete: 2 role(s) in the catalog`); índice GiST em
   (Problem Details, headers `X-Request-Id` e `operationId`s no OpenAPI,
   sem mudança de runtime) e **5.6** (gerador determinístico, alvo
   `api:contract:generate` e primeiro `openapi.json` versionado em
-  `libs/api-client/openapi/`) `Completed`. As subtarefas 5.7 a 5.12
-  estão `Pending` e **cada uma exige autorização
+  `libs/api-client/openapi/`) e **5.7** (`api:contract:check`, somente
+  leitura, fora de `yarn validate` até a 5.10) `Completed`. As
+  subtarefas 5.8 a 5.12 estão `Pending` e **cada uma exige autorização
   explícita e individual**. As imagens Docker da API e do worker estiveram
   conscientemente quebradas entre a 5.2 e a 5.3 (o `yarn.lock` ganhou o
   quinto workspace) e foram consertadas na 5.3 (`COPY` de

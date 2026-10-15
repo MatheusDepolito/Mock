@@ -176,6 +176,16 @@
         "options": {
           "command": "node dist/apps/api/src/contract/generate-openapi.js libs/api-client/openapi/openapi.json"
         }
+      },
+      "contract:check": {
+        "executor": "nx:run-commands",
+        "cache": false,
+        "dependsOn": [
+          "build"
+        ],
+        "options": {
+          "command": "node dist/apps/api/src/contract/check-openapi.js libs/api-client/openapi/openapi.json"
+        }
       }
     }
   },

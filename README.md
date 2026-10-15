@@ -11,8 +11,8 @@ está `In Progress`** — subtarefas 5.0 (abertura documental), 5.1 (spike)
 5.2 (scaffold de `libs/api-client`, sem API pública), 5.3 (Dockerfiles e
 o quinto workspace) e 5.4 (extração do setup HTTP e do documento
 Swagger), 5.5 (Problem Details, headers e `operationId`s no OpenAPI) e
-5.6 (gerador determinístico do `openapi.json`) `Completed`; 5.7 a 5.12
-`Pending` (decisões registradas na [ADR 009](docs/adr/009-openapi-contract-and-api-client.md), `Proposed`).
+5.6 (gerador determinístico do `openapi.json`) e 5.7 (`contract:check`
+somente leitura) `Completed`; 5.8 a 5.12 `Pending` (decisões registradas na [ADR 009](docs/adr/009-openapi-contract-and-api-client.md), `Proposed`).
 As subtarefas 4.1 a 4.7 da Fase 4 estão `Completed` e
 aprovadas (`libs/queue`, `apps/worker` — com o consumidor ligado ao
 seu `AppModule` e validado de ponta a ponta contra Redis real —, o
@@ -199,7 +199,8 @@ do projeto.
   `libs/api-client`, 5.3, Dockerfiles do quinto workspace, e 5.4, extração
   do setup HTTP e do documento Swagger, e 5.5, Problem Details, headers e
   `operationId`s no OpenAPI, e 5.6, gerador determinístico e primeiro
-  `openapi.json` versionado, `Completed`; 5.7 a 5.12 `Pending`; ADR 009 `Proposed`; 5.2 e 5.3 entraram no mesmo commit de
+  `openapi.json` versionado, e 5.7, check somente leitura, `Completed`;
+  5.8 a 5.12 `Pending`; ADR 009 `Proposed`; 5.2 e 5.3 entraram no mesmo commit de
   checkpoint).
   A Fase 4 — Worker e BullMQ — está `Completed` (última fase concluída
   antes da corrente). As

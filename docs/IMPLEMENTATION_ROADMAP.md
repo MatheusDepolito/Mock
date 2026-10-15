@@ -43,7 +43,8 @@ Regras de controle:
 e dependências), 5.3 (Dockerfiles e o quinto workspace) e 5.4 (extração
 do setup HTTP e do documento Swagger) e 5.5 (documentação de Problem
 Details, headers e `operationId`s) e 5.6 (gerador determinístico e
-`api:contract:generate`) `Completed`; 5.7 a 5.12 `Pending`. Ver seção
+`api:contract:generate`) e 5.7 (`api:contract:check`, somente leitura)
+`Completed`; 5.8 a 5.12 `Pending`. Ver seção
 própria da Fase 5 abaixo.
 
 **Fase 4 — Worker e BullMQ**: `Completed` — última fase concluída antes
@@ -1171,8 +1172,8 @@ dist/apps/worker/src/main.js`, 902 módulos carregados e nenhum de
 (Dockerfiles e o quinto workspace) e 5.4 (extração do setup HTTP e do
 documento Swagger) e 5.5 (documentação de Problem Details, headers e
 `operationId`s) e 5.6 (gerador determinístico e
-`api:contract:generate`) estão `Completed`; as subtarefas 5.7 a 5.12
-estão `Pending`. Cada subtarefa exige autorização explícita e
+`api:contract:generate`) e 5.7 (`api:contract:check`, somente leitura)
+estão `Completed`; as subtarefas 5.8 a 5.12 estão `Pending`. Cada subtarefa exige autorização explícita e
 individual, e nenhuma delas autoriza commit, branch ou push. O registro
 das decisões está na
 [ADR 009](adr/009-openapi-contract-and-api-client.md) (`Proposed`,
@@ -1468,9 +1469,62 @@ libs/api-client/openapi/openapi.json`, **nunca `tsx`**) e script raiz
   `yarn.lock`, Dockerfile, `create-test-app.ts`, `AppModule`, `main.ts`,
   controller, DTO, `configure-app.ts`, `swagger.ts`, `nx.json` ou
   `libs/api-client/src` tocados; sem `schema.d.ts`, sem `contract:check`.
-- **5.7 — `api:contract:check` (somente leitura)**: `Pending`.
-  Comparação de bytes em memória, `cache: false`, testes permanentes de
-  drift e de não escrita (D17).
+- **5.7 — `api:contract:check` (somente leitura)**: `Completed` —
+  aprovada (D16, D17). Detecta drift entre o código e o `openapi.json`
+  versionado **sem escrever nada**: gera o documento em memória com o
+  mesmo caminho da 5.6 (`buildOpenApiDocument()` + `serializeOpenApi()`,
+  reutilizados sem alteração), lê o arquivo e decide por **igualdade de
+  bytes** (`Buffer`). **Código** (`apps/api/src/contract/`):
+  `compare-contract.ts` (`compareContract(expected, actual)`, função
+  pura: igual, ou a **primeira diferença** com linha, coluna, tipo —
+  `content`, `end-of-file`, `line-ending` (CRLF × LF), `bom` ou
+  `length` — e trechos curtos, escapados e truncados de cada lado, sem
+  despejar o documento); `run-contract-check.ts` (`runContractCheck(
+caminho, dependências injetáveis)`: resultado `equal`, `missing`
+  — arquivo ausente, distinto de `different` — ou `different`; só
+  `readFileSync` é importado de `node:fs`); `check-openapi.ts` (CLI com
+  o caminho como argumento obrigatório; **exit 0** se igual, **exit 1**
+  em drift ou arquivo ausente, **exit 2** em argumento ausente ou erro
+  de execução; em drift imprime a primeira diferença e `Run "yarn
+contract:generate" and review the diff.`). **Alvo**
+  `api:contract:check` (`nx:run-commands`, `cache: false`,
+  `dependsOn: ["build"]`, `node
+dist/apps/api/src/contract/check-openapi.js
+libs/api-client/openapi/openapi.json`, nunca `tsx`) e script raiz
+  `contract:check`; **nada** foi acrescentado a `validate`/
+  `validate:nx` nem ao hook (isso é a 5.10). **Provas**: (1) com o
+  arquivo atual, `nx run api:contract:check` → exit 0, e SHA-256
+  (`a40f983a…faa2`), mtime, tamanho e `git status` do `openapi.json`
+  **idênticos** antes e depois; (2) drift real pela CLI, em cópias fora
+  do repositório: linha alterada → exit 1 (`content`, linha 203,
+  coluna 48); cópia em CRLF → exit 1 (`line-ending`); sem o `\n` final
+  → exit 1 (`end-of-file`); com BOM → exit 1 (`bom`); saída de cerca de
+  400 a 470 bytes em todos os casos, sem despejar o documento; (3)
+  arquivo ausente → exit 1 com mensagem distinta de drift (`file not
+found`, `Run "yarn contract:generate" to create it.`); (4) argumento
+  ausente ou vazio → exit 2 com mensagem de uso; (5) `git status` do
+  repositório inalterado após todas as provas e cópias removidas.
+  **Testes** (offline, sem PostgreSQL/Redis): `compare-contract.spec.ts`
+  (10: iguais, diferença no meio, primeira diferença, linha/coluna,
+  `\n` final ausente e extra, CRLF × LF, BOM, lado mais curto, trechos
+  curtos); `run-contract-check.spec.ts` (8: `equal`, `different`,
+  `missing`, CRLF/sem `\n`/BOM como drift, erro diferente de
+  `ENOENT` relançado; **não escrita**, em diretório temporário do SO e
+  com spies armados só durante a chamada, zero chamadas às APIs de
+  escrita de `node:fs` e `node:fs/promises` e hash e mtime intactos; e
+  **teste estático** que falha se qualquer identificador de escrita
+  aparecer nos módulos do check ou se algo além de `readFileSync` for
+  importado de `node:fs`); `apps/api/test/contract-drift.spec.ts` (2:
+  **drift de pipeline** — um controller e um DTO descartáveis, definidos
+  no teste, geram o documento A e o documento B (o DTO ganha uma
+  propriedade) com `applyHttpSetup` + `createSwaggerDocument`; os bytes
+  diferem e `compareContract` acusa; A × A é igual; nenhum arquivo do
+  repositório é tocado). Resultados: `api:test:integration` **70**
+  testes/16 arquivos (68 + 2), `api:test` **220** (202 + 18),
+  `api:typecheck`, `api:lint`, `yarn format:check`, `git diff --check` e
+  `yarn validate` aprovados. Nenhum arquivo proibido, dependência,
+  `yarn.lock`, `libs/api-client` ou o próprio `openapi.json` foram
+  alterados.
 - **5.8 — Tipos gerados e `api-client:contract:generate`/`check`**:
   `Pending` (D2, D7, D18). `schema.d.ts` versionado; o script de
   geração dos tipos usa `import` (`.mjs`), porque o `openapi-typescript`

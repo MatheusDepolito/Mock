@@ -18,6 +18,7 @@
     "typecheck": "tsc -b",
     "nx:report": "nx report",
     "contract:generate": "nx run api:contract:generate",
+    "contract:check": "nx run api:contract:check",
     "validate:nx": "nx run-many -t db:validate db:generate lint typecheck test build && nx run api:test:integration && nx run worker:test:integration",
     "validate": "yarn format:check && yarn lint && yarn validate:nx",
     "validate:infra": "nx run api:db:migrate:deploy:test && nx run api:db:seed:test && nx run api:test:integration:infra && nx run worker:test:integration:infra"
