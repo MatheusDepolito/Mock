@@ -125,35 +125,37 @@ Fases concluídas (`Completed`), com o detalhamento no roadmap:
   ([roadmap](docs/IMPLEMENTATION_ROADMAP.md#fase-3--docker-postgis-redis-e-prisma)).
 - **Fase 4 — Worker e BullMQ**: `Completed`
   ([roadmap](docs/IMPLEMENTATION_ROADMAP.md#fase-4--worker-e-bullmq)).
+- **Fase 5 — OpenAPI e api-client**: `Completed`; ADR 009 `Accepted`
+  ([roadmap](docs/IMPLEMENTATION_ROADMAP.md#fase-5--openapi-e-api-client)).
 
-Fase ativa:
+**Nenhuma fase está `In Progress`.** A última concluída é a Fase 5; a
+Fase 6 — Tailwind, `libs/ui` e Storybook — e as seguintes (7 a 9)
+permanecem `Pending` e só podem ser iniciadas com autorização
+explícita.
 
-- **Fase 5 — OpenAPI e api-client**: `In Progress` — fase corrente; o
-  estado das subtarefas está no
-  [roadmap](docs/IMPLEMENTATION_ROADMAP.md#fase-5--openapi-e-api-client)
-  e as decisões na
-  [ADR 009](docs/adr/009-openapi-contract-and-api-client.md). Cada
-  subtarefa exige autorização explícita e individual. Regras desta
-  fase:
-  - `contract:generate` escreve os artefatos versionados por execução
-    explícita e nunca entra em `yarn validate`, no hook ou em
-    pipeline; `contract:check` é somente leitura e compara/falha.
-  - O gerador é compilado pelo `api:build` e executado com `node`
-    sobre `dist`, nunca com `tsx`.
-  - Sem override de peer, sem `--legacy-peer-deps`, sem troca de
-    ferramenta e sem rebaixar o TypeScript.
-  - Os riscos residuais aceitos e seus gatilhos estão em
-    [Riscos residuais e gatilhos](docs/IMPLEMENTATION_ROADMAP.md#riscos-residuais-e-gatilhos).
+Regras permanentes do contrato OpenAPI
+([ADR 009](docs/adr/009-openapi-contract-and-api-client.md)):
+
+- `contract:generate` escreve os artefatos versionados por execução
+  explícita e nunca entra em `yarn validate`, no hook ou em
+  pipeline; `contract:check` é somente leitura, compara/falha e faz
+  parte do `yarn validate`.
+- O gerador é compilado pelo `api:build` e executado com `node` sobre
+  `dist`, nunca com `tsx`.
+- Sem override de peer, sem `--legacy-peer-deps`, sem troca de
+  ferramenta e sem rebaixar o TypeScript.
+
+Os riscos residuais aceitos e seus gatilhos estão em
+[Riscos residuais e gatilhos](docs/IMPLEMENTATION_ROADMAP.md#riscos-residuais-e-gatilhos).
 
 Limites de escopo:
 
 - Não crie `apps/web`, outras `libs/*` de produto, Next.js,
   autenticação, domínio de negócio ou qualquer outra peça de fases
-  posteriores à Fase 5, e não antecipe entregáveis de fases futuras
-  (incluindo a Fase 6 — Tailwind, `libs/ui` e Storybook, `Pending`, e
-  qualquer subtarefa da Fase 5 além da já autorizada), mesmo que
-  solicitado de forma implícita por uma tarefa, a menos que essa tarefa
-  autorize explicitamente o avanço.
+  posteriores à Fase 5 (a Fase 6 e as seguintes, todas `Pending`), e
+  não antecipe entregáveis de fases futuras, mesmo que solicitado de
+  forma implícita por uma tarefa, a menos que essa tarefa autorize
+  explicitamente o avanço.
 - Não crie commits, branches, remotes ou publique nada, a menos que a
   tarefa autorize explicitamente essa ação.
 

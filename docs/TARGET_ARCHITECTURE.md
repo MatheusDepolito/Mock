@@ -313,14 +313,15 @@ Detalhamento e consequências em
   desatualizados em relação ao código-fonte da API falham o pipeline
   (targets `contract:generate` e `contract:check`, ver seção 13).
 
-> **Estado de implementação (Fase 5, `In Progress`)**: nada desta seção
-> foi implementado ainda — a Fase 5 foi aberta apenas documentalmente
-> (subtarefa 5.0) e `libs/api-client` não existe. Os detalhes de
-> implementação que esta seção não fixa (local do `openapi.json`,
-> serialização canônica, local dos tipos gerados, separação entre
-> `contract:generate` — execução explícita que escreve os artefatos — e
-> `contract:check` — somente leitura) estão em
-> [ADR 009](adr/009-openapi-contract-and-api-client.md) (`Proposed`).
+> **Estado de implementação (Fase 5, `Completed`)**: o `openapi.json`
+> versionado está em `libs/api-client/openapi/openapi.json` e os tipos
+> gerados em `libs/api-client/src/generated/schema.d.ts`; o cliente
+> base tipado é o `createApiClient` (`openapi-fetch`) de
+> `libs/api-client`. O alvo `contract:generate` é uma execução manual
+> explícita que escreve os dois artefatos; o `contract:check` é
+> somente leitura. Os detalhes (serialização canônica, separação entre
+> os dois alvos) estão na
+> [ADR 009](adr/009-openapi-contract-and-api-client.md) (`Accepted`).
 > Nenhuma decisão desta seção é alterada por essa nota.
 
 ## 7. Autenticação (decisão, não implementação no skeleton)
@@ -737,9 +738,12 @@ targets Nx:
 - `typecheck`
 - `test`
 - `test:integration`
-- `contract:generate`
-- `contract:check`
+- `contract:check` (somente leitura; parte do `yarn validate`)
 - `build`
+
+`contract:generate` existe como target Nx, mas é uma **execução manual
+explícita**: escreve o `openapi.json` e os tipos gerados versionados, e
+**não** faz parte de `yarn validate`, do hook nem de pipeline.
 
 ### Comando `yarn validate` e proteção local via Husky
 
@@ -747,7 +751,8 @@ targets Nx:
 `format:check`, o lint do workspace (incluindo arquivos de configuração
 na raiz, que não pertencem a nenhum projeto Nx) e, via `validate:nx`,
 os targets cacheáveis do Nx (`lint`, `typecheck`, `test` e `build` de
-todos os projetos, mais `api:test:integration`) — ver
+todos os projetos, mais `api:test:integration`) e os `contract:check`
+(`api` e `api-client`, somente leitura, sem cache) — ver
 `package.json` para os scripts exatos.
 
 Um hook `pre-commit` do Husky executa `yarn validate` automaticamente

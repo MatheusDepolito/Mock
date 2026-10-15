@@ -2,18 +2,18 @@
 
 ## Status
 
-Proposed
+Accepted (subtarefa 5.13, fechamento da Fase 5, 2026-10-15)
 
 Esta ADR é aberta pela subtarefa 5.0 da Fase 5
 ([docs/IMPLEMENTATION_ROADMAP.md](../IMPLEMENTATION_ROADMAP.md)). Ela
 **complementa** a [ADR 001](001-rest-openapi.md) — que decidiu REST com
 OpenAPI como fonte de verdade do contrato, `openapi-typescript` e
 `openapi-fetch` — e **não a altera nem a supersede**. Passa a
-`Accepted` somente no fechamento da Fase 5. O spike (subtarefa 5.1) foi
-concluído e resolveu as decisões condicionais (ver "Resultado do spike
-5.1"); os valores de D8 foram aprovados e gravados na 5.2, restando a
-confirmação das decisões nas subtarefas seguintes. As ADRs 001–008 permanecem
-inalteradas.
+`Accepted` no fechamento da Fase 5 (subtarefa 5.13). O spike
+(subtarefa 5.1) resolveu as decisões condicionais (ver "Resultado do
+spike 5.1"), os valores de D8 foram gravados na 5.2 e as demais decisões
+foram implementadas e validadas nas subtarefas 5.3 a 5.11. As ADRs
+001–008 permanecem inalteradas.
 
 ## Contexto
 
@@ -50,9 +50,10 @@ Fatos do código que moldam a decisão (verificados na abertura da fase):
 
 ## Decisão
 
-Cada decisão carrega o estado na abertura da fase: **aprovada**,
-**aprovada condicional** ao spike 5.1, ou **regra aprovada com valores
-pendentes**. A numeração segue o plano técnico da Fase 5 aprovado pelo
+Cada decisão foi aprovada na abertura da fase; as que eram
+**condicionais** ao spike 5.1 ou tinham **valores pendentes** foram
+resolvidas (o resultado consta em cada item e em "Resultado do spike
+5.1"). A numeração segue o plano técnico da Fase 5 aprovado pelo
 responsável do projeto (não existe D6 nesse plano).
 
 1. **D1 — Local do `openapi.json` (aprovada).**
@@ -156,7 +157,7 @@ eol` no `openapi.json` devolve `text: set` e `eol: lf`).
     padrão e `fetch` nunca repassado como `undefined`; sem hooks do
     TanStack Query, sem singleton, sem autenticação, sem DTOs manuais.
 13. **D14 — Registro (aprovada).** Esta ADR, `Proposed` na abertura,
-    `Accepted` no fechamento da fase.
+    `Accepted` no fechamento da fase (5.13).
 14. **D15 — Dockerfiles (aprovada).** Ajuste na subtarefa 5.3,
     imediatamente após a 5.2 e no mesmo commit; entre 5.2 e 5.3 as
     imagens ficaram conscientemente quebradas (o `yarn.lock` ganhou o
@@ -280,7 +281,7 @@ workspace mudar de major de TypeScript), removendo a exceção.
   gerado" o que são tipos gerados (hooks não são gerados); esta ADR
   interpreta "cliente gerado" no `contract:check` como "tipos gerados".
 - O local do `openapi.json` não estava fixado em nenhum documento
-  anterior (resolvido por D1, `Proposed`).
+  anterior (resolvido por D1).
 - A descrição de `yarn validate` na seção 13 de `TARGET_ARCHITECTURE.md`
-  não lista `contract:check`; a atualização fica para o fechamento da
-  Fase 5.
+  não listava `contract:check`; foi atualizada na 5.13, junto com a
+  nota de estado de implementação da seção 6.

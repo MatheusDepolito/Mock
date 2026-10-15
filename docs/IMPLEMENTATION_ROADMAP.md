@@ -38,27 +38,29 @@ Regras de controle:
 
 ## Fase corrente
 
-**Fase 5 — OpenAPI e api-client**: `In Progress`. Esta seção é a **fonte
-única do status** das fases e subtarefas; `AGENTS.md` e `README.md`
+**Nenhuma fase está `In Progress`.** A última fase concluída é a **Fase 5
+— OpenAPI e api-client**; a próxima do roadmap, a Fase 6, permanece
+`Pending`. Esta seção é a **fonte única do status** das fases e
+subtarefas; `AGENTS.md` e `README.md`
 apenas apontam para cá. O detalhamento de cada fase está na sua própria
 seção, abaixo.
 
-| Fase                                                                          | Status        | Resumo                                                                                                 |
-| ----------------------------------------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------ |
-| [0 — Fundação e revisão documental](#fase-0--fundação-e-revisão-documental)   | `Completed`   | Revisão documental aprovada pelo responsável.                                                          |
-| [1 — Yarn 4 e Nx](#fase-1--yarn-4-e-nx-bootstrap-do-monorepo)                 | `Completed`   | Workspace Yarn 4 + Nx.                                                                                 |
-| [2 — API NestJS](#fase-2--api-nestjs-skeleton-da-api)                         | `Completed`   | Skeleton de `apps/api` e `libs/config`.                                                                |
-| [3 — Docker, PostGIS, Redis e Prisma](#fase-3--docker-postgis-redis-e-prisma) | `Completed`   | Tarefas 3.0 a 3.6; ADR 006/007/008 `Accepted`; readiness real; Dockerfile da API.                      |
-| [4 — Worker e BullMQ](#fase-4--worker-e-bullmq)                               | `Completed`   | Subtarefas 4.1 a 4.7; `libs/queue`, `apps/worker`, Dockerfile do worker.                               |
-| [5 — OpenAPI e api-client](#fase-5--openapi-e-api-client)                     | `In Progress` | 5.0 a 5.12 (incl. 5.10-B) `Completed`; **5.13** (fechamento documental) `Pending`; ADR 009 `Proposed`. |
-| 6 — Tailwind, `libs/ui` e Storybook                                           | `Pending`     | —                                                                                                      |
-| 7 — App Next.js e áreas por persona                                           | `Pending`     | —                                                                                                      |
-| 8 — Adapters Stripe e Mapbox em sandbox                                       | `Pending`     | —                                                                                                      |
-| 9 — Validação integrada do skeleton                                           | `Pending`     | —                                                                                                      |
+| Fase                                                                          | Status      | Resumo                                                                                                                                         |
+| ----------------------------------------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| [0 — Fundação e revisão documental](#fase-0--fundação-e-revisão-documental)   | `Completed` | Revisão documental aprovada pelo responsável.                                                                                                  |
+| [1 — Yarn 4 e Nx](#fase-1--yarn-4-e-nx-bootstrap-do-monorepo)                 | `Completed` | Workspace Yarn 4 + Nx.                                                                                                                         |
+| [2 — API NestJS](#fase-2--api-nestjs-skeleton-da-api)                         | `Completed` | Skeleton de `apps/api` e `libs/config`.                                                                                                        |
+| [3 — Docker, PostGIS, Redis e Prisma](#fase-3--docker-postgis-redis-e-prisma) | `Completed` | Tarefas 3.0 a 3.6; ADR 006/007/008 `Accepted`; readiness real; Dockerfile da API.                                                              |
+| [4 — Worker e BullMQ](#fase-4--worker-e-bullmq)                               | `Completed` | Subtarefas 4.1 a 4.7; `libs/queue`, `apps/worker`, Dockerfile do worker.                                                                       |
+| [5 — OpenAPI e api-client](#fase-5--openapi-e-api-client)                     | `Completed` | Subtarefas 5.0 a 5.13 (incl. 5.10-B); contrato OpenAPI versionado, `libs/api-client`, `contract:check` no `yarn validate`; ADR 009 `Accepted`. |
+| 6 — Tailwind, `libs/ui` e Storybook                                           | `Pending`   | —                                                                                                                                              |
+| 7 — App Next.js e áreas por persona                                           | `Pending`   | —                                                                                                                                              |
+| 8 — Adapters Stripe e Mapbox em sandbox                                       | `Pending`   | —                                                                                                                                              |
+| 9 — Validação integrada do skeleton                                           | `Pending`   | —                                                                                                                                              |
 
-Cada subtarefa da Fase 5 ainda `Pending` exige autorização explícita e
-individual; nenhuma subtarefa autoriza, por si só, commit, branch ou
-push.
+Nenhuma fase futura pode ser iniciada sem autorização explícita: a Fase 6
+e as seguintes permanecem `Pending`. Nenhuma subtarefa autoriza, por si
+só, commit, branch ou push.
 
 ## Riscos residuais e gatilhos
 
@@ -1065,21 +1067,12 @@ dist/apps/worker/src/main.js`, 902 módulos carregados e nenhum de
 
 ## Fase 5 — OpenAPI e api-client
 
-**Status**: In Progress. As subtarefas 5.0 (abertura documental), 5.1
-(spike), 5.2 (scaffold de `libs/api-client` e dependências) e 5.3
-(Dockerfiles e o quinto workspace) e 5.4 (extração do setup HTTP e do
-documento Swagger) e 5.5 (documentação de Problem Details, headers e
-`operationId`s) e 5.6 (gerador determinístico e
-`api:contract:generate`) e 5.7 (`api:contract:check`, somente leitura)
-e 5.8 (tipos gerados e checks do `api-client`) e 5.9 (cliente
-`openapi-fetch`), 5.10 (`contract:check` em `yarn validate`) e 5.10-B
-(guarda dos Dockerfiles contra workspace novo) e 5.11 (validação
-integrada) e 5.12 (limpeza documental) estão `Completed`; a subtarefa
-5.13 está `Pending`. Cada subtarefa exige autorização explícita e
-individual, e nenhuma delas autoriza commit, branch ou push. O registro
-das decisões está na
-[ADR 009](adr/009-openapi-contract-and-api-client.md) (`Proposed`,
-complementa a [ADR 001](adr/001-rest-openapi.md) sem alterá-la).
+**Status**: Completed. As subtarefas 5.0 a 5.13 (incluindo a 5.10-B)
+estão `Completed`. Cada subtarefa exigiu autorização explícita e
+individual. O registro das decisões está na
+[ADR 009](adr/009-openapi-contract-and-api-client.md) (`Accepted`
+na 5.13; complementa a [ADR 001](adr/001-rest-openapi.md) sem
+alterá-la).
 
 **Objetivo**: fechar o ciclo de contrato determinístico entre backend e
 frontend.
@@ -1089,7 +1082,7 @@ frontend.
 - **5.0 — Abertura documental**: `Completed`. Somente documentação:
   Fase 5 passa a `In Progress` no roadmap, README e AGENTS §6 na mesma
   alteração; subtarefas e decisões registradas aqui; ADR 009 criada
-  (`Proposed`); nota curta na seção 6 de
+  (`Proposed` na abertura); nota curta na seção 6 de
   `docs/TARGET_ARCHITECTURE.md`, sem alterar nenhuma decisão. Nenhum
   código, configuração, dependência ou Dockerfile; ADRs 001–008
   inalteradas.
@@ -1720,9 +1713,24 @@ db:validate db:generate lint typecheck test build contract:check`, e
   da fase correspondente deste roadmap (análise por frases e por
   termos; nenhum fato precisou ser movido para fora do que as seções
   de fase já registram).
-- **5.13 — Fechamento documental**: `Pending`. Roadmap, README, AGENTS,
-  `TARGET_ARCHITECTURE.md` (§6 e §13) e ADR 009 (`Accepted`) na mesma
-  alteração.
+- **5.13 — Fechamento documental**: `Completed` — aprovada. Somente
+  documentação, na mesma alteração: Fase 5 `Completed` (nenhuma fase
+  `In Progress`; Fase 6 `Pending`) neste roadmap, no README e no
+  AGENTS §6 (as regras do contrato OpenAPI passaram a permanentes);
+  seções 6 e 13 do `TARGET_ARCHITECTURE.md` com o estado implementado
+  (nenhuma decisão alterada); ADR 009 `Accepted`. **O que a fase
+  entregou**: o `openapi.json` determinístico e versionado em
+  `libs/api-client/openapi/openapi.json`; os tipos gerados em
+  `libs/api-client/src/generated/schema.d.ts`; o cliente
+  `createApiClient` (`openapi-fetch`) em `libs/api-client`; Problem
+  Details, `X-Request-Id` e `operationId`s documentados; a guarda dos
+  Dockerfiles contra workspace novo; e o quinto workspace nos
+  Dockerfiles. **Comandos**: `yarn contract:generate` (execução manual
+  explícita; escreve os dois artefatos; fora de `yarn validate`, do
+  hook e de pipeline) e `yarn contract:check` (somente leitura,
+  `cache: false`; faz parte do `validate:nx`, logo do `yarn validate`
+  e do hook). **Validação ao longo da fase**: ver 5.10 e 5.11
+  (evidência integrada e prova de drift).
 
 **Decisões** (numeração do plano técnico aprovado; não existe D6):
 
@@ -1740,7 +1748,7 @@ db:validate db:generate lint typecheck test build contract:check`, e
 | D11 | `X-Request-Id` em todas as respostas e opcional no request (confirmado no Swagger 11.4.7)                                                                                                        | Aprovada                                                                        |
 | D12 | `operationId` explícitos (`health_live`/`health_ready`, substituem `HealthController_live_v1`) e descrição atualizada                                                                            | Aprovada                                                                        |
 | D13 | `createApiClient({ baseUrl, fetch? })` + re-exports de tipos; `ProblemDetails` derivado do schema                                                                                                | Aprovada; implementada na 5.9                                                   |
-| D14 | Decisões registradas na ADR 009 (`Proposed`; `Accepted` no fechamento)                                                                                                                           | Aprovada                                                                        |
+| D14 | Decisões registradas na ADR 009 (`Accepted` na 5.13)                                                                                                                                             | Aprovada                                                                        |
 | D15 | Dockerfiles ajustados na 5.3, imediata e no mesmo commit da 5.2                                                                                                                                  | Aprovada                                                                        |
 | D16 | `contract:check` em `validate:nx`; `contract:generate` fora de validate/hook/CI                                                                                                                  | Aprovada; implementada na 5.10                                                  |
 | D17 | Provas permanentes (puras, fs observado, módulo descartável) + prova pontual na 5.11                                                                                                             | Aprovada                                                                        |
