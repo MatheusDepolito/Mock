@@ -387,7 +387,8 @@ apply` / `Seed complete: 2 role(s) in the catalog`); índice GiST em
   Prisma" lista só `libs/config`) foi apenas reportada — a ADR não foi
   alterada. Riscos residuais: `host.docker.internal` só no Docker
   Desktop; isolamento por banco lógico segue convencional; grafo de
-  workspaces duplicado nos dois Dockerfiles; imagem grande.
+  workspaces duplicado nos dois Dockerfiles (agora com guarda
+  automática, 5.10-B); imagem grande.
   **A subtarefa 4.7 (validação integrada e fechamento documental) está
   `Completed` e aprovada tecnicamente.** Evidências **novas** da
   rodada: `yarn validate` com cache do Nx desligado (`api` 192,
@@ -411,7 +412,8 @@ apply` / `Seed complete: 2 role(s) in the catalog`); índice GiST em
   a propagação de `X-Request-Id` HTTP até um job (nenhum endpoint HTTP
   enfileira jobs). Riscos residuais: isolamento por banco lógico
   convencional; `host.docker.internal` só no Docker Desktop; grafo de
-  workspaces duplicado nos Dockerfiles; imagens grandes com pacotes
+  workspaces duplicado nos Dockerfiles (com guarda automática desde a
+  5.10-B); imagens grandes com pacotes
   Prisma inertes no worker; Dockerfile do worker não exercitado no
   Compose `full` (Fase 9); divergência factual da ADR 006 apenas
   reportada, ADR inalterada. **A Fase 4 está `Completed`** (ao fechá-la
@@ -432,8 +434,10 @@ apply` / `Seed complete: 2 role(s) in the catalog`); índice GiST em
   leitura) e **5.8** (tipos gerados
   do `api-client`, `schema.d.ts` versionado) e **5.9** (cliente
   `openapi-fetch`, `createApiClient`, sem hooks nem singleton)
-  e **5.10** (`contract:check` dentro de `yarn validate` e do hook)
-  `Completed`. As subtarefas 5.11 e 5.12 estão `Pending` e **cada uma exige autorização
+  e **5.10** (`contract:check` dentro de `yarn validate` e do hook) e
+  **5.10-B** (teste que falha o `yarn validate` se um Dockerfile não
+  copiar o `package.json` de algum workspace) `Completed`. As
+  subtarefas 5.11 a 5.13 estão `Pending` e **cada uma exige autorização
   explícita e individual**. As imagens Docker da API e do worker estiveram
   conscientemente quebradas entre a 5.2 e a 5.3 (o `yarn.lock` ganhou o
   quinto workspace) e foram consertadas na 5.3 (`COPY` de

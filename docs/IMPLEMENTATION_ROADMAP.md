@@ -46,8 +46,8 @@ Details, headers e `operationId`s) e 5.6 (gerador determinístico e
 `api:contract:generate`) e 5.7 (`api:contract:check`, somente leitura)
 e 5.8 (tipos gerados e checks do `api-client`) e 5.9 (cliente
 `openapi-fetch`) e 5.10 (`contract:check` em `yarn validate`)
-`Completed`; 5.11 e 5.12 `Pending`. Ver seção própria da Fase 5
-abaixo.
+e 5.10-B (guarda dos Dockerfiles contra workspace novo) `Completed`;
+5.11 a 5.13 `Pending`. Ver seção própria da Fase 5 abaixo.
 
 **Fase 4 — Worker e BullMQ**: `Completed` — última fase concluída antes
 da corrente (4.1 a 4.7 `Completed` e aprovadas; ver seção própria da
@@ -1018,7 +1018,8 @@ validate:infra` (55 testes/13 arquivos na API, 2 testes/2 arquivos
     isolamento por banco lógico `1` segue sendo convenção, não garantia
     técnica (risco da 4.5, mitigado pelo preflight, não eliminado); (3)
     o grafo completo de workspaces agora está duplicado nos Dockerfiles
-    da API e do worker — um novo workspace exigirá ajustar os dois; (4)
+    da API e do worker — um novo workspace exigirá ajustar os dois
+    (desde a 5.10-B há guarda automática que falha o `yarn validate`); (4)
     imagem grande por causa do `node_modules` completo; (5)
     **divergência factual da ADR 006 apenas reportada, não
     corrigida**: a seção "Dockerfile da API e Prisma" lista só
@@ -1115,7 +1116,8 @@ dist/apps/worker/src/main.js`, 902 módulos carregados e nenhum de
     `1` é convencional, não uma garantia técnica — o preflight mitiga,
     não elimina uma execução concorrente; (2) `host.docker.internal`
     só existe no Docker Desktop; (3) o grafo de workspaces está
-    duplicado nos Dockerfiles da API e do worker; (4) imagens grandes
+    duplicado nos Dockerfiles da API e do worker (desde a 5.10-B há
+    guarda automática); (4) imagens grandes
     por causa do `node_modules` completo (pacotes Prisma/`pg` inertes
     no worker); (5) o Dockerfile do worker não foi exercitado via
     Compose `full` (Fase 9); (6) a ADR 006 segue com a divergência
@@ -1176,8 +1178,9 @@ documento Swagger) e 5.5 (documentação de Problem Details, headers e
 `operationId`s) e 5.6 (gerador determinístico e
 `api:contract:generate`) e 5.7 (`api:contract:check`, somente leitura)
 e 5.8 (tipos gerados e checks do `api-client`) e 5.9 (cliente
-`openapi-fetch`) e 5.10 (`contract:check` em `yarn validate`) estão
-`Completed`; as subtarefas 5.11 e 5.12 estão `Pending`. Cada subtarefa exige autorização explícita e
+`openapi-fetch`), 5.10 (`contract:check` em `yarn validate`) e 5.10-B
+(guarda dos Dockerfiles contra workspace novo) estão `Completed`; as
+subtarefas 5.11 a 5.13 estão `Pending`. Cada subtarefa exige autorização explícita e
 individual, e nenhuma delas autoriza commit, branch ou push. O registro
 das decisões está na
 [ADR 009](adr/009-openapi-contract-and-api-client.md) (`Proposed`,
@@ -1683,12 +1686,57 @@ worker:test:integration`; **nenhuma outra mudança** no arquivo. O
   no `dist` (e o `exports` aponta `types` para a fonte `src/`); decidir
   na **Fase 7, ao configurar o consumo pelo `apps/web`** — D2 e o build
   não foram alterados.
+- **5.10-B — Guarda dos Dockerfiles contra workspace novo**: `Completed`
+  — aprovada; dívida técnica da revisão do processo, **sem alterar
+  nenhuma decisão arquitetural**. Um teste automático falha o `yarn
+validate` se um workspace (`apps/*`, `libs/*`) não tiver o `COPY` do
+  seu `package.json` nos stages `build` **e** `runtime` de **cada**
+  Dockerfile — o que evita repetir o problema da 4.6-A e da 5.2/5.3
+  (imagens quebradas por um workspace novo no `yarn.lock`). **Código**:
+  `apps/api/test/support/dockerfile-workspaces.ts`, funções puras e sem
+  I/O — `parseDockerfileStages` (separa por `FROM … AS <nome>`) e
+  `findMissingWorkspaceCopies` (devolve, por stage, os workspaces sem o
+  `COPY` esperado: `COPY <ws>/package.json ./<ws>/package.json` no
+  `build` e `COPY --from=build --chown=node:node /app/<ws>/package.json
+./<ws>/package.json` no `runtime`; só o espaço em branco pode variar,
+  o padrão não é afrouxado; falha explicitamente se faltar o stage
+  `build` ou `runtime`). **Teste**
+  `apps/api/test/dockerfile-workspaces.spec.ts` (integração offline,
+  sem Docker, rede ou banco; 14 testes): descobre os workspaces pelos
+  globs `workspaces` do `package.json` raiz (apenas diretórios com
+  `package.json`; hoje `apps/api`, `apps/worker`, `libs/api-client`,
+  `libs/config`, `libs/queue`) usando só `readFileSync`, `readdirSync` e
+  `statSync`; verifica os **Dockerfiles reais** da API e do worker (nada
+  faltando em nenhum stage); casos sintéticos (completo; `COPY` removido
+  no `build`; removido no `runtime`; workspace novo fictício nos dois
+  stages; um `COPY` do stage errado não satisfaz o outro; só variações
+  de espaço toleradas; prefixo `libs/api` não confundido com
+  `libs/api-client`; stage ausente ⇒ erro explícito); e teste estático
+  de que o módulo de apoio e o spec não contêm identificadores de
+  escrita nem importam além das funções de leitura. **Prova
+  histórica**, fora do repositório (Dockerfiles extraídos de
+  `git show f7b98d4:…` para o scratchpad, script descartável com
+  `tsx`, removido ao final): com a lista **atual** de workspaces, a
+  guarda acusa `libs/api-client` nos stages `build` **e** `runtime` do
+  Dockerfile da API **e** do worker daquele commit
+  (`{"build":["libs/api-client"],"runtime":["libs/api-client"]}` nos
+  dois), e os Dockerfiles atuais passam no mesmo script. Resultados:
+  `api:test:integration` **84** testes/17 arquivos (70 + 14),
+  `api:typecheck`, `api:lint`, `yarn format:check`, `git diff --check`
+  e `yarn validate` aprovados. Dockerfiles, `.dockerignore`,
+  `docker-compose.yml`, `nx.json`, código de produção, scripts de
+  contrato, artefatos, dependências e `yarn.lock` não foram alterados.
+  O risco residual "grafo de workspaces duplicado nos Dockerfiles"
+  permanece (a duplicação existe), mas agora há **guarda automática**.
 - **5.11 — Validação integrada**: `Pending`. `yarn validate` sem cache,
   `yarn validate:infra`, `contract:generate` duas vezes sem diff,
   rebuild das imagens, `/docs-json` do container igual ao
   `openapi.json`, e a prova pontual de drift em cópia descartável fora
   do repositório (autorização própria).
-- **5.12 — Fechamento documental**: `Pending`. Roadmap, README, AGENTS,
+- **5.12 — Limpeza documental**: `Pending`. Enxugar o `AGENTS.md`,
+  fazer do roadmap a fonte única de status das fases e subtarefas e
+  reunir os riscos residuais numa seção única, cada um com seu gatilho.
+- **5.13 — Fechamento documental**: `Pending`. Roadmap, README, AGENTS,
   `TARGET_ARCHITECTURE.md` (§6 e §13) e ADR 009 (`Accepted`) na mesma
   alteração.
 
