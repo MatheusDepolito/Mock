@@ -44,8 +44,9 @@ e dependências), 5.3 (Dockerfiles e o quinto workspace) e 5.4 (extração
 do setup HTTP e do documento Swagger) e 5.5 (documentação de Problem
 Details, headers e `operationId`s) e 5.6 (gerador determinístico e
 `api:contract:generate`) e 5.7 (`api:contract:check`, somente leitura)
-e 5.8 (tipos gerados e checks do `api-client`) `Completed`; 5.9 a 5.12
-`Pending`. Ver seção própria da Fase 5 abaixo.
+e 5.8 (tipos gerados e checks do `api-client`) e 5.9 (cliente
+`openapi-fetch`) `Completed`; 5.10 a 5.12 `Pending`. Ver seção própria
+da Fase 5 abaixo.
 
 **Fase 4 — Worker e BullMQ**: `Completed` — última fase concluída antes
 da corrente (4.1 a 4.7 `Completed` e aprovadas; ver seção própria da
@@ -1173,8 +1174,9 @@ dist/apps/worker/src/main.js`, 902 módulos carregados e nenhum de
 documento Swagger) e 5.5 (documentação de Problem Details, headers e
 `operationId`s) e 5.6 (gerador determinístico e
 `api:contract:generate`) e 5.7 (`api:contract:check`, somente leitura)
-e 5.8 (tipos gerados e checks do `api-client`) estão `Completed`; as
-subtarefas 5.9 a 5.12 estão `Pending`. Cada subtarefa exige autorização explícita e
+e 5.8 (tipos gerados e checks do `api-client`) e 5.9 (cliente
+`openapi-fetch`) estão `Completed`; as subtarefas 5.10 a 5.12 estão
+`Pending`. Cada subtarefa exige autorização explícita e
 individual, e nenhuma delas autoriza commit, branch ou push. O registro
 das decisões está na
 [ADR 009](adr/009-openapi-contract-and-api-client.md) (`Proposed`,
@@ -1595,9 +1597,63 @@ false` — a prova virou **teste permanente**
   passou a incluir `scripts/**`. Nenhum arquivo de `apps/api`,
   Dockerfile, `nx.json`, `yarn.lock`, dependência ou o `openapi.json`
   foram alterados; sem `createApiClient` nem export público (5.9).
-- **5.9 — Cliente `openapi-fetch`**: `Pending` (D13).
-  `createApiClient({ baseUrl, fetch? })`, testes com `fetch` injetado e
-  testes de tipo.
+- **5.9 — Cliente `openapi-fetch`**: `Completed` — aprovada (D13, D18).
+  Cliente HTTP tipado e fino em `libs/api-client/src/`: `client.ts`
+  (`createApiClient(options)` = `createClient<paths>` do `openapi-fetch`
+  0.17.0; `ApiClientOptions` com `baseUrl: string` **obrigatório, sem
+  valor padrão**, e `fetch?` com o mesmo tipo da opção do `openapi-fetch`;
+  respeita `exactOptionalPropertyTypes` — nunca repassa `fetch:
+undefined` —; `ApiClient` = retorno), `types.ts` (re-exporta `paths`,
+  `components` e `operations` de `./generated/schema` e define
+  `ProblemDetails = components['schemas']['ProblemDetailsDto']`,
+  derivado e nunca redeclarado) e `index.ts` (exporta **somente**
+  `createApiClient`, `ApiClientOptions`, `ApiClient`, `paths`,
+  `components`, `operations` e `ProblemDetails`). Sem hooks do TanStack
+  Query, sem singleton, sem autenticação, sem DTOs escritos à mão;
+  nenhum import de `apps/*`, `@mockp/config`, `@mockp/queue` nem
+  `@tanstack/*` (`grep` limpo). `libs/api-client/README.md` documenta o
+  uso mínimo, a regra "tipos vêm do contrato gerado" e os comandos
+  `yarn contract:generate`/`yarn contract:check`. **Testes** (vitest,
+  node, sem rede, sempre com `fetch` injetado): `client.spec.ts` (6:
+  `GET /api/v1/health/live` chama `${baseUrl}/api/v1/health/live` com
+  `GET` e tipa `data.status`; `GET /api/v1/health/ready` com `503`
+  `application/problem+json` tipa `error` como `ProblemDetails` com
+  `code`, `requestId` e `detail`; `X-Request-Id` enviado e não enviado;
+  `globalThis.fetch` usado quando nenhum `fetch` é informado; e testes
+  de tipo com `// @ts-expect-error` — path inexistente, método
+  inexistente, header com tipo errado, `baseUrl` ausente, `fetch:
+undefined` —, verificados pelo `api-client:typecheck`),
+  `client-options.spec.ts` (2: com `vi.mock` do `openapi-fetch`, a opção
+  `fetch` **não existe** nas opções repassadas quando omitida, e é
+  repassada intacta quando informada) e `types.spec.ts` (3:
+  `ProblemDetails` igual ao schema de `components`, `keyof paths` e
+  `keyof operations` exatos, e a superfície pública só com
+  `createApiClient` em valor). **Provas**: (1) **D18 no código
+  compilado** — `nx run api-client:build` e `require()` do CommonJS em
+  `dist/src/index.js` (exports: `createApiClient`; `typeof` `function`;
+  chamada `GET /api/v1/health/live` com `fetch` injetado → `GET
+http://api.test/api/v1/health/live`, status `200`, `data`
+  `{"status":"ok"}`, sem rede; também via `require('@mockp/api-client')`,
+  que resolve para o `dist`); (2) a resolução de tipos do `openapi-fetch`
+  sob `module: commonjs`/`moduleResolution: bundler` passa em
+  `api-client:typecheck`; (3) **achado, apenas reportado**: o
+  `dist/src/types.d.ts` referencia `./generated/schema`, que **não
+  existe no `dist`** (o `tsc` não copia o `schema.d.ts`), e o `exports`
+  da lib aponta `types` para `./src/index.ts` (fonte), de modo que a
+  resolução de tipos dos consumidores usa a fonte e não os `.d.ts` do
+  `dist`; D2 e a configuração de build não foram alterados — fica como
+  decisão a tomar antes de qualquer consumo via `dist`; (4) `grep`
+  conferido; (5) `yarn contract:check` com os dois checks em exit 0,
+  SHA-256 do `openapi.json` (`a40f983a…faa2`) e do `schema.d.ts`
+  (`565cf1f0…ccdc`) e mtime inalterados, e `nx graph --print` sem
+  arestas entre `api` e `api-client`. Resultados: `api-client:test`
+  **25** testes/5 arquivos (14 + 11), `api-client:typecheck`, `:build`,
+  `:lint`, `:contract:check`, `api:test:integration` **70** e `api:test`
+  **220** (inalterados), `yarn format:check`, `git diff --check` e `yarn
+validate` aprovados. `schema.d.ts`, `openapi.json`, scripts, `apps/`,
+  Dockerfiles, `nx.json`, `.prettierignore`, tsconfigs, dependências e
+  `yarn.lock` não foram alterados; nada de `contract:*` em `validate`
+  ou no hook (5.10).
 - **5.10 — `contract:check` em `yarn validate`**: `Pending` (D16).
   Acrescentado ao `validate:nx`; hook inalterado; `contract:generate`
   fora do caminho.
@@ -1625,12 +1681,12 @@ false` — a prova virou **teste permanente**
 | D10 | `live`: 200+500; `ready`: 200+503+500                                                                                                                                                            | Aprovada                                                                        |
 | D11 | `X-Request-Id` em todas as respostas e opcional no request (confirmado no Swagger 11.4.7)                                                                                                        | Aprovada                                                                        |
 | D12 | `operationId` explícitos (`health_live`/`health_ready`, substituem `HealthController_live_v1`) e descrição atualizada                                                                            | Aprovada                                                                        |
-| D13 | `createApiClient({ baseUrl, fetch? })` + re-exports de tipos                                                                                                                                     | Aprovada                                                                        |
+| D13 | `createApiClient({ baseUrl, fetch? })` + re-exports de tipos; `ProblemDetails` derivado do schema                                                                                                | Aprovada; implementada na 5.9                                                   |
 | D14 | Decisões registradas na ADR 009 (`Proposed`; `Accepted` no fechamento)                                                                                                                           | Aprovada                                                                        |
 | D15 | Dockerfiles ajustados na 5.3, imediata e no mesmo commit da 5.2                                                                                                                                  | Aprovada                                                                        |
 | D16 | `contract:check` em `validate:nx`; `contract:generate` fora de validate/hook/CI                                                                                                                  | Aprovada                                                                        |
 | D17 | Provas permanentes (puras, fs observado, módulo descartável) + prova pontual na 5.11                                                                                                             | Aprovada                                                                        |
-| D18 | `libs/api-client` em CommonJS como `libs/queue`; script de geração em `.mjs` (`openapi-typescript` só via `require(esm)`)                                                                        | Condição atendida (spike 5.1)                                                   |
+| D18 | `libs/api-client` em CommonJS como `libs/queue`; script de geração em `.mjs` (`openapi-typescript` só via `require(esm)`)                                                                        | Condição atendida (spike 5.1); `require()` do `dist` provado na 5.9             |
 
 `contract:generate` (escreve os artefatos versionados, execução
 explícita) e `contract:check` (somente leitura: compara e falha) são

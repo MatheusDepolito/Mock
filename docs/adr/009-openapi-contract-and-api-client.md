@@ -148,10 +148,13 @@ eol` no `openapi.json` devolve `text: set` e `eol: lf`).
     explícitos (`health_live`/`health_ready`) e `info.description`
     atualizada antes do primeiro spec versionado. O `operationId`
     padrão atual (`HealthController_live_v1`) é substituído por eles.
-12. **D13 — Forma do cliente (aprovada).** Factory
+12. **D13 — Forma do cliente (aprovada; implementada na 5.9).** Factory
     `createApiClient({ baseUrl, fetch? })` sobre `createClient<paths>`
-    e re-exports de tipos; sem hooks do TanStack Query, sem singleton,
-    sem autenticação, sem DTOs manuais.
+    e re-exports de tipos (`paths`, `components`, `operations` e
+    `ProblemDetails`, este derivado de
+    `components['schemas']['ProblemDetailsDto']`); `baseUrl` sem valor
+    padrão e `fetch` nunca repassado como `undefined`; sem hooks do
+    TanStack Query, sem singleton, sem autenticação, sem DTOs manuais.
 13. **D14 — Registro (aprovada).** Esta ADR, `Proposed` na abertura,
     `Accepted` no fechamento da fase.
 14. **D15 — Dockerfiles (aprovada).** Ajuste na subtarefa 5.3,
@@ -184,7 +187,13 @@ validate`, no hook ou em pipeline: é execução explícita que escreve
     `openapi-fetch` tem build CJS verdadeiro. Como o `openapi-typescript`
     só roda em script de geração (nunca em runtime), o **script de
     geração dos tipos usa `import` (`.mjs`)**; o repositório já exige
-    Node `>=24.18.0 <25`.
+    Node `>=24.18.0 <25`. Confirmado na 5.9 no código compilado: o
+    `require()` do CommonJS em `dist/src/index.js` expõe
+    `createApiClient` e faz uma chamada com `fetch` injetado, sem
+    rede. Ponto em aberto, só reportado: o `dist/src/types.d.ts`
+    referencia `./generated/schema`, que não existe no `dist`, e o
+    `exports` da lib aponta `types` para `./src/index.ts`; decidir antes
+    de qualquer consumo de tipos via `dist`.
 
 ### Resultado do spike 5.1
 
