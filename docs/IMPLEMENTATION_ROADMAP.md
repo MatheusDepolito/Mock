@@ -42,8 +42,9 @@ Regras de controle:
 (abertura documental), 5.1 (spike), 5.2 (scaffold de `libs/api-client`
 e dependências), 5.3 (Dockerfiles e o quinto workspace) e 5.4 (extração
 do setup HTTP e do documento Swagger) e 5.5 (documentação de Problem
-Details, headers e `operationId`s) `Completed`; 5.6 a 5.12 `Pending`.
-Ver seção própria da Fase 5 abaixo.
+Details, headers e `operationId`s) e 5.6 (gerador determinístico e
+`api:contract:generate`) `Completed`; 5.7 a 5.12 `Pending`. Ver seção
+própria da Fase 5 abaixo.
 
 **Fase 4 — Worker e BullMQ**: `Completed` — última fase concluída antes
 da corrente (4.1 a 4.7 `Completed` e aprovadas; ver seção própria da
@@ -1169,8 +1170,9 @@ dist/apps/worker/src/main.js`, 902 módulos carregados e nenhum de
 (spike), 5.2 (scaffold de `libs/api-client` e dependências) e 5.3
 (Dockerfiles e o quinto workspace) e 5.4 (extração do setup HTTP e do
 documento Swagger) e 5.5 (documentação de Problem Details, headers e
-`operationId`s) estão `Completed`; as subtarefas 5.6 a 5.12 estão
-`Pending`. Cada subtarefa exige autorização explícita e
+`operationId`s) e 5.6 (gerador determinístico e
+`api:contract:generate`) estão `Completed`; as subtarefas 5.7 a 5.12
+estão `Pending`. Cada subtarefa exige autorização explícita e
 individual, e nenhuma delas autoriza commit, branch ou push. O registro
 das decisões está na
 [ADR 009](adr/009-openapi-contract-and-api-client.md) (`Proposed`,
@@ -1409,17 +1411,63 @@ dist/apps/api/src/main.js`. (4) Worker: preflight fail-closed
   `yarn format:check`, `git diff --check` e `yarn validate` aprovados.
   Nenhuma dependência, `yarn.lock`, Dockerfile, gerador, `openapi.json`
   ou alvo `contract:*` tocados.
-- **5.6 — Gerador determinístico e `api:contract:generate`**: `Pending`
-  (D3–D5). Gerador em `apps/api/src/contract/`, **compilado pelo
-  `api:build` (tsc, com `emitDecoratorMetadata`) e executado com `node`
-  sobre `dist` — nunca com `tsx`** (D3, opção B); os alvos de contrato
-  da API dependem de `build`. `NestFactory.create(…, { logger: false,
-preview: true })` com config sintética fixa; serialização canônica
-  (D4); primeiro `openapi.json` versionado; `.prettierignore` e
-  `.gitattributes`. Testes: zero sockets; determinismo byte a byte;
-  equivalência com o `/docs-json`, **verificando explicitamente que o
-  transformador do Vitest também injeta as dependências** nesse teste
-  (o spike mediu só o `tsx`/esbuild).
+- **5.6 — Gerador determinístico e `api:contract:generate`**: `Completed`
+  — aprovada (D3–D5). **Código** (`apps/api/src/contract/`):
+  `contract-server-config.ts` (`CONTRACT_SERVER_CONFIG`, constante
+  sintética e fixa — nunca lê `process.env` nem `.env`, sem segredos,
+  URLs de banco e Redis para a porta inalcançável `1`);
+  `build-openapi-document.ts` (`buildOpenApiDocument()` =
+  `NestFactory.create(AppModule.forRoot(CONTRACT_SERVER_CONFIG), {
+logger: false, preview: true })` + `applyHttpSetup` +
+  `createSwaggerDocument`, sem `listen()`/`init()`, com `app.close()` em
+  `finally`); `serialize-openapi.ts` (`serializeOpenApi(doc)`: chaves de
+  todos os objetos ordenadas por code point, arrays preservados, 2
+  espaços, um único `\n` final, sem `\r`, sem BOM); `generate-openapi.ts`
+  (CLI com o caminho de saída como argumento obrigatório; o **único**
+  módulo que escreve em disco — o de build e o serializador não
+  importam nenhuma API de escrita de `fs`, para a 5.7 reutilizá-los em
+  um check somente leitura). **Alvo** `api:contract:generate`
+  (`nx:run-commands`, `cache: false`, `dependsOn: ["build"]`, `node
+dist/apps/api/src/contract/generate-openapi.js
+libs/api-client/openapi/openapi.json`, **nunca `tsx`**) e script raiz
+  `contract:generate`; **nada** foi acrescentado a `validate`/
+  `validate:nx` nem ao hook Husky. **`.prettierignore`** ganhou
+  `libs/api-client/openapi/openapi.json`; **`.gitattributes` não foi
+  alterado** (já cobre `*.json` e `*.ts` com `eol=lf`) — correção do D5:
+  `git check-attr text eol` no arquivo gerado devolve `text: set` e
+  `eol: lf`. **Primeiro `libs/api-client/openapi/openapi.json`
+  versionado**: 8783 bytes, SHA-256
+  `a40f983a93e65cc22fb101a2e5cecd1f74f8bbf358be578ee97237a89256faa2`;
+  sem BOM, sem `\r`, termina com um único `\n`, 2 espaços. **Provas**:
+  (1) primeira geração via `nx run api:contract:generate`; (2) segunda
+  geração em ambiente diferente (`TZ=Asia/Tokyo`, `LANG=C`,
+  `NODE_ENV=production`, `LOG_LEVEL=trace`, `PORT=9999`, `DATABASE_URL`/
+  `REDIS_URL`/`CORS_ALLOWED_ORIGINS` falsos) — **SHA-256 idêntico**,
+  `cmp` byte a byte idêntico e `git status` só com os arquivos
+  esperados; (3) o `JSON.parse` do arquivo é deep-equal ao corpo de
+  `GET /docs-json` (verificação pontual por spec temporário, removido);
+  (4) `git check-attr` acima. O `dist` compilado resolve
+  `@mockp/config`/`@mockp/queue` (as dependências de build rodaram via
+  `dependsOn`). **Testes** (offline, sem PostgreSQL/Redis):
+  `apps/api/src/contract/serialize-openapi.spec.ts` (7: chaves
+  embaralhadas ⇒ mesmos bytes, ordenação por code point — U+1F600 depois
+  de U+FFFF, arrays preservados, um `\n` final, sem `\r`/BOM, 2
+  espaços, idempotência) e `apps/api/test/contract-generator.spec.ts`
+  (5: **o transformador do Vitest injeta as dependências** —
+  `HealthService` recebe `PrismaService`/`RedisService` idênticos aos
+  resolvidos por token; equivalência byte a byte com o `/docs-json` do
+  `createTestApp()`; zero chamadas a `net.Socket.connect`, `net.connect`
+  e `tls.connect`; duas gerações idênticas no mesmo processo; só os 2
+  paths, sem `servers`, sem campos de data/hora). Achado de teste:
+  `instanceof PrismaService` é falso mesmo para a instância real
+  (`PrismaClient` se envolve em um `Proxy`), então a prova usa
+  identidade com `app.get(PrismaService)`. Resultados:
+  `api:test:integration` **68** testes/15 arquivos (63 + 5), `api:test`
+  **202** (195 + 7), `api:typecheck`, `api:lint`, `yarn format:check`,
+  `git diff --check` e `yarn validate` aprovados. Nenhuma dependência,
+  `yarn.lock`, Dockerfile, `create-test-app.ts`, `AppModule`, `main.ts`,
+  controller, DTO, `configure-app.ts`, `swagger.ts`, `nx.json` ou
+  `libs/api-client/src` tocados; sem `schema.d.ts`, sem `contract:check`.
 - **5.7 — `api:contract:check` (somente leitura)**: `Pending`.
   Comparação de bytes em memória, `cache: false`, testes permanentes de
   drift e de não escrita (D17).
@@ -1445,25 +1493,25 @@ preview: true })` com config sintética fixa; serialização canônica
 
 **Decisões** (numeração do plano técnico aprovado; não existe D6):
 
-| ID  | Decisão                                                                                                                                       | Estado                                                                          |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| D1  | `openapi.json` em `libs/api-client/openapi/openapi.json`                                                                                      | Aprovada                                                                        |
-| D2  | Tipos em `libs/api-client/src/generated/schema.d.ts` + verificação anti-`skipLibCheck` (medida no spike; repetir na 5.8)                      | Aprovada                                                                        |
-| D3  | Gerador em `apps/api/src/contract/`, compilado pelo `api:build` e executado com `node` sobre `dist` (nunca `tsx`); `preview: true` confirmado | Aprovada; alterada pelo spike 5.1 (opção B)                                     |
-| D4  | Chaves ordenadas, arrays preservados, 2 espaços, LF, `\n` final                                                                               | Aprovada                                                                        |
-| D5  | `.prettierignore` + `.gitattributes` (`eol=lf`) para os artefatos                                                                             | Aprovada                                                                        |
-| D7  | Warning de peer (`typescript ^5.x` × 6.0.3) aceito como exceção documentada na ADR 009; gatilho de revisão                                    | Exceção concedida (spike 5.1); na 5.2 o aviso no workspace é `YN0002`           |
-| D8  | Versões exatas; `openapi-typescript` devDependency, `openapi-fetch` dependency de `libs/api-client`                                           | Aprovada e gravada na 5.2 (`openapi-typescript` 7.13.0, `openapi-fetch` 0.17.0) |
-| D9  | `ProblemDetailsDto` único; erros só com `content` (nunca `type` + `content`), sem `@ApiProduces`                                              | Aprovada                                                                        |
-| D10 | `live`: 200+500; `ready`: 200+503+500                                                                                                         | Aprovada                                                                        |
-| D11 | `X-Request-Id` em todas as respostas e opcional no request (confirmado no Swagger 11.4.7)                                                     | Aprovada                                                                        |
-| D12 | `operationId` explícitos (`health_live`/`health_ready`, substituem `HealthController_live_v1`) e descrição atualizada                         | Aprovada                                                                        |
-| D13 | `createApiClient({ baseUrl, fetch? })` + re-exports de tipos                                                                                  | Aprovada                                                                        |
-| D14 | Decisões registradas na ADR 009 (`Proposed`; `Accepted` no fechamento)                                                                        | Aprovada                                                                        |
-| D15 | Dockerfiles ajustados na 5.3, imediata e no mesmo commit da 5.2                                                                               | Aprovada                                                                        |
-| D16 | `contract:check` em `validate:nx`; `contract:generate` fora de validate/hook/CI                                                               | Aprovada                                                                        |
-| D17 | Provas permanentes (puras, fs observado, módulo descartável) + prova pontual na 5.11                                                          | Aprovada                                                                        |
-| D18 | `libs/api-client` em CommonJS como `libs/queue`; script de geração em `.mjs` (`openapi-typescript` só via `require(esm)`)                     | Condição atendida (spike 5.1)                                                   |
+| ID  | Decisão                                                                                                                                                                                          | Estado                                                                          |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| D1  | `openapi.json` em `libs/api-client/openapi/openapi.json`                                                                                                                                         | Aprovada                                                                        |
+| D2  | Tipos em `libs/api-client/src/generated/schema.d.ts` + verificação anti-`skipLibCheck` (medida no spike; repetir na 5.8)                                                                         | Aprovada                                                                        |
+| D3  | Gerador em `apps/api/src/contract/`, compilado pelo `api:build` e executado com `node` sobre `dist` (nunca `tsx`); `preview: true` confirmado                                                    | Aprovada; alterada pelo spike 5.1 (opção B)                                     |
+| D4  | Chaves ordenadas, arrays preservados, 2 espaços, LF, `\n` final                                                                                                                                  | Aprovada                                                                        |
+| D5  | `.prettierignore` para os artefatos gerados (`openapi.json` na 5.6, `schema.d.ts` na 5.8); `.gitattributes` não precisa de alteração (`*.json`/`*.ts` já `eol=lf`, provado com `git check-attr`) | Aprovada; corrigida na 5.6                                                      |
+| D7  | Warning de peer (`typescript ^5.x` × 6.0.3) aceito como exceção documentada na ADR 009; gatilho de revisão                                                                                       | Exceção concedida (spike 5.1); na 5.2 o aviso no workspace é `YN0002`           |
+| D8  | Versões exatas; `openapi-typescript` devDependency, `openapi-fetch` dependency de `libs/api-client`                                                                                              | Aprovada e gravada na 5.2 (`openapi-typescript` 7.13.0, `openapi-fetch` 0.17.0) |
+| D9  | `ProblemDetailsDto` único; erros só com `content` (nunca `type` + `content`), sem `@ApiProduces`                                                                                                 | Aprovada                                                                        |
+| D10 | `live`: 200+500; `ready`: 200+503+500                                                                                                                                                            | Aprovada                                                                        |
+| D11 | `X-Request-Id` em todas as respostas e opcional no request (confirmado no Swagger 11.4.7)                                                                                                        | Aprovada                                                                        |
+| D12 | `operationId` explícitos (`health_live`/`health_ready`, substituem `HealthController_live_v1`) e descrição atualizada                                                                            | Aprovada                                                                        |
+| D13 | `createApiClient({ baseUrl, fetch? })` + re-exports de tipos                                                                                                                                     | Aprovada                                                                        |
+| D14 | Decisões registradas na ADR 009 (`Proposed`; `Accepted` no fechamento)                                                                                                                           | Aprovada                                                                        |
+| D15 | Dockerfiles ajustados na 5.3, imediata e no mesmo commit da 5.2                                                                                                                                  | Aprovada                                                                        |
+| D16 | `contract:check` em `validate:nx`; `contract:generate` fora de validate/hook/CI                                                                                                                  | Aprovada                                                                        |
+| D17 | Provas permanentes (puras, fs observado, módulo descartável) + prova pontual na 5.11                                                                                                             | Aprovada                                                                        |
+| D18 | `libs/api-client` em CommonJS como `libs/queue`; script de geração em `.mjs` (`openapi-typescript` só via `require(esm)`)                                                                        | Condição atendida (spike 5.1)                                                   |
 
 `contract:generate` (escreve os artefatos versionados, execução
 explícita) e `contract:check` (somente leitura: compara e falha) são

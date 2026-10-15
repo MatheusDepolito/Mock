@@ -166,6 +166,16 @@
           "command": "tsx --tsconfig tsconfig.app.json src/queue/system-ping.command.ts",
           "cwd": "apps/api"
         }
+      },
+      "contract:generate": {
+        "executor": "nx:run-commands",
+        "cache": false,
+        "dependsOn": [
+          "build"
+        ],
+        "options": {
+          "command": "node dist/apps/api/src/contract/generate-openapi.js libs/api-client/openapi/openapi.json"
+        }
       }
     }
   },

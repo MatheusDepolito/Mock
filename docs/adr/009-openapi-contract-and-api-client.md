@@ -91,10 +91,13 @@ fixa>)` com `NestFactory.create(…, { logger: false, preview: true })`
    **preservada** (tem semântica: `required`, `enum`, `tags`,
    `parameters`), `JSON.stringify(x, null, 2)` mais um único `\n`
    final, UTF-8 sem BOM, sem `\r`.
-5. **D5 — Artefatos gerados no Prettier e no Git (aprovada).**
-   `.prettierignore` e `.gitattributes` (`eol=lf`) para o
-   `openapi.json` e o `schema.d.ts`; o determinismo é provado por
-   testes de bytes, não por formatter. Aplicado na 5.6.
+5. **D5 — Artefatos gerados no Prettier e no Git (aprovada; corrigida na
+   5.6).** `.prettierignore` para o `openapi.json` (aplicado na 5.6) e
+   para o `schema.d.ts` (a aplicar na 5.8); o determinismo é provado
+   por testes de bytes, não por formatter. **`.gitattributes` não
+   precisa de alteração**: já normaliza `*.json` e `*.ts` com
+   `eol=lf` (a redação original previa alterá-lo; `git check-attr text
+eol` no `openapi.json` devolve `text: set` e `eol: lf`).
 6. **D7 — Peer `typescript ^5.x` × TypeScript `6.0.3` (exceção
    concedida; condição provada no spike 5.1).**
    O warning de peer do `openapi-typescript` (`YN0060`) é aceito como
