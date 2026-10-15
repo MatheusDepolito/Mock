@@ -46,8 +46,9 @@ Details, headers e `operationId`s) e 5.6 (gerador determinístico e
 `api:contract:generate`) e 5.7 (`api:contract:check`, somente leitura)
 e 5.8 (tipos gerados e checks do `api-client`) e 5.9 (cliente
 `openapi-fetch`) e 5.10 (`contract:check` em `yarn validate`)
-e 5.10-B (guarda dos Dockerfiles contra workspace novo) `Completed`;
-5.11 a 5.13 `Pending`. Ver seção própria da Fase 5 abaixo.
+e 5.10-B (guarda dos Dockerfiles contra workspace novo) e 5.11 (validação
+integrada) `Completed`; 5.12 e 5.13 `Pending`. Ver seção própria da Fase
+5 abaixo.
 
 **Fase 4 — Worker e BullMQ**: `Completed` — última fase concluída antes
 da corrente (4.1 a 4.7 `Completed` e aprovadas; ver seção própria da
@@ -1179,8 +1180,9 @@ documento Swagger) e 5.5 (documentação de Problem Details, headers e
 `api:contract:generate`) e 5.7 (`api:contract:check`, somente leitura)
 e 5.8 (tipos gerados e checks do `api-client`) e 5.9 (cliente
 `openapi-fetch`), 5.10 (`contract:check` em `yarn validate`) e 5.10-B
-(guarda dos Dockerfiles contra workspace novo) estão `Completed`; as
-subtarefas 5.11 a 5.13 estão `Pending`. Cada subtarefa exige autorização explícita e
+(guarda dos Dockerfiles contra workspace novo) e 5.11 (validação
+integrada) estão `Completed`; as subtarefas 5.12 e 5.13 estão
+`Pending`. Cada subtarefa exige autorização explícita e
 individual, e nenhuma delas autoriza commit, branch ou push. O registro
 das decisões está na
 [ADR 009](adr/009-openapi-contract-and-api-client.md) (`Proposed`,
@@ -1728,11 +1730,89 @@ validate` se um workspace (`apps/*`, `libs/*`) não tiver o `COPY` do
   contrato, artefatos, dependências e `yarn.lock` não foram alterados.
   O risco residual "grafo de workspaces duplicado nos Dockerfiles"
   permanece (a duplicação existe), mas agora há **guarda automática**.
-- **5.11 — Validação integrada**: `Pending`. `yarn validate` sem cache,
-  `yarn validate:infra`, `contract:generate` duas vezes sem diff,
-  rebuild das imagens, `/docs-json` do container igual ao
-  `openapi.json`, e a prova pontual de drift em cópia descartável fora
-  do repositório (autorização própria).
+- **5.11 — Validação integrada**: `Completed` — aprovada. Validação da
+  Fase 5 de ponta a ponta com **evidência nova**; nenhum código, script,
+  teste, configuração, Dockerfile, artefato, dependência ou `yarn.lock`
+  mudou. **Estado**: HEAD `74b6bb2`, branch
+  `feat/phase-5-openapi-api-client`, árvore limpa antes e depois.
+  **`yarn validate` sem cache**: exit 0 em 32 s, com as duas tarefas
+  `api:contract:check` e `api-client:contract:check` executadas;
+  contagens — `queue` 2, `config` 41, `worker` 15, `api-client` 25 e
+  `api` 220 testes unitários; integração da API **84** testes/17
+  arquivos; `worker:test:integration` sem arquivos (esperado).
+  **`yarn validate:infra`**: exit 0 em 42 s — `migrate deploy` sem
+  pendências, seed idempotente (2 papéis), API **55** testes/13
+  arquivos e worker **2** testes/2 arquivos, **idênticos ao baseline da
+  4.7** (nenhuma diferença a explicar). Antes de rodar, confirmado sem
+  expor credenciais que o `TEST_DATABASE_URL` é `localhost:5432`, banco
+  `mockp_test`, e que `current_database()` e `system_identifier` pela
+  URL batem com os do `postgres` do Compose. **`yarn contract:generate`
+  duas vezes**: depois de cada uma `git status` limpo e SHA-256 do
+  `openapi.json` (`a40f983a…faa2`) e do `schema.d.ts` (`565cf1f0…ccdc`)
+  inalterados. **API em container** (`mockp-api:5.11-test`, id
+  `07a4a9b27806`, contra `postgres`/`redis` locais via
+  `host.docker.internal`, banco `mockp_test`): `live` e `ready` `200`;
+  `whoami` = `node`; `/proc/1/cmdline` = `node
+dist/apps/api/src/main.js`; nenhuma menção a migration nos logs de
+  boot; `yarn workspaces list` no runtime lista os 5 workspaces; e o
+  **`GET /docs-json` do container, canonicalizado com o
+  `serializeOpenApi` compilado, é byte a byte igual ao
+  `libs/api-client/openapi/openapi.json` versionado** (8783 bytes,
+  SHA-256 `a40f983a…faa2`). **Worker** (`mockp-worker:5.11-test`, id
+  `857a357b1567`): as camadas **divergem** do `5.3-test` (o
+  `package.json` da raiz, o de `apps/api` e o de `libs/api-client`
+  mudaram desde a 5.3, só em scripts/alvos; `libs/config`,
+  `libs/queue`, `apps/worker` e `yarn.lock` não mudaram), então o ciclo
+  completo da 5.3 foi **repetido**, sem reaproveitar prova histórica:
+  preflight fail-closed somente leitura (mesmo `run_id` do Redis pelo
+  host e pelo container, banco lógico `1`, fila `system` sem job e sem
+  chave além das de infraestrutura); `Worker started`, `whoami` =
+  `node`, `/proc/1/cmdline` = `node dist/apps/worker/src/main.js`;
+  consumo real do job `17` publicado do host com o mesmo `requestId`
+  nos logs e job `completed`; `SIGTERM` real com `docker stop --time
+10` em 569 ms, `ExitCode=0`, `OOMKilled=false`, sem `--init`, sem
+  `SIGKILL` (`CLIENT LIST` 3 → 1, apenas complementar); job removido só
+  após conferir o `requestId` e container removido. **Prova pontual de
+  drift (D17)**, fora do repositório: `git archive HEAD` num diretório
+  novo do scratchpad, junction de `node_modules` para o do repositório,
+  `NX_DAEMON=false`, `NX_SKIP_NX_CACHE=true`, `api:db:generate` na
+  cópia e o `nx` chamado direto (`node node_modules/nx/dist/bin/nx.js`,
+  pois o Yarn não tem estado de instalação na cópia; por isso o
+  primeiro comando do `validate:nx` foi rodado como `nx run-many -t
+db:validate db:generate lint typecheck test build contract:check`, e
+  não via `yarn validate:nx`). **Controle**: cópia limpa →
+  `contract:check` passa. **Mutação 1** (só o texto de uma
+  `description` do `ProblemDetailsDto`, `type` → `TYPE`):
+  `api:contract:check` falhou com exit 1 e a mensagem de drift (linha
+  119, coluna 74); `nx run-many -t contract:check` falhou com exit 1
+  (`Failed tasks: api:contract:check`); o `run-many` do `validate:nx`
+  falhou com exit 1 e `api:contract:check` entre as tarefas que
+  falharam. **Mutação 2** (cópia restaurada, um byte do `schema.d.ts`:
+  `status` → `Status`): `api-client:contract:check` falhou com exit 1
+  (linha 45, coluna 13) e o `run-many` listou `api-client:contract:check`
+  como falha. Os dois checks detectaram as duas mutações. **Segurança
+  do junction**: removido primeiro o próprio junction, sem recursão
+  (`[Directory]::Delete(…, false)`); o `node_modules` real ficou
+  intacto (existe, 609 entradas com ocultos / 604 sem, igual a antes, com
+  `nx` e `typescript` presentes); sem nenhum ponto de reparse restante,
+  a cópia foi apagada. Caches ignorados podem ter sido escritos em
+  `node_modules/.vite` pelo junction (ignorado pelo Git); `git status`
+  limpo e hashes dos artefatos inalterados. **Greps**: nenhum
+  `system.ping`/`queue`/rota de teste no `openapi.json` nem no
+  `schema.d.ts` (só os dois paths de health); `libs/api-client` não
+  importa de `apps/*`, `@mockp/config`, `@mockp/queue` nem `@tanstack/*`,
+  e `apps/api` não importa de `libs/api-client` (as 5 menções são só
+  caminhos de dados); em `libs/api-client/src` fora de `generated/` só
+  existem os tipos derivados conhecidos (`ApiClientOptions`, `ApiClient`,
+  `ProblemDetails`); nenhum segredo/credencial nos arquivos novos da
+  Fase 5 (o `CONTRACT_SERVER_CONFIG` usa URLs sem usuário/senha);
+  nenhuma ocorrência de `contract:generate` em `validate`,
+  `validate:nx`, `validate:infra` nem no hook; nenhum Controller importa
+  Repository ou Prisma (ADR 002; único controller: `health`).
+  **Limpeza**: containers temporários removidos; `postgres`/`redis`
+  saudáveis, nunca parados/reiniciados/recriados; imagens anteriores
+  preservadas (as `5.11-test` são novas); cópia e arquivos do
+  scratchpad removidos; `git status` limpo.
 - **5.12 — Limpeza documental**: `Pending`. Enxugar o `AGENTS.md`,
   fazer do roadmap a fonte única de status das fases e subtarefas e
   reunir os riscos residuais numa seção única, cada um com seu gatilho.

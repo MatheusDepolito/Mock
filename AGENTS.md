@@ -436,8 +436,9 @@ apply` / `Seed complete: 2 role(s) in the catalog`); índice GiST em
   `openapi-fetch`, `createApiClient`, sem hooks nem singleton)
   e **5.10** (`contract:check` dentro de `yarn validate` e do hook) e
   **5.10-B** (teste que falha o `yarn validate` se um Dockerfile não
-  copiar o `package.json` de algum workspace) `Completed`. As
-  subtarefas 5.11 a 5.13 estão `Pending` e **cada uma exige autorização
+  copiar o `package.json` de algum workspace) e **5.11** (validação
+  integrada da fase, sem mudança de código) `Completed`. As subtarefas
+  5.12 e 5.13 estão `Pending` e **cada uma exige autorização
   explícita e individual**. As imagens Docker da API e do worker estiveram
   conscientemente quebradas entre a 5.2 e a 5.3 (o `yarn.lock` ganhou o
   quinto workspace) e foram consertadas na 5.3 (`COPY` de

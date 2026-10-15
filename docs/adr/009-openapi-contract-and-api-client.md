@@ -257,7 +257,9 @@ workspace mudar de major de TypeScript), removendo a exceção.
 - Se a exceção de peer de D7 for aceita, um warning permanente de peer
   fica registrado como risco até o gatilho de revisão.
 - O grafo de workspaces copiado pelos Dockerfiles passa a cinco entradas
-  (duplicado nos dois Dockerfiles).
+  (duplicado nos dois Dockerfiles; desde a 5.10-B um teste automático
+  falha o `yarn validate` se um workspace faltar em qualquer
+  Dockerfile).
 - Entre as subtarefas 5.2 e 5.3 as imagens ficaram quebradas (resolvido
   na 5.3); por isso as duas devem ser entregues no mesmo commit.
 
