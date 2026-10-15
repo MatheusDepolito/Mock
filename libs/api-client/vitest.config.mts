@@ -8,10 +8,12 @@ export default defineConfig(() => ({
     watch: false,
     globals: true,
     environment: 'node',
-    include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
-    // No tests yet (Fase 5, subtarefa 5.2 is scaffold-only) — precedent:
-    // apps/api/vitest.config.mts. Real tests arrive with the generated
-    // types and the client (5.8/5.9).
+    include: [
+      'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+      // Specs of the contract tooling (generated types) live next to the
+      // scripts, outside `src/` so they never reach the client bundle.
+      'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+    ],
     passWithNoTests: true,
     reporters: ['default'],
     coverage: {

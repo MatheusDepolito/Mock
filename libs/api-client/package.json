@@ -35,6 +35,28 @@
           "command": "tsc -b tsconfig.json",
           "cwd": "libs/api-client"
         }
+      },
+      "contract:generate": {
+        "executor": "nx:run-commands",
+        "cache": false,
+        "dependsOn": [
+          {
+            "projects": [
+              "api"
+            ],
+            "target": "contract:generate"
+          }
+        ],
+        "options": {
+          "command": "node libs/api-client/scripts/generate-types.mjs"
+        }
+      },
+      "contract:check": {
+        "executor": "nx:run-commands",
+        "cache": false,
+        "options": {
+          "command": "node libs/api-client/scripts/check-types.mjs"
+        }
       }
     }
   },

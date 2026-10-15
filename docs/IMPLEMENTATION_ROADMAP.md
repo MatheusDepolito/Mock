@@ -44,8 +44,8 @@ e dependências), 5.3 (Dockerfiles e o quinto workspace) e 5.4 (extração
 do setup HTTP e do documento Swagger) e 5.5 (documentação de Problem
 Details, headers e `operationId`s) e 5.6 (gerador determinístico e
 `api:contract:generate`) e 5.7 (`api:contract:check`, somente leitura)
-`Completed`; 5.8 a 5.12 `Pending`. Ver seção
-própria da Fase 5 abaixo.
+e 5.8 (tipos gerados e checks do `api-client`) `Completed`; 5.9 a 5.12
+`Pending`. Ver seção própria da Fase 5 abaixo.
 
 **Fase 4 — Worker e BullMQ**: `Completed` — última fase concluída antes
 da corrente (4.1 a 4.7 `Completed` e aprovadas; ver seção própria da
@@ -1173,7 +1173,8 @@ dist/apps/worker/src/main.js`, 902 módulos carregados e nenhum de
 documento Swagger) e 5.5 (documentação de Problem Details, headers e
 `operationId`s) e 5.6 (gerador determinístico e
 `api:contract:generate`) e 5.7 (`api:contract:check`, somente leitura)
-estão `Completed`; as subtarefas 5.8 a 5.12 estão `Pending`. Cada subtarefa exige autorização explícita e
+e 5.8 (tipos gerados e checks do `api-client`) estão `Completed`; as
+subtarefas 5.9 a 5.12 estão `Pending`. Cada subtarefa exige autorização explícita e
 individual, e nenhuma delas autoriza commit, branch ou push. O registro
 das decisões está na
 [ADR 009](adr/009-openapi-contract-and-api-client.md) (`Proposed`,
@@ -1526,10 +1527,74 @@ found`, `Run "yarn contract:generate" to create it.`); (4) argumento
   `yarn.lock`, `libs/api-client` ou o próprio `openapi.json` foram
   alterados.
 - **5.8 — Tipos gerados e `api-client:contract:generate`/`check`**:
-  `Pending` (D2, D7, D18). `schema.d.ts` versionado; o script de
-  geração dos tipos usa `import` (`.mjs`), porque o `openapi-typescript`
-  só carrega via `require(esm)`; `contract:generate` da raiz encadeia a
-  API e depois a lib.
+  `Completed` — aprovada (D2, D7, D18). Gera e versiona os tipos a partir
+  do `openapi.json` versionado, de forma determinística, com um check
+  somente leitura; o `openapi.json` **não mudou** (SHA-256 `a40f983a…faa2`
+  antes e depois de regenerar). **Scripts** (`libs/api-client/scripts/`,
+  fora de `src/`, `.mjs` com `import`): `types-contract.mjs` (núcleo
+  compartilhado e somente leitura — `generateTypesText` com `openapiTS` +
+  `astToString`, normalizado para LF, um `\n` final, sem BOM;
+  `compareTexts`, que reporta só a primeira diferença; `checkTypes`);
+  `generate-types.mjs` (**o único** que escreve em disco, em
+  `src/generated/schema.d.ts`); `check-types.mjs` (CLI somente leitura:
+  gera em memória, lê o `schema.d.ts` e compara **bytes**; caminhos
+  opcionais `spec` e `types`; exit 0 se igual, **1** em drift ou arquivo
+  ausente — mensagens distintas —, **2** em uso inválido ou erro de
+  execução; imports de `node:fs` limitados a `readFileSync`). **Alvos Nx**
+  `api-client:contract:generate` (`cache: false`, `dependsOn:
+[{ projects: ["api"], target: "contract:generate" }]` — o spec é
+  regenerado antes dos tipos) e `api-client:contract:check` (`cache:
+false`, sem `dependsOn` para a API: compara com o spec **versionado**);
+  scripts da raiz `contract:generate` → `nx run
+api-client:contract:generate` e `contract:check` → `nx run-many -t
+contract:check` (API e `api-client`); **nada** em `validate`/
+  `validate:nx` nem no hook (5.10). `nx graph --print`: **sem aresta**
+  entre `api` e `api-client` (o `dependsOn` com `projects` ordena tarefas
+  sem criar dependência de projeto). `.prettierignore` ganhou
+  `libs/api-client/src/generated/schema.d.ts` (o ESLint já ignora
+  `**/generated/**` e o `.gitattributes` já cobre `*.ts` com `eol=lf`);
+  `src/index.ts` segue `export {};`. **Primeiro `schema.d.ts`
+  versionado**: 7096 bytes, 204 linhas, SHA-256
+  `565cf1f0c7e0efce15c17db6148ee29da452c10fc9b62e48ad1eafe765c9ccdc`, só
+  LF, um `\n` final, sem BOM. **Provas**: (1) `nx run
+api-client:contract:generate` (dispara antes o da API) → `schema.d.ts`
+  acima, `openapi.json` inalterado; (2) segunda geração em outro
+  ambiente (`TZ=Asia/Tokyo`, `LANG=C`, `NODE_ENV=production`,
+  `DATABASE_URL`/`REDIS_URL` falsos) → SHA-256 e bytes idênticos; (3)
+  `yarn contract:check` da raiz → os dois checks com exit 0 e SHA, mtime
+  e `git status` dos artefatos idênticos antes e depois; (4) drift pela
+  CLI em cópias fora do repositório: spec alterado → exit 1 (`content`,
+  linha 46, coluna 9); `schema.d.ts` alterado → exit 1 (linha 9, coluna
+  14); CRLF → exit 1 (`line-ending`); sem `\n` final → exit 1
+  (`end-of-file`); arquivo ausente → exit 1 com mensagem distinta; três
+  argumentos, flag e argumento vazio → exit 2 com uso; spec ausente →
+  exit 2 com a mensagem do erro; cópias removidas e repositório intacto;
+  (5) sem arestas entre `api` e `api-client`; (6) `yarn install
+--immutable` (sem alteração do `yarn.lock`): apenas o `YN0002`
+  já registrado para `openapi-typescript` e os de `@nestjs/bullmq`.
+  **D7**: nenhum erro de TypeScript no `schema.d.ts` com `skipLibCheck:
+false` — a prova virou **teste permanente**
+  (`schema-typecheck.spec.mjs`: API do `typescript`, `noEmit`,
+  `skipLibCheck: false`, `types: []`, `lib: ES2022` e as flags estritas
+  do `tsconfig.base.json` — `strict`, `exactOptionalPropertyTypes`,
+  `noUncheckedIndexedAccess` —, **zero diagnósticos**, com controle
+  negativo que prova que uma declaração quebrada é reportada). **Testes**
+  (offline): `types-contract.spec.mjs` (12: determinismo, só LF/`\n`
+  final/sem BOM, conteúdo — `paths` das duas rotas, `ProblemDetailsDto`,
+  `health_live`/`health_ready`, `X-Request-Id`, `application/problem+json`
+  —, drift com spec alterado em memória, `compareTexts`, check que não
+  escreve — spies nas APIs de escrita de `node:fs` e `node:fs/promises`
+  num diretório temporário, hash e mtime intactos —, arquivo ausente,
+  e dois testes estáticos sobre os módulos do check) e
+  `schema-typecheck.spec.mjs` (2); sem teste de frescor do `schema.d.ts`
+  real (o frescor é o alvo `contract:check`, como na 5.7). Resultados:
+  `api-client:test` **14** testes/2 arquivos, `api-client:contract:check`,
+  `:typecheck`, `:build`, `:lint`, `api:test:integration` **70** e
+  `api:test` **220** (inalterados), `yarn format:check`, `git diff
+--check` e `yarn validate` aprovados. O `vitest.config.mts` da lib
+  passou a incluir `scripts/**`. Nenhum arquivo de `apps/api`,
+  Dockerfile, `nx.json`, `yarn.lock`, dependência ou o `openapi.json`
+  foram alterados; sem `createApiClient` nem export público (5.9).
 - **5.9 — Cliente `openapi-fetch`**: `Pending` (D13).
   `createApiClient({ baseUrl, fetch? })`, testes com `fetch` injetado e
   testes de tipo.
@@ -1550,7 +1615,7 @@ found`, `Run "yarn contract:generate" to create it.`); (4) argumento
 | ID  | Decisão                                                                                                                                                                                          | Estado                                                                          |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
 | D1  | `openapi.json` em `libs/api-client/openapi/openapi.json`                                                                                                                                         | Aprovada                                                                        |
-| D2  | Tipos em `libs/api-client/src/generated/schema.d.ts` + verificação anti-`skipLibCheck` (medida no spike; repetir na 5.8)                                                                         | Aprovada                                                                        |
+| D2  | Tipos em `libs/api-client/src/generated/schema.d.ts` + teste permanente anti-`skipLibCheck` (5.8)                                                                                                | Aprovada; provada na 5.8                                                        |
 | D3  | Gerador em `apps/api/src/contract/`, compilado pelo `api:build` e executado com `node` sobre `dist` (nunca `tsx`); `preview: true` confirmado                                                    | Aprovada; alterada pelo spike 5.1 (opção B)                                     |
 | D4  | Chaves ordenadas, arrays preservados, 2 espaços, LF, `\n` final                                                                                                                                  | Aprovada                                                                        |
 | D5  | `.prettierignore` para os artefatos gerados (`openapi.json` na 5.6, `schema.d.ts` na 5.8); `.gitattributes` não precisa de alteração (`*.json`/`*.ts` já `eol=lf`, provado com `git check-attr`) | Aprovada; corrigida na 5.6                                                      |

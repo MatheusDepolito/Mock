@@ -10,3 +10,4 @@ yarn.lock
 # Generated contract artifact (Fase 5): written by `yarn contract:generate`
 # in its own canonical format, never formatted by Prettier.
 libs/api-client/openapi/openapi.json
+libs/api-client/src/generated/schema.d.ts

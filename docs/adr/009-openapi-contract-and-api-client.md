@@ -59,11 +59,14 @@ responsável do projeto (não existe D6 nesse plano).
    `libs/api-client/openapi/openapi.json`. O cliente fica autocontido,
    sem aresta de projeto Nx `api-client → api`; o alvo de geração da API
    escreve fora do próprio projeto, com saída declarada.
-2. **D2 — Tipos gerados (aprovada).**
-   `libs/api-client/src/generated/schema.d.ts`, com verificação
-   adicional de que o arquivo compila sem depender de `skipLibCheck`
-   (medido no spike 5.1 com resultado positivo; repetir sobre o arquivo
-   real na 5.8).
+2. **D2 — Tipos gerados (aprovada; provada na 5.8).**
+   `libs/api-client/src/generated/schema.d.ts`. A verificação de que o
+   arquivo compila sem depender de `skipLibCheck` virou **teste
+   permanente** na 5.8 (`schema-typecheck.spec.mjs`): API do
+   `typescript`, `noEmit`, `skipLibCheck: false`, `types: []`,
+   `lib: ES2022` e as flags estritas do `tsconfig.base.json`, exigindo
+   zero diagnósticos, com um controle negativo que prova que uma
+   declaração quebrada é reportada.
 3. **D3 — Gerador (aprovada; alterada pelo spike 5.1 para a opção B).**
    O gerador fica em `apps/api/src/contract/`, é **compilado pelo
    `api:build`** (tsc, com `emitDecoratorMetadata`) e **executado com
@@ -93,7 +96,7 @@ fixa>)` com `NestFactory.create(…, { logger: false, preview: true })`
    final, UTF-8 sem BOM, sem `\r`.
 5. **D5 — Artefatos gerados no Prettier e no Git (aprovada; corrigida na
    5.6).** `.prettierignore` para o `openapi.json` (aplicado na 5.6) e
-   para o `schema.d.ts` (a aplicar na 5.8); o determinismo é provado
+   para o `schema.d.ts` (aplicado na 5.8); o determinismo é provado
    por testes de bytes, não por formatter. **`.gitattributes` não
    precisa de alteração**: já normaliza `*.json` e `*.ts` com
    `eol=lf` (a redação original previa alterá-lo; `git check-attr text
@@ -110,7 +113,9 @@ eol` no `openapi.json` devolve `text: set` e `eol: lf`).
    workspace `libs/api-client`, o aviso aparece como `YN0002` ("não
    fornece `typescript`", faixa `^5.x`) e não como o `YN0060` do spike,
    porque o workspace não lista `typescript` como dependência própria;
-   nenhum dos dois virou erro no `yarn install --immutable`. Nenhuma versão
+   nenhum dos dois virou erro no `yarn install --immutable`. Na 5.8 o
+   `schema.d.ts` gerado do contrato real compilou com zero diagnósticos
+   sob `skipLibCheck: false` (teste permanente). Nenhuma versão
    do `openapi-typescript` verificada declara suporte a TypeScript 6: a
    `latest` é a 7.13.0 (peer `^5.x`), e as 7.9.1, 7.10.1 e 7.12.0
    também declaram `^5.x`; não há versão mais nova nem tag `next`
