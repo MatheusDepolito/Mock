@@ -20,11 +20,13 @@ WORKDIR /app
 # Yarn Berry needs every workspace's package.json to resolve
 # `yarn install --immutable` correctly, not just the root's. That means
 # the *whole* workspace graph recorded in yarn.lock (apps/api,
-# apps/worker, libs/config, libs/queue): a missing workspace fails the
-# install (`@mockp/queue` not found) or would modify the lockfile.
+# apps/worker, libs/api-client, libs/config, libs/queue): a missing
+# workspace fails the install (`@mockp/queue` not found) or would modify
+# the lockfile.
 COPY package.json yarn.lock .yarnrc.yml ./
 COPY apps/api/package.json ./apps/api/package.json
 COPY apps/worker/package.json ./apps/worker/package.json
+COPY libs/api-client/package.json ./libs/api-client/package.json
 COPY libs/config/package.json ./libs/config/package.json
 COPY libs/queue/package.json ./libs/queue/package.json
 
@@ -72,6 +74,7 @@ WORKDIR /app
 COPY --from=build --chown=node:node /app/package.json /app/yarn.lock /app/.yarnrc.yml ./
 COPY --from=build --chown=node:node /app/apps/api/package.json ./apps/api/package.json
 COPY --from=build --chown=node:node /app/apps/worker/package.json ./apps/worker/package.json
+COPY --from=build --chown=node:node /app/libs/api-client/package.json ./libs/api-client/package.json
 COPY --from=build --chown=node:node /app/libs/config/package.json ./libs/config/package.json
 COPY --from=build --chown=node:node /app/libs/queue/package.json ./libs/queue/package.json
 

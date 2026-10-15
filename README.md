@@ -6,9 +6,11 @@ corretoras.
 O workspace Yarn/Nx, `libs/config` e o skeleton técnico da API NestJS
 (`apps/api`) já estão implementados (Fases 0 a 2, `Completed`). A Fase 3
 (persistência e infraestrutura local) está **`Completed`**. **A Fase 4
-(worker e BullMQ) está `Completed`** — última fase concluída; nenhuma
-fase está `In Progress` e a Fase 5 (OpenAPI e api-client) está
-`Pending`, não iniciada. As subtarefas 4.1 a 4.7 estão `Completed` e
+(worker e BullMQ) está `Completed`**. **A Fase 5 (OpenAPI e api-client)
+está `In Progress`** — subtarefas 5.0 (abertura documental), 5.1 (spike)
+5.2 (scaffold de `libs/api-client`, sem API pública) e 5.3 (Dockerfiles
+e o quinto workspace) `Completed`; 5.4 a 5.12 `Pending` (decisões registradas na [ADR 009](docs/adr/009-openapi-contract-and-api-client.md), `Proposed`).
+As subtarefas 4.1 a 4.7 da Fase 4 estão `Completed` e
 aprovadas (`libs/queue`, `apps/worker` — com o consumidor ligado ao
 seu `AppModule` e validado de ponta a ponta contra Redis real —, o
 comando interno da API que publica `system.ping`, o Dockerfile do
@@ -83,7 +85,8 @@ existe desde a Tarefa 4.6 (`Completed`): consumo real de `system.ping`
 no container e `SIGTERM` real em Linux (saída `0` em 478 ms, sem
 `SIGKILL`) comprovados; o Dockerfile da API foi ajustado na 4.6-A para
 o grafo atual de quatro workspaces (incluindo `@mockp/queue`). A
-Tarefa 4.7 repetiu a validação integrada e fechou a fase. Nenhum
+Tarefa 4.7 repetiu a validação integrada e fechou a fase. A Fase 5 foi
+aberta depois, só documentalmente (subtarefa 5.0). Nenhum
 Dockerfile de frontend existe ainda. Antes de qualquer novo scaffold ou
 implementação, leia a documentação abaixo — ela é a fonte de verdade
 do projeto.
@@ -188,9 +191,13 @@ do projeto.
   reflete a ADR 007 e está correto; a ADR 006 não foi alterada,
   permanece `Accepted`. **A Fase 3 — Docker, PostGIS, Redis e Prisma —
   está `Completed`**.
-- **Fase corrente**: Fase 4 — Worker e BullMQ — **`Completed`** (última
-  fase concluída; nenhuma fase `In Progress`; a Fase 5 está `Pending`,
-  sem nenhuma implementação iniciada). As
+- **Fase corrente**: Fase 5 — OpenAPI e api-client — **`In Progress`**
+  (subtarefas 5.0, abertura documental, 5.1, spike, e 5.2, scaffold de
+  `libs/api-client`, e 5.3, Dockerfiles do quinto workspace, `Completed`;
+  5.4 a 5.12 `Pending`; ADR 009 `Proposed`; 5.2 e 5.3 devem entrar no
+  mesmo commit).
+  A Fase 4 — Worker e BullMQ — está `Completed` (última fase concluída
+  antes da corrente). As
   subtarefas **4.1** (`libs/queue` — `SYSTEM_QUEUE_NAME`,
   `SYSTEM_PING_JOB_NAME`, `SYSTEM_PING_JOB_OPTIONS`,
   `SystemPingJobPayload` — e o novo entrypoint `@mockp/config/worker`;
@@ -269,7 +276,9 @@ do projeto.
   contra Redis real (Fase 4, `Completed`); `apps/worker/Dockerfile`
   existe e foi validado na Tarefa 4.6 (`Completed`) — ainda sem
   Next.js e sem libs de produto além de `libs/config`/`libs/queue`; a
-  Fase 5 permanece `Pending`.
+  Fase 5 está `In Progress`: a `libs/api-client` existe desde a
+  subtarefa 5.2, mas só como scaffold sem API pública (sem tipos
+  gerados nem cliente).
 - Segue [docs/IMPLEMENTATION_ROADMAP.md](docs/IMPLEMENTATION_ROADMAP.md),
   que define o status de cada fase (`Pending`, `In Progress`,
   `Completed`, `Blocked`).

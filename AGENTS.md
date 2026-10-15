@@ -326,8 +326,8 @@ apply` / `Seed complete: 2 role(s) in the catalog`); índice GiST em
   Redis já existem como containers locais (Docker Compose) e já são
   exercitados de verdade pela suíte `yarn validate:infra` desde a
   3.3.4.
-- **Fase 4 — Worker e BullMQ**: `Completed` — última fase concluída;
-  nenhuma fase está `In Progress`. As subtarefas 4.1
+- **Fase 4 — Worker e BullMQ**: `Completed` — anterior à Fase 5, a
+  fase corrente (ver o bullet da Fase 5 abaixo). As subtarefas 4.1
   (`libs/queue` e `@mockp/config/worker`), 4.2 (skeleton de
   `apps/worker`), 4.3 (conexão Redis própria do worker e
   `SystemPingProcessor`, via `@nestjs/bullmq`) e 4.4 (comando interno
@@ -412,19 +412,48 @@ apply` / `Seed complete: 2 role(s) in the catalog`); índice GiST em
   workspaces duplicado nos Dockerfiles; imagens grandes com pacotes
   Prisma inertes no worker; Dockerfile do worker não exercitado no
   Compose `full` (Fase 9); divergência factual da ADR 006 apenas
-  reportada, ADR inalterada. **A Fase 4 está `Completed`; nenhuma fase
-  está `In Progress`; a Fase 5 — OpenAPI e api-client — permanece
-  `Pending`, sem implementação iniciada.**
-  `apps/web` continua não existindo neste repositório.
+  reportada, ADR inalterada. **A Fase 4 está `Completed`** (ao fechá-la
+  nenhuma fase estava `In Progress`; a Fase 5 foi aberta depois, ver o
+  bullet seguinte). `apps/web` continua não existindo neste
+  repositório.
   Ver [docs/IMPLEMENTATION_ROADMAP.md](docs/IMPLEMENTATION_ROADMAP.md),
   Fase 4, para o detalhamento completo subtarefa por subtarefa.
+- **Fase 5 — OpenAPI e api-client**: `In Progress` — fase corrente,
+  subtarefas **5.0** (abertura documental), **5.1** (spike), **5.2**
+  (scaffold de `libs/api-client` e dependências, sem API pública) e
+  **5.3** (Dockerfiles e o quinto workspace) `Completed`. As subtarefas
+  5.4 a 5.12 estão `Pending` e **cada uma exige autorização explícita e
+  individual**. As imagens Docker da API e do worker estiveram
+  conscientemente quebradas entre a 5.2 e a 5.3 (o `yarn.lock` ganhou o
+  quinto workspace) e foram consertadas na 5.3 (`COPY` de
+  `libs/api-client/package.json` nos dois stages de cada Dockerfile,
+  provado com build real, `yarn workspaces list` no runtime, API e
+  worker em container e `SIGTERM` com saída `0`); 5.2 e 5.3 devem
+  entrar no mesmo commit. As decisões estão registradas na
+  [ADR 009](docs/adr/009-openapi-contract-and-api-client.md)
+  (`Proposed`; complementa a ADR 001 sem alterá-la). O spike resolveu as
+  condicionais: o gerador é **compilado pelo `api:build` e executado com
+  `node` sobre `dist`, nunca com `tsx`** (o esbuild não emite
+  `emitDecoratorMetadata`), `preview: true` foi confirmado, o warning de
+  peer `typescript ^5.x` × `6.0.3` do `openapi-typescript` virou
+  exceção documentada, e `libs/api-client` é CommonJS. As versões exatas
+  foram gravadas na 5.2 (`openapi-typescript` 7.13.0 como
+  `devDependency` e `openapi-fetch` 0.17.0 como `dependency`). Regra
+  central: `contract:generate` escreve os artefatos versionados por
+  execução explícita e nunca entra em `yarn validate`, no hook ou em
+  pipeline; `contract:check` é somente leitura e compara/falha. Sem
+  override de peer, sem `--legacy-peer-deps`, sem troca de ferramenta e
+  sem rebaixar o TypeScript. Os Dockerfiles só são ajustados à quinta
+  workspace na 5.3 (já feito). Ver
+  [docs/IMPLEMENTATION_ROADMAP.md](docs/IMPLEMENTATION_ROADMAP.md),
+  Fase 5.
 - Não crie `apps/web`, outras `libs/*` de produto, Next.js,
   autenticação, domínio de negócio ou qualquer outra peça de fases
-  posteriores à Fase 4, e não antecipe entregáveis de fases futuras
-  (incluindo qualquer implementação da Fase 5 — OpenAPI e api-client,
-  `Pending`, a próxima do roadmap), mesmo que solicitado de forma
-  implícita por uma tarefa, a menos que essa tarefa autorize
-  explicitamente o avanço.
+  posteriores à Fase 5, e não antecipe entregáveis de fases futuras
+  (incluindo a Fase 6 — Tailwind, `libs/ui` e Storybook, `Pending`, e
+  qualquer subtarefa da Fase 5 além da já autorizada), mesmo que
+  solicitado de forma implícita por uma tarefa, a menos que essa tarefa
+  autorize explicitamente o avanço.
 - Não crie commits, branches, remotes ou publique nada, a menos que a
   tarefa autorize explicitamente essa ação.
 

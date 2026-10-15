@@ -313,6 +313,16 @@ Detalhamento e consequências em
   desatualizados em relação ao código-fonte da API falham o pipeline
   (targets `contract:generate` e `contract:check`, ver seção 13).
 
+> **Estado de implementação (Fase 5, `In Progress`)**: nada desta seção
+> foi implementado ainda — a Fase 5 foi aberta apenas documentalmente
+> (subtarefa 5.0) e `libs/api-client` não existe. Os detalhes de
+> implementação que esta seção não fixa (local do `openapi.json`,
+> serialização canônica, local dos tipos gerados, separação entre
+> `contract:generate` — execução explícita que escreve os artefatos — e
+> `contract:check` — somente leitura) estão em
+> [ADR 009](adr/009-openapi-contract-and-api-client.md) (`Proposed`).
+> Nenhuma decisão desta seção é alterada por essa nota.
+
 ## 7. Autenticação (decisão, não implementação no skeleton)
 
 Resumo da decisão; detalhamento completo em

@@ -38,11 +38,14 @@ Regras de controle:
 
 ## Fase corrente
 
-**Fase 4 — Worker e BullMQ**: `Completed` — última fase concluída;
-**nenhuma fase está `In Progress`** neste momento (a Fase 5 está
-`Pending`, não iniciada). Ver seção própria da Fase 4 abaixo para o
-detalhamento subtarefa por subtarefa (4.1 a 4.7 `Completed` e
-aprovadas).
+**Fase 5 — OpenAPI e api-client**: `In Progress` — subtarefas 5.0
+(abertura documental), 5.1 (spike), 5.2 (scaffold de `libs/api-client`
+e dependências) e 5.3 (Dockerfiles e o quinto workspace) `Completed`;
+5.4 a 5.12 `Pending`. Ver seção própria da Fase 5 abaixo.
+
+**Fase 4 — Worker e BullMQ**: `Completed` — última fase concluída antes
+da corrente (4.1 a 4.7 `Completed` e aprovadas; ver seção própria da
+Fase 4 abaixo).
 
 **Fase 3 — Docker, PostGIS, Redis e Prisma**: `Completed` — anterior
 à Fase 4, que também está `Completed`. As
@@ -176,8 +179,9 @@ foi alterada nesta rodada, permanece `Accepted`. **A Tarefa 3.6 está
 `Completed`. A Fase 3 — Docker, PostGIS, Redis e Prisma — está
 `Completed`**. As Fases 0, 1 e 2 também estão `Completed`. **A Fase 4 —
 Worker e BullMQ — está `Completed`**: as subtarefas 4.1 a 4.7 estão
-`Completed` e aprovadas. Ver a seção própria da Fase 4 para o
-detalhamento.
+`Completed` e aprovadas. **A Fase 5 — OpenAPI e api-client — está
+`In Progress`** (ver sua seção própria). Ver a seção própria da Fase 4
+para o detalhamento.
 
 ---
 
@@ -704,8 +708,9 @@ to apply`); container de teste encerrado ao final, sem alterar o
 ## Fase 4 — Worker e BullMQ
 
 **Status**: Completed. As subtarefas 4.1 a 4.7 estão `Completed` e
-aprovadas (detalhamento abaixo). Nenhuma fase está `In Progress`; a
-Fase 5 permanece `Pending`.
+aprovadas (detalhamento abaixo). Ao fechar a Fase 4 nenhuma fase
+estava `In Progress`; a Fase 5 foi aberta depois, pela subtarefa 5.0
+(ver sua seção própria).
 
 **Objetivo**: validar a separação entre API e worker através de um job
 puramente técnico, sem expor esse fluxo via HTTP.
@@ -1116,9 +1121,10 @@ dist/apps/worker/src/main.js`, 902 módulos carregados e nenhum de
     (só o estado de implementação do Dockerfile do worker; a decisão
     arquitetural permanece inalterada).
   - **Fechamento**: **a Fase 4 — Worker e BullMQ — está `Completed`**.
-    Nenhuma fase está `In Progress` neste momento; **a Fase 5 —
-    OpenAPI e api-client — permanece `Pending`, sem nenhuma
-    implementação iniciada**, e só começa com autorização explícita.
+    À época deste fechamento nenhuma fase estava `In Progress` e a
+    Fase 5 — OpenAPI e api-client — estava `Pending`, sem nenhuma
+    implementação iniciada; ela só foi aberta depois, com autorização
+    explícita (ver a seção da Fase 5).
 
 **Entregáveis**:
 
@@ -1157,10 +1163,234 @@ dist/apps/worker/src/main.js`, 902 módulos carregados e nenhum de
 
 ## Fase 5 — OpenAPI e api-client
 
-**Status**: Pending
+**Status**: In Progress. As subtarefas 5.0 (abertura documental), 5.1
+(spike), 5.2 (scaffold de `libs/api-client` e dependências) e 5.3
+(Dockerfiles e o quinto workspace) estão `Completed`; as subtarefas 5.4
+a 5.12 estão `Pending`. Cada subtarefa exige autorização explícita e
+individual, e nenhuma delas autoriza commit, branch ou push. O registro
+das decisões está na
+[ADR 009](adr/009-openapi-contract-and-api-client.md) (`Proposed`,
+complementa a [ADR 001](adr/001-rest-openapi.md) sem alterá-la).
 
 **Objetivo**: fechar o ciclo de contrato determinístico entre backend e
 frontend.
+
+**Subtarefas**:
+
+- **5.0 — Abertura documental**: `Completed`. Somente documentação:
+  Fase 5 passa a `In Progress` no roadmap, README e AGENTS §6 na mesma
+  alteração; subtarefas e decisões registradas aqui; ADR 009 criada
+  (`Proposed`); nota curta na seção 6 de
+  `docs/TARGET_ARCHITECTURE.md`, sem alterar nenhuma decisão. Nenhum
+  código, configuração, dependência ou Dockerfile; ADRs 001–008
+  inalteradas.
+- **5.1 — Spike isolado (S1)**: `Completed` — aprovado. Investigação
+  **sem alterar o repositório** (diretório descartável fora dele, já
+  removido; HEAD, `git status`, hash do `git diff`, `yarn.lock`,
+  `package.json` e `node_modules` idênticos antes e depois), com Yarn
+  4.12.0 e `typescript@6.0.3` exato, sem override. **Nenhuma condição de
+  parada disparou.** Resultados: (1) `NestFactory.create(AppModule.forRoot(<config
+sintética>), { logger: false })` com e sem `preview: true` — documento
+  **idêntico** (SHA bruto igual em 8 processos, 4 variações × 2
+  ambientes, e em mais 3 com `TZ`/`LANG`/`cwd` diferentes; inclusive ao
+  documento que o `configureApp` real passa ao Swagger), zero chamadas
+  a `net.Socket.connect`/`net.connect`/`tls.connect`, zero
+  `listen`/`init`, construtores de `PrismaService`/`RedisService` não
+  executados em `preview`; independência de ambiente provada (dois
+  ambientes, mesmo documento), **sem** afirmar "zero leituras de
+  `process.env`" (código de biblioteca enumera o ambiente). (2)
+  `@nestjs/swagger` 11.4.7: `@ApiResponse({ content: {
+'application/problem+json': … }, headers })` e `@ApiHeader`
+  funcionam; **`type` junto com `content` faz o `content type` voltar a
+  `application/json`**, e `@ApiProduces` vale para a operação inteira.
+  (3) `openapi-typescript` 7.13.0 × TypeScript 6.0.3: gera sem
+  exceção; duas execuções (processos separados) idênticas; o
+  `schema.d.ts` compila com `tsc` 6.0.3 e as flags estritas do
+  workspace com `skipLibCheck: false` (controle negativo confirma que o
+  `.d.ts` é checado); uso real com `openapi-fetch` 0.17.0 (consulta
+  tipada a `/api/v1/health/live`, path inexistente rejeitado em tipo,
+  erro `application/problem+json` tipado). Warning `YN0060` registrado;
+  `openapi-typescript` 7.13.0 é a `latest` e nenhuma versão verificada
+  (7.9.1 a 7.13.0) declara suporte a TS 6. Candidatas de `openapi-fetch`:
+  0.17.0 (a usada) e 0.16.0. (4) Módulos: `require()` das três
+  ferramentas funciona no Node 24.18; `openapi-typescript` depende do
+  `require(esm)` do Node (falha com `ERR_REQUIRE_ESM` se desativado),
+  `openapi-fetch` tem build CJS verdadeiro. (5) Determinismo:
+  documento bruto idêntico entre processos; canonicalização D4
+  idêntica (200/200 embaralhamentos de chaves); arrays preservados.
+  (6) `tsx`: o alvo `queue:smoke:system-ping` resolve as libs para
+  `dist` (ausente num checkout limpo); com `--conditions=development`
+  resolve para as fontes `.ts`. **Achado que mudou D3**: sob `tsx`
+  (esbuild) não há `emitDecoratorMetadata` — a injeção por tipo falha em
+  silêncio e `@ApiProperty()` sem `type` explícito quebra a geração
+  (compilado com `tsc` funciona), logo o gerador é compilado e
+  executado com `node` sobre `dist` (D3, opção B). À época do spike
+  as dependências não estavam instaladas no repositório (instaladas na
+  5.2).
+- **5.2 — Scaffold de `libs/api-client` e dependências**: `Completed`
+  — aprovada. Somente scaffold, sem arquivos gerados, cliente, scripts
+  nem alvos `contract:*`. Criada `libs/api-client/` no molde de
+  `libs/queue` (CommonJS, D18): `package.json` (`@mockp/api-client`,
+  bloco `nx` com nome `api-client`, `projectType: library`, alvos
+  `build` com `@nx/js:tsc` e `typecheck`, `exports` com
+  `types`/`development`/`default`), `tsconfig.json`,
+  `tsconfig.lib.json`, `tsconfig.build.json`, `tsconfig.spec.json`,
+  `eslint.config.mjs`, `vitest.config.mts` (com `passWithNoTests:
+true`, precedente `apps/api`; nenhum teste artificial), `README.md` e
+  `src/index.ts` com `export {};` (nenhuma API pública). **Versões
+  exatas gravadas (D8)**: `openapi-fetch` 0.17.0 em `dependencies` e
+  `openapi-typescript` 7.13.0 em `devDependencies`, sem `^`/`~`;
+  `tslib` 2.8.1 em `dependencies`, por espelhar o molde
+  (`importHelpers`) — já resolvido no `yarn.lock`, sem resolução nova.
+  **Diff do `yarn.lock`**: +201/−12 linhas; 1333 → 1356 descritores (23
+  novos: o workspace, as duas dependências e seus transitivos),
+  **nenhum descritor removido e nenhuma versão resolvida de pacote
+  existente alterada** (verificado comparando os mapas descritor →
+  versão antes/depois); as 12 linhas removidas são fusões de lista de
+  descritores sem mudar a versão (`@babel/code-frame` ganha `^7.26.2`; a
+  entrada `js-yaml@npm:^4.3.2` vira `js-yaml@npm:4.3.2,
+js-yaml@npm:^4.3.2`, ambas continuam 7.29.7 e 4.3.2). **Warnings de
+  peer** (nenhum virou erro): no workspace, o aviso é `YN0002
+@mockp/api-client doesn't provide typescript (pee6a06), requested by
+openapi-typescript` (faixa `^5.x`; `yarn explain peer-requirements
+pee6a06`), e não o `YN0060` do spike — porque `libs/api-client` não
+  lista `typescript` como dependência própria (o TypeScript 6.0.3 vem
+  da raiz); sem override, sem `resolutions`, sem `--legacy-peer-deps`,
+  sem acrescentar `typescript` ao workspace (fora do escopo); os
+  demais `YN0002` (`@nestjs/bullmq` em `api`/`worker`) são anteriores.
+  **Validação**: `yarn install --immutable` sem diff adicional;
+  `nx show project api-client` descobre o projeto (alvos `lint`,
+  `test`, `build`, `typecheck`); `api-client:typecheck`, `:build`,
+  `:test` ("No test files found", exit 0) e `:lint` aprovados (cada um
+  executou uma única tarefa — o `build` não disparou build nem
+  `db:generate` da API); o grafo do Nx (`nx graph --print`) não tem
+  nenhuma aresta de ou para `api-client` (D1 preservado); Dockerfiles,
+  `.dockerignore`, `nx.json`, `tsconfig.json` raiz, scripts do
+  `package.json` raiz e dependências de outros workspaces
+  inalterados. **Entre a 5.2 e a 5.3 as imagens Docker da API e do
+  worker ficaram conscientemente quebradas** (o `yarn.lock` ganhou o
+  quinto workspace e os Dockerfiles ainda não copiavam o seu
+  `package.json`) — corrigido na 5.3, e por isso a 5.2 e a 5.3 devem
+  entrar no mesmo commit.
+- **5.3 — Adaptar os Dockerfiles ao quinto workspace**: `Completed` —
+  aprovada. Em `apps/api/Dockerfile` e `apps/worker/Dockerfile`, **só**
+  o `COPY` de `libs/api-client/package.json` nos stages `build` e
+  `runtime` de cada um (4 linhas `COPY`, antes do `COPY` de
+  `libs/config`, mesmo padrão dos outros workspaces) e o comentário que
+  enumera os workspaces (de quatro para cinco). Nenhuma outra mudança em
+  Dockerfiles, `.dockerignore`, `docker-compose.yml`, código,
+  configuração, dependências ou `yarn.lock`. **Pré-prova** (cópia fora
+  do repositório com os `package.json` que o stage `build` copia):
+  `yarn install --immutable` passa com os 5 manifests e falha com os 4
+  (`YN0028`, o lockfile seria modificado) — confirma que as imagens
+  estavam quebradas desde a 5.2 e que o `COPY` as conserta. **Provas
+  reais** (tags novas `mockp-api:5.3-test`, id `9ad829df785c`, e
+  `mockp-worker:5.3-test`, id `52a978db1f6e`, ~1,34 GB em disco cada;
+  as tags anteriores `4.7-test`, `4.6-test`, `4.6a-test`, `tarefa-3.5`
+  e `tarefa-3.6` preservadas): (1) `docker build` das duas imagens a
+  partir da raiz, com `yarn install --immutable` passando nos dois
+  stages `build`; manifest de camadas coerente com o `COPY` novo (API 22
+  → 23 camadas, worker 17 → 18, em relação às imagens `4.7-test`). (2)
+  `yarn workspaces list` no runtime das duas imagens (container
+  descartável, `--network none`, sem banco) lista os 5 workspaces
+  (`.`, `apps/api`, `apps/worker`, `libs/api-client`, `libs/config`,
+  `libs/queue`); no runtime só o `package.json` de `libs/api-client`
+  existe (sem `src` nem `dist`). (3) API em container contra os
+  `postgres`/`redis` locais existentes (via `host.docker.internal`, banco
+  `mockp_test`, host e banco conferidos sem expor credenciais):
+  `GET /api/v1/health/live` e `/ready` `200` (`application`/`database`/
+  `redis` = `up`), `whoami` = `node`, `/proc/1/cmdline` = `node
+dist/apps/api/src/main.js`. (4) Worker: preflight fail-closed
+  somente leitura (mesmo `run_id` do Redis pelo host e pelo container,
+  banco lógico `1`, fila `system` sem nenhum job pendente e sem chave de
+  job) antes de iniciar; `Worker started`, `whoami` = `node`,
+  `/proc/1/cmdline` = `node dist/apps/worker/src/main.js`; consumo real
+  do job `15` publicado do host pelo comando interno, com o mesmo
+  `requestId` nos logs do container e o job `completed` no Redis;
+  `SIGTERM` real com `docker stop --time 10` em 504 ms, `ExitCode=0`,
+  `OOMKilled=false`, sem erro, sem `--init`, sem `SIGKILL`
+  (`CLIENT LIST` 3 → 1 apenas como evidência complementar). (5) Cleanup
+  restrito ao que a execução criou: job `15` removido só após conferir o
+  `requestId`, containers temporários removidos (nenhum com o rótulo de
+  teste sobrou); `postgres`/`redis` nunca parados, reiniciados ou
+  recriados por esta tarefa e saudáveis ao final. Sem migration no boot,
+  `migrate deploy` ou seed. **A 5.2 e a 5.3 devem entrar no mesmo
+  commit.**
+- **5.4 — Extrair o setup HTTP e o documento Swagger**: `Pending`.
+  Refatoração sem mudança de contrato em `apps/api/src/app/`
+  (`configureApp` = setup HTTP + documento + `SwaggerModule.setup`),
+  provada por byte-identidade do `/docs-json` antes/depois.
+- **5.5 — Documentar Problem Details, headers e `operationId`s**:
+  `Pending` (D9–D12). `ProblemDetailsDto`, decorators reutilizáveis,
+  `X-Request-Id`, `operationId` explícitos, `info.description`
+  atualizada; só o que o código pode devolver. **Regra do spike:** nas
+  respostas de erro usar **somente `content`** com
+  `@ApiExtraModels(ProblemDetailsDto)`, **nunca `type` junto com
+  `content`** (o `type` vence e o content type volta a
+  `application/json`); não usar `@ApiProduces` por operação. O
+  `operationId` padrão atual (`HealthController_live_v1`) é substituído
+  por `health_live`/`health_ready` (D12).
+- **5.6 — Gerador determinístico e `api:contract:generate`**: `Pending`
+  (D3–D5). Gerador em `apps/api/src/contract/`, **compilado pelo
+  `api:build` (tsc, com `emitDecoratorMetadata`) e executado com `node`
+  sobre `dist` — nunca com `tsx`** (D3, opção B); os alvos de contrato
+  da API dependem de `build`. `NestFactory.create(…, { logger: false,
+preview: true })` com config sintética fixa; serialização canônica
+  (D4); primeiro `openapi.json` versionado; `.prettierignore` e
+  `.gitattributes`. Testes: zero sockets; determinismo byte a byte;
+  equivalência com o `/docs-json`, **verificando explicitamente que o
+  transformador do Vitest também injeta as dependências** nesse teste
+  (o spike mediu só o `tsx`/esbuild).
+- **5.7 — `api:contract:check` (somente leitura)**: `Pending`.
+  Comparação de bytes em memória, `cache: false`, testes permanentes de
+  drift e de não escrita (D17).
+- **5.8 — Tipos gerados e `api-client:contract:generate`/`check`**:
+  `Pending` (D2, D7, D18). `schema.d.ts` versionado; o script de
+  geração dos tipos usa `import` (`.mjs`), porque o `openapi-typescript`
+  só carrega via `require(esm)`; `contract:generate` da raiz encadeia a
+  API e depois a lib.
+- **5.9 — Cliente `openapi-fetch`**: `Pending` (D13).
+  `createApiClient({ baseUrl, fetch? })`, testes com `fetch` injetado e
+  testes de tipo.
+- **5.10 — `contract:check` em `yarn validate`**: `Pending` (D16).
+  Acrescentado ao `validate:nx`; hook inalterado; `contract:generate`
+  fora do caminho.
+- **5.11 — Validação integrada**: `Pending`. `yarn validate` sem cache,
+  `yarn validate:infra`, `contract:generate` duas vezes sem diff,
+  rebuild das imagens, `/docs-json` do container igual ao
+  `openapi.json`, e a prova pontual de drift em cópia descartável fora
+  do repositório (autorização própria).
+- **5.12 — Fechamento documental**: `Pending`. Roadmap, README, AGENTS,
+  `TARGET_ARCHITECTURE.md` (§6 e §13) e ADR 009 (`Accepted`) na mesma
+  alteração.
+
+**Decisões** (numeração do plano técnico aprovado; não existe D6):
+
+| ID  | Decisão                                                                                                                                       | Estado                                                                          |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| D1  | `openapi.json` em `libs/api-client/openapi/openapi.json`                                                                                      | Aprovada                                                                        |
+| D2  | Tipos em `libs/api-client/src/generated/schema.d.ts` + verificação anti-`skipLibCheck` (medida no spike; repetir na 5.8)                      | Aprovada                                                                        |
+| D3  | Gerador em `apps/api/src/contract/`, compilado pelo `api:build` e executado com `node` sobre `dist` (nunca `tsx`); `preview: true` confirmado | Aprovada; alterada pelo spike 5.1 (opção B)                                     |
+| D4  | Chaves ordenadas, arrays preservados, 2 espaços, LF, `\n` final                                                                               | Aprovada                                                                        |
+| D5  | `.prettierignore` + `.gitattributes` (`eol=lf`) para os artefatos                                                                             | Aprovada                                                                        |
+| D7  | Warning de peer (`typescript ^5.x` × 6.0.3) aceito como exceção documentada na ADR 009; gatilho de revisão                                    | Exceção concedida (spike 5.1); na 5.2 o aviso no workspace é `YN0002`           |
+| D8  | Versões exatas; `openapi-typescript` devDependency, `openapi-fetch` dependency de `libs/api-client`                                           | Aprovada e gravada na 5.2 (`openapi-typescript` 7.13.0, `openapi-fetch` 0.17.0) |
+| D9  | `ProblemDetailsDto` único; erros só com `content` (nunca `type` + `content`), sem `@ApiProduces`                                              | Aprovada                                                                        |
+| D10 | `live`: 200+500; `ready`: 200+503+500                                                                                                         | Aprovada                                                                        |
+| D11 | `X-Request-Id` em todas as respostas e opcional no request (confirmado no Swagger 11.4.7)                                                     | Aprovada                                                                        |
+| D12 | `operationId` explícitos (`health_live`/`health_ready`, substituem `HealthController_live_v1`) e descrição atualizada                         | Aprovada                                                                        |
+| D13 | `createApiClient({ baseUrl, fetch? })` + re-exports de tipos                                                                                  | Aprovada                                                                        |
+| D14 | Decisões registradas na ADR 009 (`Proposed`; `Accepted` no fechamento)                                                                        | Aprovada                                                                        |
+| D15 | Dockerfiles ajustados na 5.3, imediata e no mesmo commit da 5.2                                                                               | Aprovada                                                                        |
+| D16 | `contract:check` em `validate:nx`; `contract:generate` fora de validate/hook/CI                                                               | Aprovada                                                                        |
+| D17 | Provas permanentes (puras, fs observado, módulo descartável) + prova pontual na 5.11                                                          | Aprovada                                                                        |
+| D18 | `libs/api-client` em CommonJS como `libs/queue`; script de geração em `.mjs` (`openapi-typescript` só via `require(esm)`)                     | Condição atendida (spike 5.1)                                                   |
+
+`contract:generate` (escreve os artefatos versionados, execução
+explícita) e `contract:check` (somente leitura: compara e falha) são
+estritamente separados; `contract:check` começa com `cache: false`. O
+`tsconfig.json` raiz não será alterado (a lacuna histórica de
+`worker`/`queue` não é necessária a esta fase).
 
 **Entregáveis**:
 
