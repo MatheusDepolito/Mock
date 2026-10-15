@@ -40,8 +40,9 @@ Regras de controle:
 
 **Fase 5 — OpenAPI e api-client**: `In Progress` — subtarefas 5.0
 (abertura documental), 5.1 (spike), 5.2 (scaffold de `libs/api-client`
-e dependências) e 5.3 (Dockerfiles e o quinto workspace) `Completed`;
-5.4 a 5.12 `Pending`. Ver seção própria da Fase 5 abaixo.
+e dependências), 5.3 (Dockerfiles e o quinto workspace) e 5.4 (extração
+do setup HTTP e do documento Swagger) `Completed`; 5.5 a 5.12
+`Pending`. Ver seção própria da Fase 5 abaixo.
 
 **Fase 4 — Worker e BullMQ**: `Completed` — última fase concluída antes
 da corrente (4.1 a 4.7 `Completed` e aprovadas; ver seção própria da
@@ -1165,8 +1166,9 @@ dist/apps/worker/src/main.js`, 902 módulos carregados e nenhum de
 
 **Status**: In Progress. As subtarefas 5.0 (abertura documental), 5.1
 (spike), 5.2 (scaffold de `libs/api-client` e dependências) e 5.3
-(Dockerfiles e o quinto workspace) estão `Completed`; as subtarefas 5.4
-a 5.12 estão `Pending`. Cada subtarefa exige autorização explícita e
+(Dockerfiles e o quinto workspace) e 5.4 (extração do setup HTTP e do
+documento Swagger) estão `Completed`; as subtarefas 5.5 a 5.12 estão
+`Pending`. Cada subtarefa exige autorização explícita e
 individual, e nenhuma delas autoriza commit, branch ou push. O registro
 das decisões está na
 [ADR 009](adr/009-openapi-contract-and-api-client.md) (`Proposed`,
@@ -1270,8 +1272,8 @@ pee6a06`), e não o `YN0060` do spike — porque `libs/api-client` não
   inalterados. **Entre a 5.2 e a 5.3 as imagens Docker da API e do
   worker ficaram conscientemente quebradas** (o `yarn.lock` ganhou o
   quinto workspace e os Dockerfiles ainda não copiavam o seu
-  `package.json`) — corrigido na 5.3, e por isso a 5.2 e a 5.3 devem
-  entrar no mesmo commit.
+  `package.json`) — corrigido na 5.3, e por isso a 5.2 e a 5.3 entraram
+  no mesmo commit de checkpoint (`871bd06`).
 - **5.3 — Adaptar os Dockerfiles ao quinto workspace**: `Completed` —
   aprovada. Em `apps/api/Dockerfile` e `apps/worker/Dockerfile`, **só**
   o `COPY` de `libs/api-client/package.json` nos stages `build` e
@@ -1314,12 +1316,42 @@ dist/apps/api/src/main.js`. (4) Worker: preflight fail-closed
   `requestId`, containers temporários removidos (nenhum com o rótulo de
   teste sobrou); `postgres`/`redis` nunca parados, reiniciados ou
   recriados por esta tarefa e saudáveis ao final. Sem migration no boot,
-  `migrate deploy` ou seed. **A 5.2 e a 5.3 devem entrar no mesmo
-  commit.**
-- **5.4 — Extrair o setup HTTP e o documento Swagger**: `Pending`.
-  Refatoração sem mudança de contrato em `apps/api/src/app/`
-  (`configureApp` = setup HTTP + documento + `SwaggerModule.setup`),
-  provada por byte-identidade do `/docs-json` antes/depois.
+  `migrate deploy` ou seed. **A 5.2 e a 5.3 entraram no mesmo
+  commit de checkpoint (`871bd06`).**
+- **5.4 — Extrair o setup HTTP e o documento Swagger**: `Completed` —
+  aprovada. Refatoração **sem mudança de contrato nem de comportamento
+  HTTP**, em `apps/api/src/app/`: novo `swagger.ts` com
+  `createSwaggerDocument(app)` (o `DocumentBuilder` atual — título,
+  descrição `skeleton (Fase 2)` e versão inalterados — mais
+  `SwaggerModule.createDocument`, sem montar nenhuma rota); em
+  `configure-app.ts`, `applyHttpSetup(app, serverConfig)` com tudo o que
+  existia antes do Swagger, na mesma ordem (`requestId`, `helmet`, CORS,
+  prefixo `api`, versionamento URI, `ValidationPipe`), e `configureApp`
+  mantém a assinatura, sendo agora `applyHttpSetup` +
+  `createSwaggerDocument` + `SwaggerModule.setup('docs', …)`. Não
+  alterados: `main.ts`, `create-test-app.ts`, `AppModule`, controllers,
+  DTOs e o conteúdo do documento. **Prova de byte-identidade**: um spec
+  temporário (removido ao final, nunca versionado) reutilizou
+  `createTestApp()` offline e capturou o corpo de `GET /docs-json` antes
+  de editar e depois da refatoração — **mesmos 1303 bytes e o mesmo
+  SHA-256 (`d4135ad9…e310d`), `cmp` byte a byte idêntico**; o HTML de
+  `GET /docs` também ficou idêntico (3126 bytes, SHA-256 `20f2dfd8…`).
+  O documento é o mesmo que o spike 5.1 havia gerado sem servidor.
+  **Testes novos** (offline, sem PostgreSQL/Redis):
+  `apps/api/test/configure-app.spec.ts`, 6 testes — o documento de
+  `createSwaggerDocument` é igual ao servido em `/docs-json`; título,
+  versão, descrição e só os dois paths de health; repetibilidade; e,
+  para `applyHttpSetup` sozinho, `x-request-id`, Helmet, prefixo/versão
+  funcionando, `/docs` e `/docs-json` **não** montados, e o documento
+  ainda criável sem montar nada. Resultados: `api:test:integration`
+  **55** testes/14 arquivos (49 anteriores + 6; `swagger.spec.ts`,
+  `app-composition.spec.ts`, `security-headers.spec.ts`, `cors.spec.ts`,
+  `request-id.spec.ts`, `rate-limit.spec.ts` e `problem-details.spec.ts`
+  inalterados e verdes, ou seja, a ordem dos middlewares não mudou de
+  forma observável), `api:test` **192** (inalterado), `api:typecheck`,
+  `api:lint`, `yarn format:check`, `git diff --check` e `yarn validate`
+  aprovados. Nenhuma dependência, `yarn.lock`, Dockerfile, gerador,
+  `openapi.json` ou alvo `contract:*` tocados.
 - **5.5 — Documentar Problem Details, headers e `operationId`s**:
   `Pending` (D9–D12). `ProblemDetailsDto`, decorators reutilizáveis,
   `X-Request-Id`, `operationId` explícitos, `info.description`

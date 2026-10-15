@@ -421,15 +421,16 @@ apply` / `Seed complete: 2 role(s) in the catalog`); índice GiST em
 - **Fase 5 — OpenAPI e api-client**: `In Progress` — fase corrente,
   subtarefas **5.0** (abertura documental), **5.1** (spike), **5.2**
   (scaffold de `libs/api-client` e dependências, sem API pública) e
-  **5.3** (Dockerfiles e o quinto workspace) `Completed`. As subtarefas
-  5.4 a 5.12 estão `Pending` e **cada uma exige autorização explícita e
-  individual**. As imagens Docker da API e do worker estiveram
+  **5.3** (Dockerfiles e o quinto workspace) e **5.4** (extração do setup
+  HTTP e do documento Swagger, sem mudança de contrato) `Completed`. As
+  subtarefas 5.5 a 5.12 estão `Pending` e **cada uma exige autorização
+  explícita e individual**. As imagens Docker da API e do worker estiveram
   conscientemente quebradas entre a 5.2 e a 5.3 (o `yarn.lock` ganhou o
   quinto workspace) e foram consertadas na 5.3 (`COPY` de
   `libs/api-client/package.json` nos dois stages de cada Dockerfile,
   provado com build real, `yarn workspaces list` no runtime, API e
-  worker em container e `SIGTERM` com saída `0`); 5.2 e 5.3 devem
-  entrar no mesmo commit. As decisões estão registradas na
+  worker em container e `SIGTERM` com saída `0`); 5.2 e 5.3 entraram
+  no mesmo commit de checkpoint. As decisões estão registradas na
   [ADR 009](docs/adr/009-openapi-contract-and-api-client.md)
   (`Proposed`; complementa a ADR 001 sem alterá-la). O spike resolveu as
   condicionais: o gerador é **compilado pelo `api:build` e executado com
