@@ -17,7 +17,7 @@ import {
 export function createSwaggerDocument(app: INestApplication): OpenAPIObject {
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Mockp API')
-    .setDescription('Mockp platform REST API — skeleton (Fase 2).')
+    .setDescription('Mockp platform REST API.')
     .setVersion('1')
     .build();
   return SwaggerModule.createDocument(app, swaggerConfig);

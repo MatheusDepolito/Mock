@@ -35,7 +35,7 @@ describe('createSwaggerDocument', () => {
     expect(document.openapi).toMatch(/^3\./);
     expect(document.info).toEqual({
       title: 'Mockp API',
-      description: 'Mockp platform REST API — skeleton (Fase 2).',
+      description: 'Mockp platform REST API.',
       version: '1',
       contact: {},
     });

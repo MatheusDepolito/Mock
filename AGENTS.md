@@ -422,8 +422,10 @@ apply` / `Seed complete: 2 role(s) in the catalog`); índice GiST em
   subtarefas **5.0** (abertura documental), **5.1** (spike), **5.2**
   (scaffold de `libs/api-client` e dependências, sem API pública) e
   **5.3** (Dockerfiles e o quinto workspace) e **5.4** (extração do setup
-  HTTP e do documento Swagger, sem mudança de contrato) `Completed`. As
-  subtarefas 5.5 a 5.12 estão `Pending` e **cada uma exige autorização
+  HTTP e do documento Swagger, sem mudança de contrato) e **5.5**
+  (Problem Details, headers `X-Request-Id` e `operationId`s no OpenAPI,
+  sem mudança de runtime) `Completed`. As subtarefas 5.6 a 5.12 estão
+  `Pending` e **cada uma exige autorização
   explícita e individual**. As imagens Docker da API e do worker estiveram
   conscientemente quebradas entre a 5.2 e a 5.3 (o `yarn.lock` ganhou o
   quinto workspace) e foram consertadas na 5.3 (`COPY` de

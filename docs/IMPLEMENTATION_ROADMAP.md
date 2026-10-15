@@ -41,8 +41,9 @@ Regras de controle:
 **Fase 5 — OpenAPI e api-client**: `In Progress` — subtarefas 5.0
 (abertura documental), 5.1 (spike), 5.2 (scaffold de `libs/api-client`
 e dependências), 5.3 (Dockerfiles e o quinto workspace) e 5.4 (extração
-do setup HTTP e do documento Swagger) `Completed`; 5.5 a 5.12
-`Pending`. Ver seção própria da Fase 5 abaixo.
+do setup HTTP e do documento Swagger) e 5.5 (documentação de Problem
+Details, headers e `operationId`s) `Completed`; 5.6 a 5.12 `Pending`.
+Ver seção própria da Fase 5 abaixo.
 
 **Fase 4 — Worker e BullMQ**: `Completed` — última fase concluída antes
 da corrente (4.1 a 4.7 `Completed` e aprovadas; ver seção própria da
@@ -1167,7 +1168,8 @@ dist/apps/worker/src/main.js`, 902 módulos carregados e nenhum de
 **Status**: In Progress. As subtarefas 5.0 (abertura documental), 5.1
 (spike), 5.2 (scaffold de `libs/api-client` e dependências) e 5.3
 (Dockerfiles e o quinto workspace) e 5.4 (extração do setup HTTP e do
-documento Swagger) estão `Completed`; as subtarefas 5.5 a 5.12 estão
+documento Swagger) e 5.5 (documentação de Problem Details, headers e
+`operationId`s) estão `Completed`; as subtarefas 5.6 a 5.12 estão
 `Pending`. Cada subtarefa exige autorização explícita e
 individual, e nenhuma delas autoriza commit, branch ou push. O registro
 das decisões está na
@@ -1353,15 +1355,60 @@ dist/apps/api/src/main.js`. (4) Worker: preflight fail-closed
   aprovados. Nenhuma dependência, `yarn.lock`, Dockerfile, gerador,
   `openapi.json` ou alvo `contract:*` tocados.
 - **5.5 — Documentar Problem Details, headers e `operationId`s**:
-  `Pending` (D9–D12). `ProblemDetailsDto`, decorators reutilizáveis,
-  `X-Request-Id`, `operationId` explícitos, `info.description`
-  atualizada; só o que o código pode devolver. **Regra do spike:** nas
-  respostas de erro usar **somente `content`** com
-  `@ApiExtraModels(ProblemDetailsDto)`, **nunca `type` junto com
-  `content`** (o `type` vence e o content type volta a
-  `application/json`); não usar `@ApiProduces` por operação. O
-  `operationId` padrão atual (`HealthController_live_v1`) é substituído
-  por `health_live`/`health_ready` (D12).
+  `Completed` — aprovada (D9–D12). Muda **somente o documento OpenAPI**;
+  o comportamento em runtime (status, corpo, headers, ordem de
+  middlewares, filtro) não mudou — `ProblemDetailsFilter`,
+  `request-id.ts`, `health.service.ts`, DTOs de health, `AppModule`,
+  `main.ts` e `create-test-app.ts` intocados, e os testes HTTP
+  existentes (`health.spec.ts`, `problem-details.spec.ts`,
+  `request-id.spec.ts`, `rate-limit.spec.ts`, `cors.spec.ts`,
+  `security-headers.spec.ts` e demais) passaram **sem edição**. Código
+  novo: `ProblemDetailsDto`
+  (`apps/api/src/common/dto/problem-details-response.dto.ts`, espelha
+  `ProblemDetailsBody` via `implements`; `code` com enum derivado das
+  chaves de `PROBLEM_CATALOG`; `errors` opcional com valores
+  `string[]`; todo `@ApiProperty` com `type`/`enum` explícito);
+  `ApiProblemResponse(status, descrição)`
+  (`api-problem-response.decorator.ts`: `@ApiResponse` **somente com
+  `content` `application/problem+json` + `$ref`** e
+  `@ApiExtraModels(ProblemDetailsDto)`, nunca `type` junto com
+  `content`, sem `@ApiProduces`); `api-request-id.decorator.ts` com a
+  definição única do `X-Request-Id` (`REQUEST_ID_RESPONSE_HEADERS` e
+  `ApiRequestIdHeader()`, usando `REQUEST_ID_PATTERN.source` do
+  middleware, sem repetir o regex); `health.controller.ts` com
+  `@ApiOperation` (`operationId` e `summary`); `swagger.ts` com
+  `info.description` = `Mockp platform REST API.` (título e versão
+  inalterados). **Documento resultante** (`/docs-json`, 4977 bytes,
+  SHA-256 `09b1faa37de6bdbd30b31043c91174c6a7e6807fa39415f9f45359713fb61ce8`,
+  capturado por spec temporário removido ao final; antes, na 5.4, eram
+  1303 bytes): exatamente 2 paths — `GET /api/v1/health/live`
+  (`operationId` `health_live`; respostas `200` `application/json`
+  `HealthLiveResponseDto` e `500` `application/problem+json`
+  `ProblemDetailsDto`) e `GET /api/v1/health/ready` (`health_ready`;
+  `200` `HealthReadyResponseDto`, `503` `SERVICE_UNAVAILABLE` sem
+  `checks` e `500`, ambas `application/problem+json`); `X-Request-Id`
+  como header de **todas** as respostas (`string`, `maxLength` 128,
+  `pattern` `^[A-Za-z0-9_-]{1,128}$`) e como parâmetro de request
+  opcional (`in: header`, `required: false`) nas duas operações;
+  nenhum `400`, `404` nem `429`; schemas `ProblemDetailsDto`,
+  `HealthLiveResponseDto`, `HealthReadyChecksDto` e
+  `HealthReadyResponseDto`. As condições de parada não dispararam:
+  `content` + `headers` renderizaram como no spike e os `operationId`
+  explícitos saíram sem sufixo de versão. **Testes**:
+  `apps/api/test/swagger.spec.ts` estendido (3 → 11 testes: conjunto
+  exato de status por operação, content types e `$ref`, `200` em
+  `application/json`, `X-Request-Id`, `operationId` exatos, `info`
+  exato, dois paths, schema de Problem Details e ausência de
+  `400`/`404`/`429`), `apps/api/test/configure-app.spec.ts` ajustado
+  só na descrição antiga, e novo
+  `apps/api/src/common/dto/problem-details-response.dto.spec.ts` (3
+  testes: espelho de tipos com `ProblemDetailsBody`, enum de `code` =
+  chaves de `PROBLEM_CATALOG`, tipo explícito em toda propriedade).
+  Resultados: `api:test:integration` **63** testes/14 arquivos (55 + 8),
+  `api:test` **195** (192 + 3), `api:typecheck`, `api:lint`,
+  `yarn format:check`, `git diff --check` e `yarn validate` aprovados.
+  Nenhuma dependência, `yarn.lock`, Dockerfile, gerador, `openapi.json`
+  ou alvo `contract:*` tocados.
 - **5.6 — Gerador determinístico e `api:contract:generate`**: `Pending`
   (D3–D5). Gerador em `apps/api/src/contract/`, **compilado pelo
   `api:build` (tsc, com `emitDecoratorMetadata`) e executado com `node`

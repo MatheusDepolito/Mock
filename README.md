@@ -10,7 +10,8 @@ O workspace Yarn/Nx, `libs/config` e o skeleton técnico da API NestJS
 está `In Progress`** — subtarefas 5.0 (abertura documental), 5.1 (spike)
 5.2 (scaffold de `libs/api-client`, sem API pública), 5.3 (Dockerfiles e
 o quinto workspace) e 5.4 (extração do setup HTTP e do documento
-Swagger) `Completed`; 5.5 a 5.12 `Pending` (decisões registradas na [ADR 009](docs/adr/009-openapi-contract-and-api-client.md), `Proposed`).
+Swagger) e 5.5 (Problem Details, headers e `operationId`s no OpenAPI)
+`Completed`; 5.6 a 5.12 `Pending` (decisões registradas na [ADR 009](docs/adr/009-openapi-contract-and-api-client.md), `Proposed`).
 As subtarefas 4.1 a 4.7 da Fase 4 estão `Completed` e
 aprovadas (`libs/queue`, `apps/worker` — com o consumidor ligado ao
 seu `AppModule` e validado de ponta a ponta contra Redis real —, o
@@ -195,8 +196,8 @@ do projeto.
 - **Fase corrente**: Fase 5 — OpenAPI e api-client — **`In Progress`**
   (subtarefas 5.0, abertura documental, 5.1, spike, e 5.2, scaffold de
   `libs/api-client`, 5.3, Dockerfiles do quinto workspace, e 5.4, extração
-  do setup HTTP e do documento Swagger, `Completed`; 5.5 a 5.12
-  `Pending`; ADR 009 `Proposed`; 5.2 e 5.3 entraram no mesmo commit de
+  do setup HTTP e do documento Swagger, e 5.5, Problem Details, headers e
+  `operationId`s no OpenAPI, `Completed`; 5.6 a 5.12 `Pending`; ADR 009 `Proposed`; 5.2 e 5.3 entraram no mesmo commit de
   checkpoint).
   A Fase 4 — Worker e BullMQ — está `Completed` (última fase concluída
   antes da corrente). As
