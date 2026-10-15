@@ -45,8 +45,9 @@ do setup HTTP e do documento Swagger) e 5.5 (documentação de Problem
 Details, headers e `operationId`s) e 5.6 (gerador determinístico e
 `api:contract:generate`) e 5.7 (`api:contract:check`, somente leitura)
 e 5.8 (tipos gerados e checks do `api-client`) e 5.9 (cliente
-`openapi-fetch`) `Completed`; 5.10 a 5.12 `Pending`. Ver seção própria
-da Fase 5 abaixo.
+`openapi-fetch`) e 5.10 (`contract:check` em `yarn validate`)
+`Completed`; 5.11 e 5.12 `Pending`. Ver seção própria da Fase 5
+abaixo.
 
 **Fase 4 — Worker e BullMQ**: `Completed` — última fase concluída antes
 da corrente (4.1 a 4.7 `Completed` e aprovadas; ver seção própria da
@@ -1175,8 +1176,8 @@ documento Swagger) e 5.5 (documentação de Problem Details, headers e
 `operationId`s) e 5.6 (gerador determinístico e
 `api:contract:generate`) e 5.7 (`api:contract:check`, somente leitura)
 e 5.8 (tipos gerados e checks do `api-client`) e 5.9 (cliente
-`openapi-fetch`) estão `Completed`; as subtarefas 5.10 a 5.12 estão
-`Pending`. Cada subtarefa exige autorização explícita e
+`openapi-fetch`) e 5.10 (`contract:check` em `yarn validate`) estão
+`Completed`; as subtarefas 5.11 e 5.12 estão `Pending`. Cada subtarefa exige autorização explícita e
 individual, e nenhuma delas autoriza commit, branch ou push. O registro
 das decisões está na
 [ADR 009](adr/009-openapi-contract-and-api-client.md) (`Proposed`,
@@ -1654,9 +1655,34 @@ validate` aprovados. `schema.d.ts`, `openapi.json`, scripts, `apps/`,
   Dockerfiles, `nx.json`, `.prettierignore`, tsconfigs, dependências e
   `yarn.lock` não foram alterados; nada de `contract:*` em `validate`
   ou no hook (5.10).
-- **5.10 — `contract:check` em `yarn validate`**: `Pending` (D16).
-  Acrescentado ao `validate:nx`; hook inalterado; `contract:generate`
-  fora do caminho.
+- **5.10 — `contract:check` em `yarn validate`**: `Completed` —
+  aprovada (D16). O `validate:nx` do `package.json` raiz passou a ser
+  `nx run-many -t db:validate db:generate lint typecheck test build
+contract:check && nx run api:test:integration && nx run
+worker:test:integration`; **nenhuma outra mudança** no arquivo. O
+  `yarn validate` — e portanto o hook `pre-commit` — roda agora as duas
+  tarefas `api:contract:check` e `api-client:contract:check`.
+  `contract:generate` **não** aparece em `validate`, `validate:nx` nem
+  `validate:infra` (`grep` confirma zero ocorrências) e `.husky/pre-commit`
+  segue inalterado, com o conteúdo exato `yarn validate` (`git diff`
+  vazio). **Provas**: (1) `NX_SKIP_NX_CACHE=true yarn validate` → exit 0,
+  as duas tarefas `contract:check` executadas (não lidas do cache) na
+  mesma passada do `run-many`, **duração total de 32 s** (informativa; o
+  `run-many` principal levou 13,8 s) — o custo de `cache: false`; (2)
+  antes e depois do `validate`: `git status`, SHA-256 e mtime do
+  `openapi.json` (`a40f983a…faa2`) e do `schema.d.ts` (`565cf1f0…ccdc`)
+  **idênticos**, ou seja, o `validate` não muta o repositório; (3) `grep`
+  em `package.json`; (4) `nx graph --print` segue sem arestas entre `api`
+  e `api-client`; (5) `.husky/pre-commit` inalterado. Sem condição de
+  corrida: o `api:contract:check` depende de `build` e o Nx o ordena na
+  mesma execução. Nenhum código, script, módulo de contrato, artefato,
+  Dockerfile, `nx.json`, `.husky/*`, dependência ou `yarn.lock` foi
+  alterado; `docs/TARGET_ARCHITECTURE.md` fica para o fechamento da fase
+  (seção 13). **Risco registrado, sem alteração agora:** os `.d.ts` do
+  `dist` do `api-client` referenciam `./generated/schema`, que não existe
+  no `dist` (e o `exports` aponta `types` para a fonte `src/`); decidir
+  na **Fase 7, ao configurar o consumo pelo `apps/web`** — D2 e o build
+  não foram alterados.
 - **5.11 — Validação integrada**: `Pending`. `yarn validate` sem cache,
   `yarn validate:infra`, `contract:generate` duas vezes sem diff,
   rebuild das imagens, `/docs-json` do container igual ao
@@ -1684,7 +1710,7 @@ validate` aprovados. `schema.d.ts`, `openapi.json`, scripts, `apps/`,
 | D13 | `createApiClient({ baseUrl, fetch? })` + re-exports de tipos; `ProblemDetails` derivado do schema                                                                                                | Aprovada; implementada na 5.9                                                   |
 | D14 | Decisões registradas na ADR 009 (`Proposed`; `Accepted` no fechamento)                                                                                                                           | Aprovada                                                                        |
 | D15 | Dockerfiles ajustados na 5.3, imediata e no mesmo commit da 5.2                                                                                                                                  | Aprovada                                                                        |
-| D16 | `contract:check` em `validate:nx`; `contract:generate` fora de validate/hook/CI                                                                                                                  | Aprovada                                                                        |
+| D16 | `contract:check` em `validate:nx`; `contract:generate` fora de validate/hook/CI                                                                                                                  | Aprovada; implementada na 5.10                                                  |
 | D17 | Provas permanentes (puras, fs observado, módulo descartável) + prova pontual na 5.11                                                                                                             | Aprovada                                                                        |
 | D18 | `libs/api-client` em CommonJS como `libs/queue`; script de geração em `.mjs` (`openapi-typescript` só via `require(esm)`)                                                                        | Condição atendida (spike 5.1); `require()` do `dist` provado na 5.9             |
 

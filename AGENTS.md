@@ -61,7 +61,9 @@ Uma tarefa não está concluída até que o agente:
 - Rode `yarn validate` — o comando oficial que agrega
   `format:check`, lint do workspace e, via `validate:nx`, os targets
   cacheáveis do Nx (`lint`, `typecheck`, `test`, `build` de todos os
-  projetos e `api:test:integration`). É o mesmo comando que o hook
+  projetos e `api:test:integration`) e, desde a Fase 5 (subtarefa 5.10),
+  os dois `contract:check` (`api` e `api-client`, somente leitura, sem
+  cache). É o mesmo comando que o hook
   `pre-commit` do Husky executa localmente (ver seção 7) — nunca deve
   ser pulado antes de considerar uma tarefa concluída.
 - Rode as verificações de tipo, lint e testes aplicáveis ao escopo
@@ -427,10 +429,11 @@ apply` / `Seed complete: 2 role(s) in the catalog`); índice GiST em
   sem mudança de runtime) e **5.6** (gerador determinístico, alvo
   `api:contract:generate` e primeiro `openapi.json` versionado em
   `libs/api-client/openapi/`) e **5.7** (`api:contract:check`, somente
-  leitura, fora de `yarn validate` até a 5.10) e **5.8** (tipos gerados
+  leitura) e **5.8** (tipos gerados
   do `api-client`, `schema.d.ts` versionado) e **5.9** (cliente
   `openapi-fetch`, `createApiClient`, sem hooks nem singleton)
-  `Completed`. As subtarefas 5.10 a 5.12 estão `Pending` e **cada uma exige autorização
+  e **5.10** (`contract:check` dentro de `yarn validate` e do hook)
+  `Completed`. As subtarefas 5.11 e 5.12 estão `Pending` e **cada uma exige autorização
   explícita e individual**. As imagens Docker da API e do worker estiveram
   conscientemente quebradas entre a 5.2 e a 5.3 (o `yarn.lock` ganhou o
   quinto workspace) e foram consertadas na 5.3 (`COPY` de

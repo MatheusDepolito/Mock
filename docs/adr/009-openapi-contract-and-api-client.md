@@ -164,14 +164,21 @@ eol` no `openapi.json` devolve `text: set` e `eol: lf`).
     `libs/api-client/package.json` nos stages `build` e `runtime` de
     cada Dockerfile, provado com build real e execução das duas
     imagens.
-15. **D16 — `yarn validate` (aprovada).** `contract:check` é acrescentado
-    a `validate:nx`; o hook Husky continua chamando exatamente
-    `yarn validate`. `contract:generate` **nunca** entra em `yarn
-validate`, no hook ou em pipeline: é execução explícita que escreve
-    os artefatos, para que o drift nunca seja corrigido em silêncio
-    antes da checagem. `contract:check` é somente leitura (gera em
-    memória, compara bytes, nunca escreve no repositório) e começa com
-    `cache: false`.
+15. **D16 — `yarn validate` (aprovada; implementada na 5.10).**
+    `contract:check` foi acrescentado a `validate:nx`
+    (`nx run-many -t … build contract:check`); o hook Husky continua
+    chamando exatamente `yarn validate`, que agora executa as duas
+    tarefas `api:contract:check` e `api-client:contract:check`.
+    `contract:generate` **nunca** entra em `yarn validate`, no hook ou em
+    pipeline: é execução explícita que escreve os artefatos, para que o
+    drift nunca seja corrigido em silêncio antes da checagem.
+    `contract:check` é somente leitura (gera em memória, compara bytes,
+    nunca escreve no repositório) e roda com `cache: false`. **Custo
+    confirmado:** o `yarn validate` completo, com o cache do Nx
+    desligado, levou 32 s (medida informativa), e os checks sempre
+    reexecutam. Provado na 5.10 que o `validate` não muta o repositório
+    (SHA-256, mtime e `git status` dos artefatos idênticos antes e
+    depois).
 16. **D17 — Provas (aprovada).** Permanentes: função pura de comparação,
     teste de não escrita com `fs` observado, módulo Nest descartável
     dentro do teste que prova drift do pipeline. Pontual (subtarefa
@@ -242,7 +249,8 @@ workspace mudar de major de TypeScript), removendo a exceção.
 
 **Negativas / trade-offs aceitos**:
 
-- `contract:check` sem cache deixa `yarn validate` mais lento; cache só
+- `contract:check` sem cache deixa `yarn validate` mais lento (medido na
+  5.10: 32 s no `yarn validate` completo sem cache do Nx); cache só
   seria proposto com todos os inputs listados e prova negativa de
   invalidação. Como o gerador roda sobre o `dist` compilado, os alvos de
   contrato da API dependem de `build` (e de `db:generate`).
