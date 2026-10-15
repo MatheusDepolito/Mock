@@ -38,157 +38,50 @@ Regras de controle:
 
 ## Fase corrente
 
-**Fase 5 — OpenAPI e api-client**: `In Progress` — subtarefas 5.0
-(abertura documental), 5.1 (spike), 5.2 (scaffold de `libs/api-client`
-e dependências), 5.3 (Dockerfiles e o quinto workspace) e 5.4 (extração
-do setup HTTP e do documento Swagger) e 5.5 (documentação de Problem
-Details, headers e `operationId`s) e 5.6 (gerador determinístico e
-`api:contract:generate`) e 5.7 (`api:contract:check`, somente leitura)
-e 5.8 (tipos gerados e checks do `api-client`) e 5.9 (cliente
-`openapi-fetch`) e 5.10 (`contract:check` em `yarn validate`)
-e 5.10-B (guarda dos Dockerfiles contra workspace novo) e 5.11 (validação
-integrada) `Completed`; 5.12 e 5.13 `Pending`. Ver seção própria da Fase
-5 abaixo.
+**Fase 5 — OpenAPI e api-client**: `In Progress`. Esta seção é a **fonte
+única do status** das fases e subtarefas; `AGENTS.md` e `README.md`
+apenas apontam para cá. O detalhamento de cada fase está na sua própria
+seção, abaixo.
 
-**Fase 4 — Worker e BullMQ**: `Completed` — última fase concluída antes
-da corrente (4.1 a 4.7 `Completed` e aprovadas; ver seção própria da
-Fase 4 abaixo).
+| Fase                                                                          | Status        | Resumo                                                                                                 |
+| ----------------------------------------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------ |
+| [0 — Fundação e revisão documental](#fase-0--fundação-e-revisão-documental)   | `Completed`   | Revisão documental aprovada pelo responsável.                                                          |
+| [1 — Yarn 4 e Nx](#fase-1--yarn-4-e-nx-bootstrap-do-monorepo)                 | `Completed`   | Workspace Yarn 4 + Nx.                                                                                 |
+| [2 — API NestJS](#fase-2--api-nestjs-skeleton-da-api)                         | `Completed`   | Skeleton de `apps/api` e `libs/config`.                                                                |
+| [3 — Docker, PostGIS, Redis e Prisma](#fase-3--docker-postgis-redis-e-prisma) | `Completed`   | Tarefas 3.0 a 3.6; ADR 006/007/008 `Accepted`; readiness real; Dockerfile da API.                      |
+| [4 — Worker e BullMQ](#fase-4--worker-e-bullmq)                               | `Completed`   | Subtarefas 4.1 a 4.7; `libs/queue`, `apps/worker`, Dockerfile do worker.                               |
+| [5 — OpenAPI e api-client](#fase-5--openapi-e-api-client)                     | `In Progress` | 5.0 a 5.12 (incl. 5.10-B) `Completed`; **5.13** (fechamento documental) `Pending`; ADR 009 `Proposed`. |
+| 6 — Tailwind, `libs/ui` e Storybook                                           | `Pending`     | —                                                                                                      |
+| 7 — App Next.js e áreas por persona                                           | `Pending`     | —                                                                                                      |
+| 8 — Adapters Stripe e Mapbox em sandbox                                       | `Pending`     | —                                                                                                      |
+| 9 — Validação integrada do skeleton                                           | `Pending`     | —                                                                                                      |
 
-**Fase 3 — Docker, PostGIS, Redis e Prisma**: `Completed` — anterior
-à Fase 4, que também está `Completed`. As
-Tarefas 3.0 (abertura documental e especificação técnica), 3.1 (Docker
-Compose com PostGIS e Redis) e **3.2** (Prisma, schema, migration
-inicial e seed) estão **`Completed`** e aprovadas —
-[ADR 006](adr/006-persistence-and-local-infrastructure.md) e
-[ADR 007](adr/007-multi-tenant-workspace-foundation.md) estão ambas
-`Accepted` (ADR 007 supersede **exclusivamente a modelagem de dados**
-da ADR 006, seção "Entidades permitidas" em diante; as decisões de
-infraestrutura local e pipeline da ADR 006 — Docker Compose, Redis,
-separação de configs Prisma, `yarn validate` — continuam válidas).
-`docker-compose.yml` sobe `postgres` (`postgis/postgis:18-3.6`) e
-`redis` (`redis:8.8.2-alpine`), com os bancos `mockp` e `mockp_test`,
-healthchecks e volumes nomeados separados; `DATABASE_URL`/`REDIS_URL`
-são obrigatórias no `ServerConfig`, e `TEST_DATABASE_URL` é exclusiva
-de testes/scripts. `schema.prisma`, a migration inicial e o seed
-**implementam as 15 entidades multi-tenant da ADR 007**, validados
-offline e em banco limpo (volume PostgreSQL recriado, migration
-aplicada em `mockp` e `mockp_test`, seed idempotente, 15 tabelas +
-`_prisma_migrations`, **23 `CHECK`s do domínio Mockp** — 24 no total
-do schema `public`, incluindo `spatial_ref_sys_srid_check`, que
-pertence à extensão PostGIS, não ao domínio —, 17 FKs, índices e
-extensões confirmados, provas negativas/positivas em transação com
-rollback) — auditoria independente aprovou o resultado. **A Tarefa 3.3
-está `Completed`**. O planejamento arquitetural está **concluído e
-aprovado**: [ADR 008](adr/008-runtime-persistence-and-repositories.md)
-está `Accepted`. A Tarefa 3.3 foi executada subtarefa por subtarefa
-(oito no total, ADR 008 §8). **As subtarefas 3.3.1 a 3.3.6 estão
-`Completed` e aprovadas**: **3.3.1** — `RuntimeConfigModule`,
-`RedisModule` e `RedisService` (integração com o Redis exclusivamente
-lazy, nenhum teste offline abre socket real); **3.3.2** —
-`PrismaModule` e `PrismaService` (conexão com o Prisma exclusivamente
-lazy, nenhum `$connect()` eager, nenhuma query no bootstrap,
-`onModuleDestroy()` aguarda `$disconnect()`, nenhum teste offline abre
-conexão PostgreSQL real); **3.3.3** — composição offline do
-`AppModule`, com prova de instância única de `PrismaService`/
-`RedisService` no grafo Nest, conforme ADR 008 §7.2/§8; **3.3.4** —
-harness de infraestrutura real (`apps/api/test/infra/`, target
-`api:test:integration:infra`, comando raiz `yarn validate:infra`,
-conforme ADR 008 §7.3/§7.5) e os primeiros testes reais contra
-PostgreSQL/PostGIS e Redis; **3.3.5** — `UserRepository`
-(`createWithCredential`/`createWithAuthIdentity`/`findById`/
-`findByEmail`, ADR 008 §4.1) e `UsersModule`; **3.3.6** —
-`WorkspaceRepository` (`createIndividualWorkspace`/
-`createBrokerageWorkspace`, ambos totalmente atômicos em uma única
-transação, mais `findById`, ADR 008 §4.2) e `WorkspacesModule`. Todos
-já existem no código e já estão importados em `AppModule`. Até aqui,
-nenhum dos dois (Prisma/Redis) representava readiness real por si só —
-isso passou a ser exclusivamente a Tarefa 3.4 (ver fechamento abaixo);
-até este ponto da 3.3, nenhum Dockerfile da API existia ainda — isso
-passou a ser exclusivamente a Tarefa 3.5 (ver fechamento abaixo; não é
-mais o estado atual). **A subtarefa 3.3.7**
-(`PropertyRepository`/`PropertiesModule`, ADR 008 §4.3) está
-**`Completed` e aprovada** — implementada e commitada isoladamente
-(`9e0a1dc`). **A subtarefa 3.3.8** (validação integrada e fechamento
-documental) está **`Completed` e aprovada** — `yarn validate` e
-`yarn validate:infra` aprovados de ponta a ponta, sem nenhum achado.
-**168 testes unitários, 44 testes de integração offline e 52 testes de
-integração com infraestrutura real confirmados ao final da 3.3.8.**
-**A Tarefa 3.3 está `Completed`.** **A Tarefa 3.4** (readiness real e
-testes de falha das dependências) está **`Completed` e aprovada
-tecnicamente**: `GET /api/v1/health/ready` agora checa PostgreSQL/
-PostGIS (via `PrismaService`, transação com `set_config('statement_timeout',
-..., true)` parametrizado seguido de `PostGIS_Version()`) e Redis (via
-`RedisService.ping()`) — `200` com `checks: { application: 'up',
-database: 'up', redis: 'up' }` quando saudável; `503` em Problem
-Details, `code: SERVICE_UNAVAILABLE`, sem `checks`, na falha de
-qualquer dependência. `GET /api/v1/health/live` permanece
-independente. **180 testes unitários, 49 testes de integração offline e
-53 testes de integração com infraestrutura real confirmados ao final da
-3.4**, incluindo um teste real do `set_config` parametrizado e
-validação operacional manual (parada/recuperação individual de
-`redis`/`postgres`, com `503`/`200` e liveness `200` confirmados; ambos
-os containers restaurados saudáveis). Risco residual aceito: o timeout
-do probe não cancela necessariamente uma tentativa física de conexão
-PostgreSQL ainda pendente em falha extrema de rede; a configuração
-compartilhada do `PrismaService` não foi alterada. **A Tarefa 3.5**
-(Dockerfile da API) está **`Completed` e aprovada tecnicamente**:
-`apps/api/Dockerfile` multi-stage (imagem-base e Yarn fixados nos dois
-stages, conforme ADR 006, "Dockerfile da API e Prisma"), usuário
-não-root no stage final, sem depender de `node_modules`/arquivos do
-host, `CMD` iniciando somente `node dist/apps/api/src/main.js` (sem
-migration automática), com `.dockerignore` correspondente. Validado:
-`yarn validate` aprovado; build real da imagem a partir da raiz do
-monorepo; API iniciando a partir da imagem com
-`GET /api/v1/health/live`/`GET /api/v1/health/ready` respondendo `200`
-contra o `postgres`/`redis` locais já existentes (sem pará-los ou
-recriá-los); usuário não-root confirmado; ausência de
-`prisma.test.config.ts` e de qualquer fonte TypeScript não compilado na
-imagem confirmada; ausência de migration automática no boot confirmada
-via `/proc/1/cmdline`; comando explícito
-`yarn workspace api prisma migrate deploy --config prisma.migrate.config.ts`
-executado dentro da imagem exclusivamente contra `mockp_test` (host e
-nome do banco confirmados antes), de forma idempotente (`No pending
-migrations to apply`); container de teste encerrado ao final, sem
-alterar o profile `full` do Compose. Duas lacunas factuais da ADR 006
-foram corrigidas durante a validação (a decisão em si não mudou): o
-caminho real do `CMD` é `dist/apps/api/src/main.js`, e o cache do
-Corepack precisou de `COREPACK_HOME` fixo e de `/app` com posse
-ajustada para o usuário `node`, para que nenhuma chamada de rede nem
-erro de permissão ocorresse em runtime. **A Tarefa 3.6** (validação
-integrada e fechamento documental) está **`Completed` e aprovada
-tecnicamente**: checklist de ponta a ponta da Fase 3 aprovado sem
-nenhum item pendente ou bloqueado. **Provas novas desta rodada**:
-`postgres`/`redis` saudáveis via `docker compose ps`, sem parar ou
-reiniciar nenhum dos dois; imagem de `apps/api` reconstruída a partir
-da raiz do monorepo (manifest idêntico ao build da 3.5 — build
-reprodutível) e iniciada em um container novo e temporário, com
-liveness/readiness `200`, usuário `node` e ausência de migration
-automática (`/proc/1/cmdline`) reconfirmados;
-`db:migrate:deploy:test`/`db:seed:test` executados contra `mockp_test`
-de forma idempotente (`No pending migrations to apply` / `Seed
-complete: 2 role(s) in the catalog`); índice GiST em
-`addresses.location` confirmado via `pg_indexes`; as 15 tabelas de
-domínio da ADR 007 confirmadas em `mockp_test` via `\dt`; `yarn
-validate` e `yarn validate:infra` reaprovados de ponta a ponta (mesmas
-contagens da 3.4). O container de teste foi encerrado ao final; nenhum
-volume foi recriado, nenhuma dependência foi parada manualmente nesta
-rodada, e o profile `full` não foi executado. **Provas históricas
-reaproveitadas, não repetidas**: migration em banco limpo (Tarefa 3.2)
-e a queda real de PostgreSQL/Redis fazendo o readiness responder `503`
-(Tarefa 3.4, validação operacional manual). **Divergência histórica
-sinalizada, não corrigida na ADR 006**: a ADR 006 registra um catálogo
-original de 4 papéis globais (`RoleName { CUSTOMER AGENT MANAGER
-ADMIN }`), parte da modelagem de dados que a ADR 007 supersede
-explicitamente — o seed atual, com 2 papéis globais (`CUSTOMER`,
-`ADMIN`), está correto e reflete a ADR 007; as menções a "4 papéis" na
-ADR 006 são registro histórico, não o contrato atual, e a ADR 006 não
-foi alterada nesta rodada, permanece `Accepted`. **A Tarefa 3.6 está
-`Completed`. A Fase 3 — Docker, PostGIS, Redis e Prisma — está
-`Completed`**. As Fases 0, 1 e 2 também estão `Completed`. **A Fase 4 —
-Worker e BullMQ — está `Completed`**: as subtarefas 4.1 a 4.7 estão
-`Completed` e aprovadas. **A Fase 5 — OpenAPI e api-client — está
-`In Progress`** (ver sua seção própria). Ver a seção própria da Fase 4
-para o detalhamento.
+Cada subtarefa da Fase 5 ainda `Pending` exige autorização explícita e
+individual; nenhuma subtarefa autoriza, por si só, commit, branch ou
+push.
+
+## Riscos residuais e gatilhos
+
+Registro único dos riscos residuais aceitos. Cada linha aponta para o
+local de origem (onde está o detalhamento) e para o **gatilho de
+revisão** — a condição em que o risco deve ser reavaliado. Um gatilho
+é um critério de revisão, não uma decisão: qualquer ação decorrente
+exige autorização explícita.
+
+| Risco residual                                                                                                                                                                                                                                                         | Origem                                  | Gatilho de revisão                                                                                                  |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| O timeout do probe de readiness do PostgreSQL garante prazo finito de resposta, mas não cancela necessariamente uma tentativa física de conexão pendente em falha extrema de rede; `connectionTimeoutMillis` não foi adicionado ao `PrismaService` compartilhado.      | Fase 3, Tarefa 3.4                      | Primeiro uso do `PrismaService` por um Controller/serviço de domínio, ou qualquer incidente de readiness pendurado. |
+| O isolamento por banco lógico `1` do Redis nos testes reais e no preflight do worker é convenção, não garantia técnica; o preflight mitiga, não elimina execução concorrente.                                                                                          | Fase 4, 4.5, 4.6 e 4.7                  | Segundo consumidor real do Redis do Compose, ou execução concorrente de testes.                                     |
+| `host.docker.internal` (caminho container → Redis/PostgreSQL do host) só existe no Docker Desktop.                                                                                                                                                                     | Fase 3, 3.5; Fase 4, 4.6 e 4.7          | Primeira execução em outro ambiente (CI/Linux nativo) ou a Fase 9 (Compose `full`).                                 |
+| O grafo de workspaces está duplicado nos Dockerfiles da API e do worker; um workspace novo exige ajustar os dois (há guarda automática no `yarn validate` desde a 5.10-B).                                                                                             | Fase 4, 4.6 e 4.7; Fase 5, 5.10-B       | Criação de qualquer workspace novo (`apps/web`, `libs/ui`, …) ou novo Dockerfile.                                   |
+| Imagens grandes: o `node_modules` completo da imagem do worker inclui pacotes Prisma/`pg` inertes (sem import nem acesso a banco, provado).                                                                                                                            | Fase 4, 4.6 e 4.7                       | Fase 9, ou qualquer necessidade de reduzir tamanho/tempo de build das imagens.                                      |
+| O Dockerfile do worker não foi exercitado via profile `full` do Compose.                                                                                                                                                                                               | Fase 4, 4.6 e 4.7                       | Fase 9 (profile `full` do Compose).                                                                                 |
+| A ADR 006 mantém divergências factuais apenas reportadas, sem alteração: a seção "Dockerfile da API e Prisma" lista só `libs/config`, e há menções ao catálogo original de 4 papéis globais (superseded pela ADR 007; o seed atual tem 2). A ADR permanece `Accepted`. | Fase 3, 3.5 e 3.6; Fase 4, 4.6 e 4.7    | Próxima alteração autorizada da ADR 006 ou do Dockerfile da API.                                                    |
+| A propagação de `X-Request-Id` HTTP → job não foi comprovada (só o `requestId` do comando interno até o worker; nenhum endpoint HTTP enfileira jobs).                                                                                                                  | Fase 4, 4.7                             | Primeiro endpoint HTTP que enfileire um job.                                                                        |
+| Warning de peer `typescript ^5.x` × 6.0.3 do `openapi-typescript` aceito como exceção documentada (sem override, sem `resolutions`, sem `--legacy-peer-deps`).                                                                                                         | Fase 5, 5.1, 5.2 e ADR 009 (D7)         | Nova versão do `openapi-typescript` com suporte ao TypeScript 6, ou troca de versão do TypeScript.                  |
+| `contract:check` roda com `cache: false` e custa tempo no `yarn validate` (32 s totais com cache do Nx desligado, 13,8 s no `run-many` principal, medidos na 5.10).                                                                                                    | Fase 5, 5.10 e 5.11                     | Duração do `yarn validate` incomodar o fluxo, ou introdução de CI.                                                  |
+| Os `.d.ts` do `dist` do `api-client` referenciam `./generated/schema`, que não existe no `dist`, e o `exports` aponta `types` para a fonte `src/`.                                                                                                                     | Fase 5, 5.10                            | Fase 7, ao configurar o consumo da lib pelo `apps/web`.                                                             |
+| O `tsconfig.json` raiz tem uma lacuna histórica quanto a `worker`/`queue`, não alterada por não ser necessária à Fase 5.                                                                                                                                               | Fase 5 (nota após a tabela de decisões) | Quando um workspace novo precisar de referência no `tsconfig.json` raiz.                                            |
 
 ---
 
@@ -1181,8 +1074,8 @@ documento Swagger) e 5.5 (documentação de Problem Details, headers e
 e 5.8 (tipos gerados e checks do `api-client`) e 5.9 (cliente
 `openapi-fetch`), 5.10 (`contract:check` em `yarn validate`) e 5.10-B
 (guarda dos Dockerfiles contra workspace novo) e 5.11 (validação
-integrada) estão `Completed`; as subtarefas 5.12 e 5.13 estão
-`Pending`. Cada subtarefa exige autorização explícita e
+integrada) e 5.12 (limpeza documental) estão `Completed`; a subtarefa
+5.13 está `Pending`. Cada subtarefa exige autorização explícita e
 individual, e nenhuma delas autoriza commit, branch ou push. O registro
 das decisões está na
 [ADR 009](adr/009-openapi-contract-and-api-client.md) (`Proposed`,
@@ -1813,9 +1706,20 @@ db:validate db:generate lint typecheck test build contract:check`, e
   saudáveis, nunca parados/reiniciados/recriados; imagens anteriores
   preservadas (as `5.11-test` são novas); cópia e arquivos do
   scratchpad removidos; `git status` limpo.
-- **5.12 — Limpeza documental**: `Pending`. Enxugar o `AGENTS.md`,
-  fazer do roadmap a fonte única de status das fases e subtarefas e
-  reunir os riscos residuais numa seção única, cada um com seu gatilho.
+- **5.12 — Limpeza documental**: `Completed` — aprovada. Somente
+  documentação (`AGENTS.md`, `README.md` e este roadmap), sem mudar
+  nenhuma regra, decisão, ADR ou conteúdo técnico. O `AGENTS.md` ficou
+  com as seções 1 a 5 e 7 inalteradas, a seção 6 reduzida a uma linha
+  por fase concluída mais o escopo da fase ativa e as regras
+  preservadas, e uma nova seção 8 ("Fluxo por subtarefa"); o histórico
+  foi removido dele. Este roadmap passou a ser a **fonte única do
+  status** (seção "Fase corrente", agora uma tabela curta) e ganhou a
+  seção "Riscos residuais e gatilhos", logo após ela. O `README.md`
+  ficou com um resumo curto do estado. Antes de remover qualquer fato
+  do `AGENTS.md`/`README.md`, conferiu-se que ele já constava da seção
+  da fase correspondente deste roadmap (análise por frases e por
+  termos; nenhum fato precisou ser movido para fora do que as seções
+  de fase já registram).
 - **5.13 — Fechamento documental**: `Pending`. Roadmap, README, AGENTS,
   `TARGET_ARCHITECTURE.md` (§6 e §13) e ADR 009 (`Accepted`) na mesma
   alteração.
