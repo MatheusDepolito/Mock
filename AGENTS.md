@@ -128,10 +128,22 @@ Fases concluídas (`Completed`), com o detalhamento no roadmap:
 - **Fase 5 — OpenAPI e api-client**: `Completed`; ADR 009 `Accepted`
   ([roadmap](docs/IMPLEMENTATION_ROADMAP.md#fase-5--openapi-e-api-client)).
 
-**Nenhuma fase está `In Progress`.** A última concluída é a Fase 5; a
-Fase 6 — Tailwind, `libs/ui` e Storybook — e as seguintes (7 a 9)
-permanecem `Pending` e só podem ser iniciadas com autorização
-explícita.
+Fase ativa:
+
+- **Fase 6 — Tailwind, `libs/ui` e Storybook**: `In Progress` — fase
+  corrente; o estado das subtarefas está no
+  [roadmap](docs/IMPLEMENTATION_ROADMAP.md#fase-6--tailwind-libsui-e-storybook)
+  e as decisões na [ADR 010](docs/adr/010-ui-foundation.md). Cada
+  subtarefa exige autorização explícita e individual. Regras desta
+  fase:
+  - Os tokens de design são propriedade de `libs/ui`; nunca os defina
+    em `libs/config` nem em `apps/web`.
+  - `libs/ui` não importa API, Auth.js, TanStack Query, configuração
+    server-only, `next/*` nem tipos de domínio.
+  - As regras permanentes do contrato OpenAPI (abaixo) e a regra de
+    peers (sem override, sem `--legacy-peer-deps`, sem troca de
+    ferramenta, sem rebaixar o TypeScript; em qualquer incompatibilidade,
+    parar e reportar) continuam valendo.
 
 Regras permanentes do contrato OpenAPI
 ([ADR 009](docs/adr/009-openapi-contract-and-api-client.md)):
@@ -152,9 +164,10 @@ Limites de escopo:
 
 - Não crie `apps/web`, outras `libs/*` de produto, Next.js,
   autenticação, domínio de negócio ou qualquer outra peça de fases
-  posteriores à Fase 5 (a Fase 6 e as seguintes, todas `Pending`), e
-  não antecipe entregáveis de fases futuras, mesmo que solicitado de
-  forma implícita por uma tarefa, a menos que essa tarefa autorize
+  posteriores à Fase 6 (as Fases 7 a 9, todas `Pending`), e não
+  antecipe entregáveis de fases futuras (incluindo qualquer subtarefa
+  da Fase 6 além da já autorizada), mesmo que solicitado de forma
+  implícita por uma tarefa, a menos que essa tarefa autorize
   explicitamente o avanço.
 - Não crie commits, branches, remotes ou publique nada, a menos que a
   tarefa autorize explicitamente essa ação.

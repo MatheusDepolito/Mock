@@ -38,29 +38,29 @@ Regras de controle:
 
 ## Fase corrente
 
-**Nenhuma fase está `In Progress`.** A última fase concluída é a **Fase 5
-— OpenAPI e api-client**; a próxima do roadmap, a Fase 6, permanece
-`Pending`. Esta seção é a **fonte única do status** das fases e
-subtarefas; `AGENTS.md` e `README.md`
-apenas apontam para cá. O detalhamento de cada fase está na sua própria
+**Fase 6 — Tailwind, `libs/ui` e Storybook**: `In Progress` (exatamente
+uma fase `In Progress`). As Fases 0 a 5 estão `Completed` e as Fases 7 a
+9 `Pending`. Esta seção é a **fonte única do status** das fases e
+subtarefas; `AGENTS.md` e `README.md` apenas apontam para cá. O detalhamento de cada fase está na sua própria
 seção, abaixo.
 
-| Fase                                                                          | Status      | Resumo                                                                                                                                         |
-| ----------------------------------------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| [0 — Fundação e revisão documental](#fase-0--fundação-e-revisão-documental)   | `Completed` | Revisão documental aprovada pelo responsável.                                                                                                  |
-| [1 — Yarn 4 e Nx](#fase-1--yarn-4-e-nx-bootstrap-do-monorepo)                 | `Completed` | Workspace Yarn 4 + Nx.                                                                                                                         |
-| [2 — API NestJS](#fase-2--api-nestjs-skeleton-da-api)                         | `Completed` | Skeleton de `apps/api` e `libs/config`.                                                                                                        |
-| [3 — Docker, PostGIS, Redis e Prisma](#fase-3--docker-postgis-redis-e-prisma) | `Completed` | Tarefas 3.0 a 3.6; ADR 006/007/008 `Accepted`; readiness real; Dockerfile da API.                                                              |
-| [4 — Worker e BullMQ](#fase-4--worker-e-bullmq)                               | `Completed` | Subtarefas 4.1 a 4.7; `libs/queue`, `apps/worker`, Dockerfile do worker.                                                                       |
-| [5 — OpenAPI e api-client](#fase-5--openapi-e-api-client)                     | `Completed` | Subtarefas 5.0 a 5.13 (incl. 5.10-B); contrato OpenAPI versionado, `libs/api-client`, `contract:check` no `yarn validate`; ADR 009 `Accepted`. |
-| 6 — Tailwind, `libs/ui` e Storybook                                           | `Pending`   | —                                                                                                                                              |
-| 7 — App Next.js e áreas por persona                                           | `Pending`   | —                                                                                                                                              |
-| 8 — Adapters Stripe e Mapbox em sandbox                                       | `Pending`   | —                                                                                                                                              |
-| 9 — Validação integrada do skeleton                                           | `Pending`   | —                                                                                                                                              |
+| Fase                                                                          | Status        | Resumo                                                                                                                                         |
+| ----------------------------------------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| [0 — Fundação e revisão documental](#fase-0--fundação-e-revisão-documental)   | `Completed`   | Revisão documental aprovada pelo responsável.                                                                                                  |
+| [1 — Yarn 4 e Nx](#fase-1--yarn-4-e-nx-bootstrap-do-monorepo)                 | `Completed`   | Workspace Yarn 4 + Nx.                                                                                                                         |
+| [2 — API NestJS](#fase-2--api-nestjs-skeleton-da-api)                         | `Completed`   | Skeleton de `apps/api` e `libs/config`.                                                                                                        |
+| [3 — Docker, PostGIS, Redis e Prisma](#fase-3--docker-postgis-redis-e-prisma) | `Completed`   | Tarefas 3.0 a 3.6; ADR 006/007/008 `Accepted`; readiness real; Dockerfile da API.                                                              |
+| [4 — Worker e BullMQ](#fase-4--worker-e-bullmq)                               | `Completed`   | Subtarefas 4.1 a 4.7; `libs/queue`, `apps/worker`, Dockerfile do worker.                                                                       |
+| [5 — OpenAPI e api-client](#fase-5--openapi-e-api-client)                     | `Completed`   | Subtarefas 5.0 a 5.13 (incl. 5.10-B); contrato OpenAPI versionado, `libs/api-client`, `contract:check` no `yarn validate`; ADR 009 `Accepted`. |
+| [6 — Tailwind, `libs/ui` e Storybook](#fase-6--tailwind-libsui-e-storybook)   | `In Progress` | 6.0 `Completed`; 6.1 a 6.9 `Pending`; ADR 010 `Proposed`.                                                                                      |
+| 7 — App Next.js e áreas por persona                                           | `Pending`     | —                                                                                                                                              |
+| 8 — Adapters Stripe e Mapbox em sandbox                                       | `Pending`     | —                                                                                                                                              |
+| 9 — Validação integrada do skeleton                                           | `Pending`     | —                                                                                                                                              |
 
-Nenhuma fase futura pode ser iniciada sem autorização explícita: a Fase 6
-e as seguintes permanecem `Pending`. Nenhuma subtarefa autoriza, por si
-só, commit, branch ou push.
+Nenhuma fase futura pode ser iniciada sem autorização explícita: as Fases
+7 a 9 permanecem `Pending`. Cada subtarefa da Fase 6 ainda `Pending`
+exige autorização explícita e individual; nenhuma subtarefa autoriza, por
+si só, commit, branch ou push.
 
 ## Riscos residuais e gatilhos
 
@@ -84,6 +84,9 @@ exige autorização explícita.
 | `contract:check` roda com `cache: false` e custa tempo no `yarn validate` (32 s totais com cache do Nx desligado, 13,8 s no `run-many` principal, medidos na 5.10).                                                                                                    | Fase 5, 5.10 e 5.11                     | Duração do `yarn validate` incomodar o fluxo, ou introdução de CI.                                                  |
 | Os `.d.ts` do `dist` do `api-client` referenciam `./generated/schema`, que não existe no `dist`, e o `exports` aponta `types` para a fonte `src/`.                                                                                                                     | Fase 5, 5.10                            | Fase 7, ao configurar o consumo da lib pelo `apps/web`.                                                             |
 | O `tsconfig.json` raiz tem uma lacuna histórica quanto a `worker`/`queue`, não alterada por não ser necessária à Fase 5.                                                                                                                                               | Fase 5 (nota após a tabela de decisões) | Quando um workspace novo precisar de referência no `tsconfig.json` raiz.                                            |
+| Dependências de UI (React, Tailwind e afins) passam a ser instaladas nas imagens da API e do worker, porque os Dockerfiles acompanham o grafo de workspaces (D14 da ADR 010); refatorá-los seria mudança de infraestrutura.                                            | Fase 6, D14 e 6.2                       | Reduzir tempo/tamanho de build das imagens, ou a Fase 7.                                                            |
+| A duração do `yarn validate` cresce com o Storybook no `validate:nx` (D13 da ADR 010); a decisão será reavaliada com a duração medida na 6.7.                                                                                                                          | Fase 6, D13 e 6.7                       | Duração do `yarn validate` incomodar o fluxo, ou introdução de CI.                                                  |
+| `libs/ui` tende a ser consumida como fonte TS/TSX (D6 da ADR 010, a confirmar no spike 6.1), o que exige configuração no consumidor.                                                                                                                                   | Fase 6, D6 e 6.1                        | Fase 7, ao configurar o `apps/web` (`transpilePackages`).                                                           |
 
 ---
 
@@ -1786,12 +1789,61 @@ estritamente separados; `contract:check` começa com `cache: false`. O
 
 ## Fase 6 — Tailwind, libs/ui e Storybook
 
-**Status**: Pending
+**Status**: In Progress. A subtarefa 6.0 (abertura documental e
+branch) está `Completed`; as subtarefas 6.1 a 6.9 estão `Pending`. Cada
+subtarefa exige autorização explícita e individual, e nenhuma delas
+autoriza commit, branch ou push. O registro das decisões está na
+[ADR 010](adr/010-ui-foundation.md) (`Proposed`; complementa a
+[ADR 003](adr/003-frontend-organization.md) sem alterá-la).
 
 **Objetivo**: estabelecer `libs/ui` como design system isolado e
 documentado, **antes** de existir o app Next.js, para que este último
 apenas consuma componentes já prontos (sem dependência circular entre
 frontend e design system).
+
+**Subtarefas**:
+
+- **6.0 — Abertura documental e branch**: `Completed`. Somente
+  documentação: criação da branch `feat/phase-6-ui` a partir de
+  `d3c91f8` (D1; sem push nem upstream); Fase 6 passa a `In Progress` no
+  roadmap, README e AGENTS §6 na mesma alteração; subtarefas e decisões
+  registradas aqui; ADR 010 criada (`Proposed`); nota curta na seção 5
+  de `docs/TARGET_ARCHITECTURE.md`, sem alterar nenhuma decisão. Nenhum
+  código, configuração, dependência ou Dockerfile; ADRs 001–009
+  inalteradas.
+- **6.1 — Spike S1 (fora do repositório)**: `Pending`. Investigar,
+  sem alterar o repositório: Tailwind (versão e integração, D5; CSS como
+  fonte de tokens, D2), Storybook sobre Vite 8, TypeScript 6 e Node 24
+  (D7), React, Vitest + jsdom + Testing Library (D8), `@nx/storybook`
+  versus `nx:run-commands`, consumo por um app mínimo fora do
+  repositório (D6), formato de módulo, plugins de ESLint (D15) e peers
+  (D16). **Condições de parada** (parar e reportar opções, sem decidir):
+  qualquer incompatibilidade com TypeScript 6, Vite 8 ou Node 24; o
+  Tailwind não ter caminho viável para tokens compartilhados
+  consumíveis de fora de `libs/ui`; o Storybook não buildar; o consumo
+  por um app mínimo exigir ajuste na estrutura de `libs/ui`; ou algum
+  peer virar erro de instalação. Sem override, sem `--legacy-peer-deps`.
+- **6.2 — Scaffold de `libs/ui`**: `Pending`. Workspace `libs/ui`,
+  dependências com versões exatas **e** `COPY libs/ui/package.json` nos
+  dois stages dos dois Dockerfiles, na mesma subtarefa, com build real
+  das imagens e `yarn workspaces list` (D14).
+- **6.3 — Tokens e pipeline Tailwind**: `Pending`. Tokens semânticos
+  sobre escalas (D3) e o pipeline Tailwind que os exporta.
+- **6.4 — Guardas de arquitetura**: `Pending`. ESLint
+  (`no-restricted-imports`) e teste permanente de isolamento de
+  `libs/ui` (D12), mais os plugins de ESLint se o spike os confirmar
+  (D15).
+- **6.5 — Atoms e molecules**: `Pending`. Conforme o conjunto mínimo
+  (D9).
+- **6.6 — Organisms e templates**: `Pending`. `AppHeader`, `SideNav`,
+  `AppShell` e `FormPageLayout`, genéricos (D10, D11).
+- **6.7 — Storybook**: `Pending`. Build cacheável, página "Tokens"
+  (D4), addon a11y (D8), medição da duração para reavaliar D13.
+- **6.8 — Validação integrada**: `Pending`. `yarn validate` sem cache,
+  `yarn validate:infra`, imagens, simulação de consumo e greps.
+- **6.9 — Limpeza e fechamento**: `Pending`. Roadmap `Completed`, ADR
+  010 `Accepted`, `TARGET_ARCHITECTURE.md` seções 5 e 13; README e
+  AGENTS só com a linha de status.
 
 **Entregáveis**:
 
@@ -1805,6 +1857,13 @@ frontend e design system).
 - `libs/ui` com um conjunto mínimo de componentes-base (atoms/molecules)
   usando Tailwind CSS e Tabler Icons.
 - Storybook configurado, renderizando os componentes-base.
+- Templates genéricos `AppShell` e `FormPageLayout` (com `AppHeader` e
+  `SideNav`), que recebem marca, itens de menu e área do usuário por
+  props, sem conhecer persona nem sessão (D9, D10, D11).
+- Guardas de isolamento de `libs/ui`: ESLint (`no-restricted-imports`)
+  e teste permanente, ambos dentro do `yarn validate` (D12).
+- Página "Tokens" no Storybook e contrato de nomes com o Figma (README
+  da lib + página "Tokens"; o valor muda, o nome não) (D4).
 
 **Validações**:
 
@@ -1819,6 +1878,55 @@ frontend e design system).
   Storybook e prontos para serem consumidos por `apps/web` na Fase 7,
   sem nenhum ajuste retroativo necessário em `libs/ui` motivado pelo
   frontend.
+
+**Decisões** (ADR 010; numeração do plano técnico aprovado):
+
+| ID  | Pergunta                                 | Alternativas                                                                                          | Decisão aprovada                                                                                                                            | Consequência                                                                                               | Estado                                    |
+| --- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| D1  | Branch da fase                           | partir da atual; do `main` após merge                                                                 | `feat/phase-6-ui` a partir da branch atual (`d3c91f8`)                                                                                      | PR e merge ficam para depois                                                                               | Aprovada                                  |
+| D2  | Formato dos tokens                       | CSS como fonte única; objeto TS que gera o CSS                                                        | CSS como fonte única, se o Tailwind escolhido suportar                                                                                      | Tailwind e Storybook leem o mesmo arquivo; trocar valores é editar um arquivo                              | Aprovada, condicional ao spike 6.1        |
+| D3  | Paleta e nomes                           | escalas numeradas; camada semântica (`primary`, `surface`, `text`, `danger`, `success`) sobre escalas | Camada semântica sobre escalas, com valores provisórios derivados da paleta do front antigo                                                 | Componentes usam só nomes semânticos; o Figma mapeia nome a nome                                           | Aprovada                                  |
+| D4  | Contrato de nomes com o Figma            | só o README; README + página no Storybook                                                             | README da lib + página "Tokens" no Storybook                                                                                                | O Figma usa variáveis com os mesmos nomes; o valor muda, o nome não                                        | Aprovada                                  |
+| D5  | Versão e integração do Tailwind          | fixar agora; decidir após o spike                                                                     | Decidir pelo spike 6.1                                                                                                                      | Pode mudar o formato de D2                                                                                 | Decidida pelo spike 6.1                   |
+| D6  | Como `apps/web` consome `libs/ui`        | fonte TS/TSX; `dist` compilado                                                                        | Recomendação: fonte TS/TSX; decisão final após o spike                                                                                      | Afeta a Fase 7 (`transpilePackages`); `dist` exigiria build de React e CSS                                 | Decidida pelo spike 6.1                   |
+| D7  | Storybook                                | `@storybook/react-vite`; framework Next                                                               | `@storybook/react-vite`                                                                                                                     | `libs/ui` não depende do Next; integração Nx por `nx:run-commands` ou `@nx/storybook` a definir pelo spike | Aprovada; integração Nx pendente do spike |
+| D8  | Teste de componentes                     | Vitest + jsdom + Testing Library; só interaction tests do Storybook                                   | Vitest + jsdom + Testing Library, mais o addon a11y do Storybook                                                                            | Segue a stack já aprovada (`TARGET_ARCHITECTURE.md` seção 13)                                              | Aprovada                                  |
+| D9  | Conjunto mínimo de componentes           | (lista abaixo)                                                                                        | Conjunto abaixo                                                                                                                             | Um conjunto maior seria especulação sem design                                                             | Aprovada                                  |
+| D10 | Onde ficam os dados de menu das personas | `apps/web`; `libs/ui`; `libs/config`                                                                  | `apps/web` (Fase 7)                                                                                                                         | `libs/ui` continua sem conhecer persona                                                                    | Aprovada                                  |
+| D11 | Templates da Fase 6                      | só `AppShell`; `AppShell` + `FormPageLayout`; mais                                                    | `AppShell` + `FormPageLayout`                                                                                                               | O `AppShell` precisa nascer na Fase 6 por causa do critério "sem ajuste retroativo"                        | Aprovada                                  |
+| D12 | Como garantir o isolamento de `libs/ui`  | convenção; ESLint; ESLint + teste                                                                     | ESLint (`no-restricted-imports`) + teste permanente                                                                                         | A regra falha o `yarn validate`, sem depender de revisão                                                   | Aprovada                                  |
+| D13 | Storybook no `yarn validate`             | no `validate:nx` com cache; separado                                                                  | No `validate:nx`, com cache; reavaliar com a duração medida na 6.7                                                                          | Evita Storybook quebrar em silêncio, ao custo de tempo                                                     | Aprovada; a reavaliar com dado medido     |
+| D14 | Dockerfiles e o novo workspace           | acompanhar o grafo (a guarda exige); refatorar Dockerfiles para instalar só o necessário              | Acompanhar o grafo; registrar o aumento de instalação como risco com gatilho                                                                | Refatorar os Dockerfiles seria mudança de infraestrutura, separada                                         | Aprovada                                  |
+| D15 | Plugins de ESLint                        | adicionar `react-hooks` e `jsx-a11y`; não adicionar                                                   | Adicionar, se o spike confirmar compatibilidade com ESLint 9.39                                                                             | Mais dependências, mas acessibilidade vira regra                                                           | Aprovada, condicional ao spike 6.1        |
+| D16 | Regra de peers (TypeScript 6)            | igual ao D7 da Fase 5                                                                                 | Sem override, sem `--legacy-peer-deps`, sem troca de ferramenta, sem rebaixar o TypeScript; em qualquer incompatibilidade, parar e reportar | Mesmo padrão já validado                                                                                   | Regra aprovada                            |
+| D17 | i18n                                     | biblioteca já; textos por props; adiar                                                                | Textos sempre por props, sem biblioteca (a ADR 003 não define i18n)                                                                         | Evita travar a Fase 6 numa decisão que a ADR deixou fora                                                   | Aprovada                                  |
+| D18 | Fontes                                   | carregar Inter em `libs/ui`; só o token com fallback                                                  | Só o token `font-sans` com pilha de fallback; o carregamento da fonte é do consumidor (`next/font` na Fase 7)                               | `libs/ui` não carrega arquivos de fonte                                                                    | Aprovada                                  |
+| D19 | Dark mode                                | agora; adiar                                                                                          | Adiar (os tokens semânticos deixam a porta aberta)                                                                                          | Sem custo de design agora                                                                                  | Aprovada                                  |
+| D20 | `tsconfig.json` da raiz                  | alterar; manter                                                                                       | Manter, salvo necessidade demonstrada                                                                                                       | Já é um risco registrado com gatilho                                                                       | Aprovada                                  |
+| D21 | Registro das decisões                    | ADR; só roadmap                                                                                       | ADR 010 `Proposed` na 6.0 e `Accepted` no fechamento                                                                                        | Mais um documento, decisões duráveis rastreáveis                                                           | Aprovada                                  |
+
+**Conjunto mínimo de componentes (D9)**:
+
+- **Atoms:** `Button`, `Badge`, `Container`, `Spinner`, `TextInput`,
+  `Label`, `FieldError`, `Icon` (wrapper do Tabler).
+- **Molecules:** `FormField` (rótulo + campo + erro), `Dialog` (Headless
+  UI), `Tabs`, `EmptyState`, `Alert`.
+- **Organisms:** `AppHeader`, `SideNav`.
+- **Templates:** `AppShell`, `FormPageLayout`.
+- **Fora do conjunto:** `Toast` (exige estado global ou biblioteca),
+  mapas, Stripe e qualquer componente de domínio.
+
+**Divisão de templates**:
+
+- `libs/ui` contém apenas templates **genéricos**: recebem marca, itens
+  de menu e área do usuário por **props genéricas**, sem conhecer
+  persona nem sessão, e sem requests ou autorização (ADR 003).
+- A montagem de cada área (`/customer`, `/agent`, `/manager`, `/admin`)
+  fica em `apps/web`, nos `layout.tsx` de cada rota, usando o
+  `AppShell` com os dados de cada persona (Fase 7).
+
+**Condições de parada do spike 6.1**: ver a subtarefa 6.1; a ADR 010 as
+registra também.
 
 ---
 

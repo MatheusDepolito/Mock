@@ -3,10 +3,11 @@
 Mockp é uma plataforma imobiliária que conecta clientes, corretores e
 corretoras.
 
-**Estado**: nenhuma fase está `In Progress`. As Fases 0 a 5 estão
-`Completed` (a última concluída é a **Fase 5 — OpenAPI e api-client**) e
-a Fase 6, a próxima do roadmap, está `Pending`, assim como as Fases 7 a 9. O status detalhado, por fase e subtarefa, e os riscos residuais estão
-no [roadmap](docs/IMPLEMENTATION_ROADMAP.md#fase-corrente). Antes de
+**Estado**: a **Fase 6 — Tailwind, `libs/ui` e Storybook** está
+`In Progress`; as Fases 0 a 5 estão `Completed` e as Fases 7 a 9
+`Pending`. O status detalhado, por fase e subtarefa, e os riscos
+residuais estão no
+[roadmap](docs/IMPLEMENTATION_ROADMAP.md#fase-corrente). Antes de
 qualquer novo scaffold ou implementação, leia a documentação abaixo —
 ela é a fonte de verdade do projeto.
 
@@ -28,9 +29,9 @@ ela é a fonte de verdade do projeto.
 
 ## Estado atual
 
-- **Fase corrente**: nenhuma fase `In Progress`. Fases 0 a 5
-  `Completed` (ADR 009 `Accepted`); Fase 6 — a próxima — e Fases 7 a 9
-  `Pending`. A fonte única do status é o
+- **Fase corrente**: Fase 6 — Tailwind, `libs/ui` e Storybook —
+  `In Progress` (ADR 010 `Proposed`). Fases 0 a 5 `Completed`; Fases 7
+  a 9 `Pending`. A fonte única do status é o
   [roadmap](docs/IMPLEMENTATION_ROADMAP.md#fase-corrente); os riscos
   residuais aceitos, com seus gatilhos, estão em
   [Riscos residuais e gatilhos](docs/IMPLEMENTATION_ROADMAP.md#riscos-residuais-e-gatilhos).

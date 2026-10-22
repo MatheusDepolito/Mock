@@ -293,6 +293,15 @@ Um único app Next.js contém quatro áreas, roteadas por segmento:
 Detalhamento e consequências em
 [ADR 003](adr/003-frontend-organization.md).
 
+> **Estado de implementação (Fase 6, `In Progress`)**: nada desta seção
+> foi implementado ainda — a Fase 6 foi aberta apenas documentalmente
+> (subtarefa 6.0) e `libs/ui` não existe. Os detalhes de implementação
+> que esta seção não fixa (formato dos tokens, integração do Tailwind e
+> do Storybook, conjunto mínimo de componentes, divisão de templates,
+> guardas de isolamento) estão em
+> [ADR 010](adr/010-ui-foundation.md) (`Proposed`). Nenhuma decisão
+> desta seção é alterada por essa nota.
+
 ## 6. Contrato frontend/backend
 
 - DTOs e controllers do NestJS são a fonte de verdade do contrato de
