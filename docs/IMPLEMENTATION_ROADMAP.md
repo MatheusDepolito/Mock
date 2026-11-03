@@ -52,7 +52,7 @@ seção, abaixo.
 | [3 — Docker, PostGIS, Redis e Prisma](#fase-3--docker-postgis-redis-e-prisma) | `Completed`   | Tarefas 3.0 a 3.6; ADR 006/007/008 `Accepted`; readiness real; Dockerfile da API.                                                              |
 | [4 — Worker e BullMQ](#fase-4--worker-e-bullmq)                               | `Completed`   | Subtarefas 4.1 a 4.7; `libs/queue`, `apps/worker`, Dockerfile do worker.                                                                       |
 | [5 — OpenAPI e api-client](#fase-5--openapi-e-api-client)                     | `Completed`   | Subtarefas 5.0 a 5.13 (incl. 5.10-B); contrato OpenAPI versionado, `libs/api-client`, `contract:check` no `yarn validate`; ADR 009 `Accepted`. |
-| [6 — Tailwind, `libs/ui` e Storybook](#fase-6--tailwind-libsui-e-storybook)   | `In Progress` | 6.0 a 6.4 `Completed`; 6.5 a 6.9 `Pending`; ADR 010 `Proposed`.                                                                                |
+| [6 — Tailwind, `libs/ui` e Storybook](#fase-6--tailwind-libsui-e-storybook)   | `In Progress` | 6.0 a 6.4 e 6.5a `Completed`; 6.5b a 6.9 `Pending`; ADR 010 `Proposed`.                                                                        |
 | 7 — App Next.js e áreas por persona                                           | `Pending`     | —                                                                                                                                              |
 | 8 — Adapters Stripe e Mapbox em sandbox                                       | `Pending`     | —                                                                                                                                              |
 | 9 — Validação integrada do skeleton                                           | `Pending`     | —                                                                                                                                              |
@@ -1792,7 +1792,8 @@ estritamente separados; `contract:check` começa com `cache: false`. O
 
 **Status**: In Progress. As subtarefas 6.0 (abertura documental e
 branch), 6.1 (spike), 6.2 (scaffold), 6.3 (tokens e pipeline) e 6.4
-(guardas) estão `Completed`; as subtarefas 6.5 a 6.9 estão `Pending`. Cada
+(guardas) e 6.5a (convenções e átomos simples) estão `Completed`; as
+subtarefas 6.5b a 6.9 estão `Pending`. Cada
 subtarefa exige autorização explícita e individual, e nenhuma delas
 autoriza commit, branch ou push. O registro das decisões está na
 [ADR 010](adr/010-ui-foundation.md) (`Proposed`; complementa a
@@ -1904,8 +1905,35 @@ frontend e design system).
   tamanhos de texto permanecem os padrões do Tailwind, provisórios e
   fora do contrato. `ui:test` passou de 13 para 121 testes. Sem
   dependência nova e sem mudança no `yarn.lock`.
-- **6.5 — Atoms e molecules**: `Pending`. Conforme o conjunto mínimo
-  (D9).
+- **6.5a — Convenções e átomos simples**: `Completed`. Convenções de
+  componente (estrutura `src/<camada>/<Componente>/`, named exports,
+  props nativas, `ref` como prop, `className` por último, variantes por
+  mapas fechados de strings completas, sem texto de interface, só classes
+  do contrato) e os átomos `Button`, `Badge`, `Container`, `Spinner`,
+  `Label`, `FieldError` e `Icon` (o ícone chega por prop; a lib não
+  importa o catálogo), mais `src/internal/cx.ts`, cada um com spec
+  (Testing Library, jest-dom e axe em cada variante relevante, com
+  controles negativos). **D22:** `jest-axe` 11.0.0 (publicado em
+  2026-07-26, sem peers declarados), com **tipos declarados localmente**
+  (`src/internal/jest-axe.d.ts`): `@types/jest-axe` 3.5.9 arrasta
+  `@types/jest` e quebrava o typecheck de specs existentes
+  (`expect` redeclarado), então foi instalado, reprovado e removido;
+  `@types/jest` fora da árvore. O `yarn.lock` ficou com +11 descritores
+  sobre a 6.4 (`jest-axe` e transitivas), nenhum removido ou alterado,
+  sem `YN0060`. Nova guarda no `rules.mjs`: utilitários que o tema
+  fechado não gera (paleta padrão, `black`/`white`, `shadow-*`,
+  `inset-shadow-*`, `drop-shadow-*`, `text-shadow-*` e `rounded-*`
+  padrão), com lista fixada por compilação real (782 classes sondadas;
+  `inset-shadow-*`, `drop-shadow-*` e `text-shadow-*` eram gerados por
+  padrão e o `tokens.css` passou a fechá-los, 8 resets no total).
+  CSS dos componentes compilado a partir do `styles.css` (12.483 B,
+  SHA-256 igual em duas compilações): todas as classes dos átomos saem e
+  nenhum seletor da paleta padrão aparece. `ui:test`: 121 → 253 testes.
+  Fora: molecules (`TextInput`, `FormField`, `Dialog`, `Tabs`,
+  `EmptyState`, `Alert`), organismos, templates, stories e Storybook.
+- **6.5b — Átomo `TextInput` e molecules**: `Pending`. `TextInput`,
+  `FormField`, `Dialog` (Headless UI), `Tabs`, `EmptyState` e `Alert`,
+  conforme o conjunto mínimo (D9), seguindo as convenções da 6.5a.
 - **6.6 — Organisms e templates**: `Pending`. `AppHeader`, `SideNav`,
   `AppShell` e `FormPageLayout`, genéricos (D10, D11).
 - **6.7 — Storybook**: `Pending`. Build cacheável, página "Tokens"
@@ -1977,6 +2005,7 @@ frontend e design system).
 | D19 | Dark mode                                | agora; adiar                                                                                          | Adiar (os tokens semânticos deixam a porta aberta)                                                                                                                                                                                                                                       | Sem custo de design agora                                                                                                                                     | Aprovada                                                                                                                       |
 | D20 | `tsconfig.json` da raiz                  | alterar; manter                                                                                       | Manter, salvo necessidade demonstrada                                                                                                                                                                                                                                                    | Já é um risco registrado com gatilho                                                                                                                          | Aprovada                                                                                                                       |
 | D21 | Registro das decisões                    | ADR; só roadmap                                                                                       | ADR 010 `Proposed` na 6.0 e `Accepted` no fechamento                                                                                                                                                                                                                                     | Mais um documento, decisões duráveis rastreáveis                                                                                                              | Aprovada                                                                                                                       |
+| D22 | Teste automático de acessibilidade       | só o addon a11y do Storybook; `jest-axe` nos testes de componente; só papéis da Testing Library       | `jest-axe` 11.0.0 (`toHaveNoViolations` nos testes de componente), com tipos declarados localmente porque `@types/jest-axe` arrasta `@types/jest` e conflita com `vitest/globals`; o contraste fica no `tokens.spec.ts`, porque o jsdom não calcula layout                               | Violações de papel, nome e rótulo falham o `yarn validate`; o contraste não é verificado pelo axe                                                             | Aprovada                                                                                                                       |
 
 **Conjunto mínimo de componentes (D9)**:
 

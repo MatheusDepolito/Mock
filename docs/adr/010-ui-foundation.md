@@ -82,6 +82,7 @@ encontrados no spike; os **definitivos foram aprovados na 6.2** (seção
 | D19 | Dark mode                                | agora; adiar                                                                                          | Adiar (os tokens semânticos deixam a porta aberta)                                                                                                                                                                                                                                       | Sem custo de design agora                                                                                                                                     | Aprovada                                                                                                                       |
 | D20 | `tsconfig.json` da raiz                  | alterar; manter                                                                                       | Manter, salvo necessidade demonstrada                                                                                                                                                                                                                                                    | Já é um risco registrado com gatilho                                                                                                                          | Aprovada                                                                                                                       |
 | D21 | Registro das decisões                    | ADR; só roadmap                                                                                       | ADR 010 `Proposed` na 6.0 e `Accepted` no fechamento                                                                                                                                                                                                                                     | Mais um documento, decisões duráveis rastreáveis                                                                                                              | Aprovada                                                                                                                       |
+| D22 | Teste automático de acessibilidade       | só o addon a11y do Storybook; `jest-axe` nos testes de componente; só papéis da Testing Library       | `jest-axe` 11.0.0 (`toHaveNoViolations` nos testes de componente), com tipos declarados localmente porque `@types/jest-axe` arrasta `@types/jest` e conflita com `vitest/globals`; o contraste fica no `tokens.spec.ts`, porque o jsdom não calcula layout                               | Violações de papel, nome e rótulo falham o `yarn validate`; o contraste não é verificado pelo axe                                                             | Aprovada                                                                                                                       |
 
 ### Conjunto mínimo de componentes (D9)
 
@@ -135,9 +136,11 @@ arquivo).
   (D18). `--color-border` foi acrescentada na 6.3 ao conjunto citado na
   D3.
 - **Lista fechada:** `--color-*`, `--radius-*`, `--shadow-*`,
-  `--breakpoint-*` e (desde a 6.4) `--font-*` são zerados com `initial`
-  antes da definição, então só existem utilitários dos tokens do contrato
-  (sem `bg-blue-500`, `font-serif` nem `font-mono`). Os **tamanhos de
+  `--breakpoint-*`, `--font-*` (6.4), `--inset-shadow-*`, `--drop-shadow-*`
+  e `--text-shadow-*` (6.5a) são zerados com `initial` antes da
+  definição, então só existem utilitários dos tokens do contrato (sem
+  `bg-blue-500`, `shadow-md`, `drop-shadow-lg`, `font-serif` nem
+  `font-mono`). Os **tamanhos de
   texto** (`text-sm`, `text-lg`…) permanecem os padrões do Tailwind,
   provisórios e fora do contrato até o Figma definir a tipografia.
 
@@ -173,6 +176,46 @@ do ESLint e pelos testes:
   definição de token nem `tailwind.config.*` existe em `libs/config`,
   `libs/api-client`, `libs/queue` e `apps/*/src`; mais um teste estático
   de que os módulos das guardas só leem o sistema de arquivos.
+
+### Convenções de componente e átomos (6.5a)
+
+- **Estrutura:** `src/<camada>/<Componente>/{Componente.tsx,
+Componente.spec.tsx, index.ts}`, com as camadas `atoms`, `molecules`,
+  `organisms` e `templates`; **named exports** reexportados em
+  `src/index.ts`; `src/internal/` (por exemplo `cx`) não é exportado.
+- **Props** estendem os atributos nativos (`ComponentPropsWithRef<'button'>`
+  etc.); `ref` é prop comum (React 19, sem `forwardRef`); `className` é
+  aceito e concatenado por último.
+- **Variantes** por mapas fechados de **strings literais completas**, nunca
+  por interpolação (o Tailwind só gera classes que lê literalmente).
+- **Nenhum texto de interface dentro da lib** (D17): rótulos, `aria-label`
+  e mensagens vêm por props.
+- **Só classes do contrato de tokens** mais utilitários estruturais
+  (espaçamento, flex/grid, display, tamanho, `animate-*`); os tamanhos de
+  texto padrão são provisórios.
+- **Átomos entregues:** `Button` (`variant`, `size`, `loading` com
+  `loadingLabel`), `Badge` (`tone`), `Container` (`as`: `div`, `main` ou
+  `section`), `Spinner` (`label`), `Label` (`required`), `FieldError`
+  (`id`, `announce`) e `Icon` (o componente de ícone chega pela prop
+  `icon`; a lib não importa o catálogo do Tabler).
+- **Testes de acessibilidade (D22):** `jest-axe` 11.0.0
+  (`toHaveNoViolations`) em cada variante relevante; os **tipos são
+  declarados localmente** (`src/internal/jest-axe.d.ts`, não exportado)
+  porque `@types/jest-axe` arrasta `@types/jest`, que redeclara o `expect`
+  global e conflita com `vitest/globals` (quebrava o typecheck de specs já
+  existentes). O contraste de cor continua no `tokens.spec.ts`, porque o
+  jsdom não calcula layout.
+- **Guarda de utilitários bloqueados:** em `.ts`/`.tsx` não-spec de
+  `libs/ui/src`, `rules.mjs` proíbe as classes que o tema fechado **não
+  gera** (usá-las falharia em silêncio, sem estilo): a paleta padrão do
+  Tailwind e as escalas internas (`bg-blue-500`, `text-gray-700`,
+  `bg-brand-600`…), `black`/`white` como cor, `shadow-(2xs|xs|sm|md|lg|xl|
+2xl|inner)`, `inset-shadow-*`, `drop-shadow-*`, `text-shadow-*` e
+  `rounded-(xs|lg|xl|2xl|3xl|4xl)` (com lado opcional). A lista foi fixada
+  por **compilação real** de 782 classes: além do que se esperava, `shadow-2xs`,
+  `shadow-xs`, `shadow-inner`, `rounded-xs` e `rounded-4xl` também deixam
+  de sair; já `inset-shadow-*`, `drop-shadow-*` e `text-shadow-*` **eram**
+  gerados por padrão e passaram a ser fechados em `tokens.css`.
 
 **Interpretação do critério de aceite.** O critério da Fase 6 ("sem
 nenhum ajuste retroativo necessário em `libs/ui` motivado pelo

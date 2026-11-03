@@ -42,9 +42,9 @@ names): the value may change, the name does not. The values are **provisional**.
 - **The scales are internal.** `--scale-brand-*`, `--scale-neutral-*`,
   `--scale-green-*` and `--scale-red-*` live on `:root`, outside `@theme`: they
   generate no utilities and their names are **not** part of the contract.
-- **Closed list.** Tailwind's default palette, radii, shadows, breakpoints and font
-  families are reset (`--font-*: initial`), so only utilities for the tokens above
-  exist (no `bg-blue-500`, `font-serif` or `font-mono`).
+- **Closed list.** Tailwind's default palette, radii, shadows (box, inset, drop and
+  text), breakpoints and font families are reset, so only utilities for the tokens
+  above exist (no `bg-blue-500`, `shadow-md`, `drop-shadow-lg`, `font-serif`…).
 - **Text sizes are not part of the contract yet.** `text-sm`, `text-lg`… remain
   Tailwind's defaults and are provisional until Figma defines the typography.
 - **Contrast.** The provisional values meet WCAG AA (≥ 4.5:1) for the text pairs
@@ -64,6 +64,34 @@ file. A consumer that imports only `@mockp/ui/tokens.css` must import Tailwind
 itself and add its own `@source` for the library, because Tailwind does not scan
 `node_modules`.
 
+## Component conventions
+
+- **Structure:** `src/<layer>/<Component>/{Component.tsx, Component.spec.tsx, index.ts}`,
+  with the layers `atoms`, `molecules`, `organisms` and `templates`. Components are
+  **named exports** re-exported by `src/index.ts`. `src/internal/` (for example `cx`)
+  is never exported.
+- **Props** extend the native element attributes (`ComponentPropsWithRef<'button'>`…).
+  `ref` is a plain prop (React 19, no `forwardRef`). `className` is accepted and
+  appended **last**.
+- **Variants** are closed maps of **complete class strings**. Never build a class by
+  interpolation: Tailwind only generates classes it can read literally in the source.
+- **No interface text inside the library** (D17): labels, `aria-label` and messages
+  come from props.
+- **Only token classes** (see the table above) plus structural Tailwind utilities
+  (spacing, flex/grid, display, size, `animate-*`). Default text sizes are provisional.
+- **Tests:** Vitest + Testing Library + jest-dom, and `expect(await axe(container))
+.toHaveNoViolations()` (jest-axe) for every relevant variant. jsdom does not
+  compute layout, so colour contrast is checked in `src/styles/tokens.spec.ts`.
+  The `jest-axe` types are declared locally (`src/internal/jest-axe.d.ts`) because
+  `@types/jest-axe` drags `@types/jest`, which conflicts with `vitest/globals`.
+
+### Atoms
+
+`Button` (`variant`, `size`, `loading` + `loadingLabel`), `Badge` (`tone`), `Container`
+(`as`: `div` | `main` | `section`), `Spinner` (`label`), `Label` (`required`),
+`FieldError` (`id`, `announce`) and `Icon` (the icon component comes in the `icon`
+prop, so the library never imports an icon catalog).
+
 ## Architecture guards
 
 `libs/ui` is isolated from the API, auth, data fetching, server-only code and
@@ -75,6 +103,10 @@ domain types (ADR 003, ADR 010 D12). The rules live in one module,
   `graphql`, `@mui/*`, `@emotion/*`, `@prisma/*`, `@nestjs/*`, `ioredis`,
   `bullmq`, `pg`, any `/apps/` path, and no relative import that leaves the
   library (checked per directory depth, up to 8 levels under `src`).
+- **Utilities the closed theme does not generate** are rejected in non-spec `.ts`/`.tsx`
+  files (they would fail silently, with no style at all): the default palette
+  (`bg-blue-500`, `text-gray-700`…), `black`/`white` as colours, default `shadow-*`,
+  `inset-shadow-*`, `drop-shadow-*`, `text-shadow-*` and default `rounded-*` steps.
 - **Tests** (`architecture/architecture.spec.mjs`, part of `yarn validate`): the same
   rules with positive and negative fixtures, including dynamic `import()` and
   `require()` (which `no-restricted-imports` cannot see); a scan of `src` for

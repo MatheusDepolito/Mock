@@ -164,6 +164,64 @@ export function findHardcodedColors(source) {
   return found;
 }
 
+const UTILITY_PREFIXES =
+  'bg|text|border|ring|fill|stroke|from|via|to|divide|outline|decoration|accent|caret';
+const PALETTE_NAMES =
+  'slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|brand';
+const RADIUS_SIDES = 't|r|b|l|s|e|tl|tr|br|bl|ss|se|es|ee';
+
+/**
+ * Utilities that the theme reset (`--color-*`, `--shadow-*`, `--radius-*`:
+ * ADR 010, 6.3) makes Tailwind NOT generate, so using them fails silently
+ * (no style at all). The list was fixed from a real compilation: besides the
+ * default palette and `black`/`white`, it covers every default shadow (box,
+ * inset, drop and text) and radius step that is no longer generated.
+ */
+const BLOCKED_UTILITY_PATTERNS = [
+  [
+    'default-palette-class',
+    new RegExp(
+      String.raw`(?<![\w-])(?:${UTILITY_PREFIXES})-(?:(?:${PALETTE_NAMES})(?:-\d{2,3})?|black|white)(?![\w-])`,
+      'g',
+    ),
+  ],
+  [
+    'default-shadow-class',
+    /(?<![\w-])shadow-(?:2xs|xs|sm|md|lg|xl|2xl|inner)(?![\w-])/g,
+  ],
+  [
+    'default-inset-shadow-class',
+    /(?<![\w-])inset-shadow-(?:2xs|xs|sm)(?![\w-])/g,
+  ],
+  [
+    'default-drop-shadow-class',
+    /(?<![\w-])drop-shadow-(?:xs|sm|md|lg|xl|2xl)(?![\w-])/g,
+  ],
+  [
+    'default-text-shadow-class',
+    /(?<![\w-])text-shadow-(?:2xs|xs|sm|md|lg)(?![\w-])/g,
+  ],
+  [
+    'default-radius-class',
+    new RegExp(
+      String.raw`(?<![\w-])rounded(?:-(?:${RADIUS_SIDES}))?-(?:xs|lg|xl|2xl|3xl|4xl)(?![\w-])`,
+      'g',
+    ),
+  ],
+];
+
+/** Tailwind utilities that the closed theme no longer generates. */
+export function findBlockedUtilities(source) {
+  const code = stripComments(source);
+  const found = [];
+  for (const [kind, pattern] of BLOCKED_UTILITY_PATTERNS) {
+    for (const match of code.matchAll(pattern)) {
+      found.push({ kind, match: match[0] });
+    }
+  }
+  return found;
+}
+
 /** Token-definition markers present in a text. */
 export function findTokenMarkers(source) {
   return TOKEN_MARKERS.filter((marker) => source.includes(marker));
@@ -202,6 +260,9 @@ export function findViolations(filePath, source) {
   if (isSourceFile(filePath) && !isSpecFile(filePath)) {
     for (const { kind, match } of findHardcodedColors(source)) {
       violations.push({ rule: 'hardcoded-color', detail: `${kind}: ${match}` });
+    }
+    for (const { kind, match } of findBlockedUtilities(source)) {
+      violations.push({ rule: 'blocked-utility', detail: `${kind}: ${match}` });
     }
   }
   return violations;

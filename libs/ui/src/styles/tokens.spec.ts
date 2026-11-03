@@ -136,6 +136,9 @@ describe('tokens.css — contract of semantic names (D2, D2b, D3, D4)', () => {
       '--color-*',
       '--radius-*',
       '--shadow-*',
+      '--inset-shadow-*',
+      '--drop-shadow-*',
+      '--text-shadow-*',
       '--breakpoint-*',
       '--font-*',
     ]) {

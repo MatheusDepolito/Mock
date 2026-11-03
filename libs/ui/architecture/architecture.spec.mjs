@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import {
   escapesLibrary,
   extractSpecifiers,
+  findBlockedUtilities,
   findHardcodedColors,
   findTokenMarkers,
   findViolations,
@@ -275,6 +276,75 @@ describe('hard-coded colors (pure rules)', () => {
   });
 });
 
+describe('utilities the closed theme does not generate (pure rules)', () => {
+  it.each([
+    ['bg-blue-500', 'default-palette-class'],
+    ['text-red-600', 'default-palette-class'],
+    ['border-gray-200', 'default-palette-class'],
+    ['hover:bg-green-500/50', 'default-palette-class'],
+    ['md:to-brand-600', 'default-palette-class'],
+    ['ring-neutral-100', 'default-palette-class'],
+    ['fill-slate-950', 'default-palette-class'],
+    ['text-white', 'default-palette-class'],
+    ['bg-black', 'default-palette-class'],
+    ['bg-blue', 'default-palette-class'],
+    ['shadow-sm', 'default-shadow-class'],
+    ['shadow-md', 'default-shadow-class'],
+    ['shadow-2xl', 'default-shadow-class'],
+    ['shadow-xs', 'default-shadow-class'],
+    ['shadow-inner', 'default-shadow-class'],
+    ['inset-shadow-sm', 'default-inset-shadow-class'],
+    ['drop-shadow-lg', 'default-drop-shadow-class'],
+    ['text-shadow-md', 'default-text-shadow-class'],
+    ['rounded-lg', 'default-radius-class'],
+    ['rounded-xl', 'default-radius-class'],
+    ['rounded-xs', 'default-radius-class'],
+    ['rounded-4xl', 'default-radius-class'],
+    ['rounded-t-xl', 'default-radius-class'],
+  ])('flags %s', (utility, kind) => {
+    const source = `const c = "flex ${utility} p-4";`;
+    expect(findBlockedUtilities(source).map((u) => u.kind)).toContain(kind);
+    expect(
+      findViolations('src/atoms/Card.tsx', source).map((v) => v.rule),
+    ).toContain('blocked-utility');
+  });
+
+  it.each([
+    'bg-primary',
+    'bg-primary/90',
+    'text-primary-foreground',
+    'text-content-muted',
+    'border-border',
+    'bg-surface-raised',
+    'bg-danger',
+    'text-success',
+    'outline-primary',
+    'shadow-card',
+    'shadow-none',
+    'rounded-none',
+    'rounded-sm',
+    'rounded-md',
+    'rounded-full',
+    'bg-transparent',
+    'text-current',
+    'fill-current',
+    'text-sm',
+    'font-sans',
+    'drop-shadow-none',
+    'context-red-500',
+    'bg-redundant',
+  ])('does not flag %s', (utility) => {
+    expect(findBlockedUtilities(`const c = "${utility}";`)).toEqual([]);
+  });
+
+  it('only checks non-spec .ts/.tsx files', () => {
+    const source = 'const c = "bg-blue-500 shadow-md";';
+    expect(findViolations('src/atoms/Card.tsx', source)).not.toEqual([]);
+    expect(findViolations('src/atoms/Card.spec.tsx', source)).toEqual([]);
+    expect(findViolations('src/styles/tokens.css', source)).toEqual([]);
+  });
+});
+
 describe('negative control: a synthetic violating file is reported', () => {
   it('reports every category at once', () => {
     const source = [
@@ -282,6 +352,7 @@ describe('negative control: a synthetic violating file is reported', () => {
       "import Link from 'next/link';",
       "import far from '../../../libs/config/src/x';",
       "const color = '#ff0000';",
+      'const cls = "bg-blue-500 shadow-md";',
     ].join('\n');
     expect(
       findViolations('src/atoms/Bad.tsx', source).map((v) => v.rule),
@@ -290,6 +361,8 @@ describe('negative control: a synthetic violating file is reported', () => {
       'forbidden-import',
       'import-outside-library',
       'hardcoded-color',
+      'blocked-utility',
+      'blocked-utility',
     ]);
   });
 });
@@ -311,7 +384,7 @@ describe('real scan of libs/ui', () => {
         path,
         readFileSync(file, 'utf8'),
       )) {
-        if (violation.rule !== 'hardcoded-color')
+        if (!['hardcoded-color', 'blocked-utility'].includes(violation.rule))
           found.push({ path, ...violation });
       }
     }
@@ -327,6 +400,21 @@ describe('real scan of libs/ui', () => {
         readFileSync(file, 'utf8'),
       )) {
         if (violation.rule === 'hardcoded-color')
+          found.push({ path, ...violation });
+      }
+    }
+    expect(found).toEqual([]);
+  });
+
+  it('has no utility that the closed theme does not generate', () => {
+    const found = [];
+    for (const file of sourceFiles) {
+      const path = posix(relative(LIB_ROOT, file));
+      for (const violation of findViolations(
+        path,
+        readFileSync(file, 'utf8'),
+      )) {
+        if (violation.rule === 'blocked-utility')
           found.push({ path, ...violation });
       }
     }
