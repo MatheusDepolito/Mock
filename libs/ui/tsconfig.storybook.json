@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../../dist/out-tsc/libs/ui/storybook",
+    "tsBuildInfoFile": "../../dist/out-tsc/libs/ui/storybook/storybook.tsbuildinfo",
+    "types": ["node", "vite/client"]
+  },
+  "include": [".storybook/**/*.ts"],
+  "references": [{ "path": "./tsconfig.lib.json" }]
+}

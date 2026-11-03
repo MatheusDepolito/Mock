@@ -309,6 +309,52 @@ ReactNode`, com `id`, `aria-describedby`, `aria-invalid` e `required`);
 - **Constante única:** `BREAKPOINT_LG = '64rem'`; um teste a compara com
   `--breakpoint-lg` de `tokens.css`, para que não divirjam.
 
+### Storybook (6.7)
+
+- **Configuração** em `libs/ui/.storybook/`: `main.ts` (framework
+  `@storybook/react-vite`, stories em `../src/**/*.stories.@(ts|tsx)`, addon
+  `@storybook/addon-a11y` e o plugin `@tailwindcss/vite` adicionado em
+  `viteFinal`) e `preview.ts` (importa `styles.css`; sem dark mode, D19, e sem
+  texto de interface). **Sem `vite.config.ts` na lib**, sem `@nx/storybook`,
+  sem outros addons; a verificação de tipos ganhou `tsconfig.storybook.json`.
+- **Targets Nx** (`nx:run-commands`, `cwd: libs/ui`): `storybook:build`
+  (`storybook build`, `cache: true`, `outputs` em `storybook-static`, `inputs`
+  explícitos: `src`, `.storybook`, README, `package.json`, tsconfigs e as
+  dependências externas do Storybook e do Tailwind) e `storybook` (servidor de
+  desenvolvimento, sem cache). `storybook:build` entrou no `validate:nx`
+  (D13); `storybook-static` é ignorado pelo Git, pelo Prettier e pelo ESLint.
+- **Stories:** uma por componente exportado (17) mais a página
+  `Foundations/Tokens`, com textos de demonstração em português **dentro das
+  stories** (a lib segue sem texto fixo, D17). A story `AppShell/MobileDrawer`
+  usa um viewport móvel e uma função `play` que abre a gaveta.
+- **Página "Tokens":** lê `tokens.css` e o README por `?raw` e lista os tokens
+  semânticos do `@theme` (cores, espaçamento, raios, sombras, pontos de quebra
+  e fonte) com o valor resolvido e uma amostra desenhada por `var(--token)`;
+  as escalas internas `--scale-*` **não** aparecem. O parser é uma função pura
+  (`tokens-parser.ts`, com testes positivos e negativos) que **lança erro** em
+  entrada malformada, e também roda em `viteFinal`, então um arquivo quebrado
+  falha o teste e o build em vez de renderizar uma lista vazia. Como o Tailwind
+  só emite a variável de um token que algum utilitário usa, `tokens-samples.ts`
+  lista um utilitário por token amostrável, e um teste falha se um token novo
+  não estiver no mapa.
+- **Testes de stories:** todas as stories são carregadas por `import.meta.glob`,
+  compostas com `composeStories` (portable stories), renderizadas e verificadas
+  com `axe` (no `container`, ou em `document.body` quando há portal: `Dialog`
+  aberto e gaveta); outro teste exige que todo componente exportado por
+  `src/index.ts` tenha um `*.stories.tsx` (com controle negativo). Nenhum teste
+  escreve em disco. Para o `?raw` de `tokens.css` funcionar no Vitest, o
+  `vitest.config.mts` da lib processa esse arquivo (`css.include`), pois o
+  Vitest devolve string vazia para CSS não processado.
+
+**Medições para a D13** (a D13 **não** foi alterada; ver "Riscos residuais" no
+roadmap): `storybook:build` a frio leva ~9,6 s no total (mediana de 3 execuções:
+9,56 s; o Nx mede 4,9 s e o Vite 3,2 s); com cache, o acerto leva dezenas de
+milissegundos no Nx e o erro após alterar uma story ~5,2 s; a saída (57 stories
+em 18 títulos, 67 arquivos, ~7,8 MB) é idêntica entre execuções, exceto o campo
+`generatedAt` de `project.json`. O `yarn validate` sem cache passou de ~38,6 s
+(média de 2 execuções) para ~43,5 s (mediana de 5 execuções, de 38,9 a 46,7 s), cerca de **+13%**; com cache
+quente, de 14,2 s para 15,2 s.
+
 **Interpretação do critério de aceite.** O critério da Fase 6 ("sem
 nenhum ajuste retroativo necessário em `libs/ui` motivado pelo
 frontend") **não** considera "ajuste retroativo" a **troca de valores de

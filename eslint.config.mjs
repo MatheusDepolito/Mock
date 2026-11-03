@@ -9,6 +9,7 @@ export default tseslint.config(
       '.nx/cache/**',
       '.nx/workspace-data/**',
       '**/dist/**',
+      '**/storybook-static/**',
       '**/coverage/**',
       '**/tmp/**',
       '**/*.log',

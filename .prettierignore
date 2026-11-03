@@ -4,6 +4,7 @@ node_modules/
 dist/
 coverage/
 tmp/
+storybook-static/
 *.log
 yarn.lock
 

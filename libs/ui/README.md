@@ -13,8 +13,25 @@ Headless UI and Tabler Icons, documented in Storybook.
 - Isolated from the API, Auth.js, TanStack Query, server-only configuration,
   `next/*` and domain types.
 
-Decisions: [ADR 010](../../docs/adr/010-ui-foundation.md). Components and
-Storybook arrive in later subtasks.
+Decisions: [ADR 010](../../docs/adr/010-ui-foundation.md).
+
+## Storybook
+
+Storybook 10 (`@storybook/react-vite`, with the accessibility addon) documents every
+component and the design tokens. It is run through Nx (`nx:run-commands`, no
+`@nx/storybook`):
+
+```bash
+yarn nx run ui:storybook         # development server (http://localhost:6006)
+yarn nx run ui:storybook:build   # static build in libs/ui/storybook-static (cached by Nx)
+```
+
+`storybook:build` is part of `yarn validate`. There is one `*.stories.tsx` next to each
+exported component (`Atoms/…`, `Molecules/…`, `Organisms/…`, `Templates/…`) and the
+`Foundations/Tokens` page, which reads `src/styles/tokens.css` and the token table of
+this README. Demo texts live in the stories (Brazilian Portuguese); the library itself
+holds no interface text. Tests render every story with the portable stories API and run
+`axe` on it, and check that every exported component has a stories file.
 
 ## Design tokens
 

@@ -14,6 +14,9 @@ export default defineConfig(() => ({
       // Architecture guards live next to the rules, outside `src/`.
       'architecture/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
     ],
+    // Vitest replaces unprocessed CSS with an empty string, even with `?raw`.
+    // The "Tokens" story reads `tokens.css?raw`, so that file must be processed.
+    css: { include: [/tokens\.css/] },
     passWithNoTests: true,
     reporters: ['default'],
     coverage: {

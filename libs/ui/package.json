@@ -23,6 +23,42 @@
           "command": "tsc -b tsconfig.json",
           "cwd": "libs/ui"
         }
+      },
+      "storybook:build": {
+        "executor": "nx:run-commands",
+        "cache": true,
+        "inputs": [
+          "{projectRoot}/src/**/*",
+          "{projectRoot}/.storybook/**/*",
+          "{projectRoot}/README.md",
+          "{projectRoot}/package.json",
+          "{projectRoot}/tsconfig*.json",
+          "{workspaceRoot}/tsconfig.base.json",
+          {
+            "externalDependencies": [
+              "storybook",
+              "@storybook/react-vite",
+              "@storybook/addon-a11y",
+              "@tailwindcss/vite",
+              "tailwindcss"
+            ]
+          }
+        ],
+        "outputs": [
+          "{projectRoot}/storybook-static"
+        ],
+        "options": {
+          "command": "storybook build -o storybook-static --disable-telemetry",
+          "cwd": "libs/ui"
+        }
+      },
+      "storybook": {
+        "executor": "nx:run-commands",
+        "cache": false,
+        "options": {
+          "command": "storybook dev --ci --disable-telemetry",
+          "cwd": "libs/ui"
+        }
       }
     }
   },
