@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
 import type { IconComponent } from '../atoms/Icon';
 
 /** One navigation entry. The library holds no concrete navigation data. */
@@ -16,6 +16,11 @@ export interface NavLinkProps {
   href: string;
   className: string;
   'aria-current'?: 'page';
+  /**
+   * Click handler of the item. **Forward it to the element you render**: inside
+   * the `AppShell` drawer it closes the drawer when the user follows a link.
+   */
+  onClick: (event: MouseEvent<HTMLElement>) => void;
   children: ReactNode;
 }
 

@@ -6,6 +6,7 @@ import type {
   ReactNode,
 } from 'react';
 import { cx } from '../../internal/cx';
+import { DESKTOP_QUERY, useMediaQuery } from '../../internal/use-media-query';
 import type { AppHeaderMenuProps } from '../../organisms/AppHeader';
 import { AppShellDrawer } from './AppShellDrawer';
 
@@ -47,11 +48,19 @@ export type AppShellProps = ShellBaseProps &
  *
  * Landmarks: the fixed sidebar is only in the DOM while the drawer is closed
  * (below `lg` it is hidden by CSS anyway, and the drawer only opens there), so
- * there is never more than one `navigation` in the DOM; no viewport logic in JS.
+ * there is never more than one `navigation` in the DOM. The drawer closes when
+ * a link is followed (via `DrawerContext`) and when the viewport reaches `lg`
+ * (the only viewport query of the library, in `internal/use-media-query`).
  */
 export function AppShell(props: AppShellProps) {
   const { skipLinkLabel, children, className, ref } = props;
   const [drawerOpen, setDrawerOpen] = useState(false);
+  // A drawer left open while the viewport grows to `lg` would stay modal but
+  // hidden: close it (state adjusted during render, no effect needed).
+  const isDesktop = useMediaQuery(DESKTOP_QUERY);
+  if (isDesktop && drawerOpen) {
+    setDrawerOpen(false);
+  }
   const mainRef = useRef<HTMLElement>(null);
   const baseId = useId();
   const mainId = `${baseId}-main`;

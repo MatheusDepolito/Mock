@@ -52,7 +52,7 @@ seção, abaixo.
 | [3 — Docker, PostGIS, Redis e Prisma](#fase-3--docker-postgis-redis-e-prisma) | `Completed`   | Tarefas 3.0 a 3.6; ADR 006/007/008 `Accepted`; readiness real; Dockerfile da API.                                                              |
 | [4 — Worker e BullMQ](#fase-4--worker-e-bullmq)                               | `Completed`   | Subtarefas 4.1 a 4.7; `libs/queue`, `apps/worker`, Dockerfile do worker.                                                                       |
 | [5 — OpenAPI e api-client](#fase-5--openapi-e-api-client)                     | `Completed`   | Subtarefas 5.0 a 5.13 (incl. 5.10-B); contrato OpenAPI versionado, `libs/api-client`, `contract:check` no `yarn validate`; ADR 009 `Accepted`. |
-| [6 — Tailwind, `libs/ui` e Storybook](#fase-6--tailwind-libsui-e-storybook)   | `In Progress` | 6.0 a 6.6 `Completed`; 6.7 a 6.9 `Pending`; ADR 010 `Proposed`.                                                                                |
+| [6 — Tailwind, `libs/ui` e Storybook](#fase-6--tailwind-libsui-e-storybook)   | `In Progress` | 6.0 a 6.6 e 6.6.1 `Completed`; 6.7 a 6.9 `Pending`; ADR 010 `Proposed`.                                                                        |
 | 7 — App Next.js e áreas por persona                                           | `Pending`     | —                                                                                                                                              |
 | 8 — Adapters Stripe e Mapbox em sandbox                                       | `Pending`     | —                                                                                                                                              |
 | 9 — Validação integrada do skeleton                                           | `Pending`     | —                                                                                                                                              |
@@ -1793,8 +1793,8 @@ estritamente separados; `contract:check` começa com `cache: false`. O
 **Status**: In Progress. As subtarefas 6.0 (abertura documental e
 branch), 6.1 (spike), 6.2 (scaffold), 6.3 (tokens e pipeline) e 6.4
 (guardas), 6.5a (convenções e átomos simples), 6.5b (`TextInput` e
-moléculas) e 6.6 (organismos e templates) estão `Completed`; as subtarefas
-6.7 a 6.9 estão `Pending`. Cada
+moléculas), 6.6 (organismos e templates) e 6.6.1 (correção da gaveta) estão
+`Completed`; as subtarefas 6.7 a 6.9 estão `Pending`. Cada
 subtarefa exige autorização explícita e individual, e nenhuma delas
 autoriza commit, branch ou push. O registro das decisões está na
 [ADR 010](adr/010-ui-foundation.md) (`Proposed`; complementa a
@@ -1957,8 +1957,8 @@ frontend e design system).
   com `sidebar`, `closeLabel`), `header` do `AppShell` como render prop
   (sem `cloneElement`) e barra lateral fixa a partir de `lg`, gaveta
   (Headless UI) abaixo dele. A barra fixa só existe no DOM com a gaveta
-  fechada, então nunca há dois `navigation` e não há lógica de viewport em
-  JS. Specs de landmarks, `aria-current`, `renderLink`, link de salto
+  fechada, então nunca há dois `navigation` (a estratégia de landmarks não
+  depende de JS de viewport). Specs de landmarks, `aria-current`, `renderLink`, link de salto
   (foco no `main`), gaveta (abrir, foco, `Esc`, retorno de foco, fundo,
   botão de fechar) e `axe` em cada variante, com controles negativos
   (`landmark-unique`, `landmark-no-duplicate-main`). Nenhum par de
@@ -1969,7 +1969,29 @@ frontend e design system).
   novo, sem token novo, `yarn.lock` e `package.json` inalterados.
   Registrados para a 6.8: o token `border` com 1,43:1 sobre
   `surface-raised` (a decidir com o Figma) e `blur-*`/`backdrop-blur-*`
-  ainda gerados. Limitação: a gaveta não fecha ao seguir um link (Fase 7).
+  ainda gerados. As duas limitações da gaveta registradas aqui foram
+  corrigidas na 6.6.1.
+- **6.6.1 — Correção da gaveta do `AppShell`**: `Completed`. (1) A gaveta
+  fecha ao seguir um link: `DrawerContext` interno (não exportado), provido
+  só em volta do conteúdo da gaveta e lido pelo `SideNav`, que chama
+  `closeDrawer` no clique de cada item (padrão e `renderLink`); cliques com
+  Ctrl, Cmd, Shift, Alt ou outro botão não fecham; `NavLinkProps` ganhou
+  `onClick`, que o consumidor deve repassar (única mudança de API pública).
+  Sem `cloneElement`, sem delegação de clique e sem supressão de lint.
+  (2) A gaveta fecha ao cruzar `lg`: `useMediaQuery` (`useSyncExternalStore`,
+  com guarda para ambientes sem `matchMedia`, como o jsdom) em
+  `src/internal/use-media-query.ts`, único arquivo não-spec com
+  `matchMedia`; listener removido ao desmontar; `BREAKPOINT_LG = '64rem'`
+  comparado por teste com `--breakpoint-lg` de `tokens.css`. Testes novos:
+  seguir link (padrão e `renderLink`) fecha e devolve o foco ao botão de
+  menu, modificadores não fecham, `renderLink` que não repassa `onClick`
+  mantém aberta (contrato), `SideNav` fora do `AppShell` segue funcionando,
+  mudança para `(min-width: 64rem)` fecha e reabre normalmente, listener
+  removido, ausência de `matchMedia` sem erro, constante contra o
+  `tokens.css`; controles negativos (sem `closeDrawer` ou sem o fechamento
+  no `lg`, os testes correspondentes falham). `ui:test`: 396 → 410. Sem
+  pacote novo, `yarn.lock`, `package.json`, `tokens.css`, `rules.mjs` e
+  `tokens.spec.ts` inalterados.
 - **6.7 — Storybook**: `Pending`. Build cacheável, página "Tokens"
   (D4), addon a11y (D8), medição da duração para reavaliar D13.
 - **6.8 — Validação integrada**: `Pending`. `yarn validate` sem cache,

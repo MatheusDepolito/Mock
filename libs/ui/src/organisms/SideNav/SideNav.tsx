@@ -1,6 +1,7 @@
-import type { ComponentPropsWithRef } from 'react';
+import type { ComponentPropsWithRef, MouseEvent } from 'react';
 import { Icon } from '../../atoms/Icon';
 import { cx } from '../../internal/cx';
+import { useDrawer } from '../../internal/drawer-context';
 import type { NavItem, NavLinkProps, RenderLink } from '../nav-types';
 
 // Closed maps of complete class strings (see Button). The current item is
@@ -36,6 +37,22 @@ export function SideNav({
   ref,
   ...rest
 }: SideNavProps) {
+  const { closeDrawer } = useDrawer();
+  // Following a link closes the `AppShell` drawer (a no-op elsewhere). Clicks
+  // that open a new tab or window (modifier keys, other buttons) keep it open.
+  const handleClick = (event: MouseEvent<HTMLElement>) => {
+    if (
+      event.button !== 0 ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
+    closeDrawer();
+  };
+
   return (
     <nav
       ref={ref}
@@ -49,6 +66,7 @@ export function SideNav({
             {renderLink({
               href: item.href,
               className: cx(LINK, item.current ? STATES.current : STATES.idle),
+              onClick: handleClick,
               ...(item.current ? { 'aria-current': 'page' as const } : {}),
               children: (
                 <>

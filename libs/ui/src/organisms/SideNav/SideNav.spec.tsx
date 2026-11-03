@@ -90,12 +90,37 @@ describe('SideNav', () => {
       });
       expect(calls[1]).not.toHaveProperty('aria-current');
       expect(typeof calls[0]?.['className']).toBe('string');
+      expect(typeof calls[0]?.['onClick']).toBe('function');
       expect(screen.getAllByRole('link')[1]).toHaveAttribute(
         'data-href',
         '/beta',
       );
       expect(document.querySelector('a')).toBeNull();
     });
+  });
+
+  it('keeps working outside the AppShell (inert drawer context)', async () => {
+    const onClick = vi.fn();
+    render(
+      <SideNav
+        label="Main"
+        items={[{ id: 'a', label: 'Alpha', href: '#alpha' }]}
+        renderLink={({ children, href, className, onClick: forward }) => (
+          <a
+            href={href}
+            className={className}
+            onClick={(event) => {
+              forward(event);
+              onClick();
+            }}
+          >
+            {children}
+          </a>
+        )}
+      />,
+    );
+    await userEvent.click(screen.getByRole('link', { name: 'Alpha' }));
+    expect(onClick).toHaveBeenCalledTimes(1);
   });
 
   it('has no items and no fixed text without data', () => {

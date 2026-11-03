@@ -122,16 +122,22 @@ no interface text**. `apps/web` (Phase 7) assembles each area with its own data.
   and `menuControls` are optional). The menu button only exists below `lg`.
 - **`SideNav`**: `<nav>` with a **required `label`** (name of the landmark) and a list of
   `NavItem` (`{ id, label, href, icon?, current? }`). The `current` item gets
-  `aria-current="page"`. `renderLink` plugs a router link (`{ href, className,
-'aria-current'?, children }`); the default is a plain `<a>`, and the library never
-  imports `next/*`.
+  `aria-current="page"`. `renderLink` plugs a router link; it receives `href`,
+  `className`, `aria-current`, `children` and **`onClick`**. The default is a plain
+  `<a>`, and the library never imports `next/*`.
+  **Forward `onClick` to the element you render**: inside the `AppShell` drawer it
+  closes the drawer when the user follows a link (plain clicks only; clicks with
+  Ctrl, Cmd, Shift or Alt, or with another button, keep it open). A `renderLink` that
+  does not forward it still works, but the drawer stays open after navigating.
 - **`AppShell`**: skip link (**required `skipLinkLabel`**), header, optional sidebar and
   `<main>`. With a `sidebar`, `menuLabel` and `closeLabel` are required and `header` is a
   **render prop** that receives the menu props to spread on `AppHeader` (no
   `cloneElement`). The sidebar is fixed from `lg`; below it, it becomes a **drawer**
   (Headless UI dialog: focus trap, `Esc`, backdrop). The fixed sidebar is only in the DOM
-  while the drawer is closed, so there is never more than one `navigation` landmark and
-  no viewport logic in JS.
+  while the drawer is closed, so there is never more than one `navigation` landmark. The
+  drawer closes when a link is followed (internal context read by `SideNav`) and when the
+  viewport reaches `lg` (the library's only `matchMedia`, in `internal/use-media-query`,
+  which is a no-op where `matchMedia` does not exist, such as jsdom or a server render).
 - **`FormPageLayout`**: `title` (`headingLevel`, `h1` by default), optional `description`
   and `actions`, children (the form) in a narrow centred column built on `Container`.
 

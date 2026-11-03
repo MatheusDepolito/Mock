@@ -2,6 +2,7 @@ import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react';
 import { IconX } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 import { Icon } from '../../atoms/Icon';
+import { DrawerContext } from '../../internal/drawer-context';
 
 export interface AppShellDrawerProps {
   id: string;
@@ -17,7 +18,9 @@ export interface AppShellDrawerProps {
  * Side drawer of the shell (private to the template). It composes Headless UI's
  * own dialog, so focus trap, `Esc` and backdrop click work as in the `Dialog`
  * molecule; that one is centred and a drawer is not, hence this composition.
- * It only exists in the DOM while open and never at `lg` and above (`lg:hidden`).
+ * It only exists in the DOM while open, and the shell closes it when the
+ * viewport reaches `lg`. It provides `DrawerContext`, so a `SideNav` inside it
+ * closes the drawer when a link is followed.
  */
 export function AppShellDrawer({
   id,
@@ -46,7 +49,9 @@ export function AppShellDrawer({
           >
             <Icon icon={IconX} size="md" />
           </button>
-          <div className="mt-12 overflow-y-auto">{children}</div>
+          <DrawerContext.Provider value={{ closeDrawer: onClose }}>
+            <div className="mt-12 overflow-y-auto">{children}</div>
+          </DrawerContext.Provider>
         </DialogPanel>
       </div>
     </Dialog>

@@ -267,9 +267,9 @@ ReactNode`, com `id`, `aria-describedby`, `aria-invalid` e `required`);
   6.5b é centralizado, e uma gaveta não é). **Estratégia de landmarks:** a
   barra fixa só está no DOM enquanto a gaveta está fechada (abaixo de `lg`
   ela já é `hidden` por CSS, e a gaveta só abre ali), então nunca há mais
-  de um `navigation` no DOM, **sem lógica de viewport em JS**. Limitação
-  conhecida: a gaveta não fecha sozinha ao seguir um link; a Fase 7 pode
-  precisar de um controle do estado da gaveta pelo consumidor.
+  de um `navigation` no DOM (a estratégia de landmarks não depende de JS de
+  viewport). As duas limitações da gaveta registradas aqui na 6.6 foram
+  corrigidas na 6.6.1 (ver abaixo).
 - **`FormPageLayout`:** `title` com `headingLevel` (padrão `h1`),
   `description` e `actions` opcionais, sobre o `Container`.
 - **Contraste:** nenhum par novo foi necessário; todos os estados (item
@@ -284,6 +284,30 @@ ReactNode`, com `id`, `aria-describedby`, `aria-invalid` e `required`);
   `content-muted`. Decidir o valor do token com o Figma.
 - `blur-*` e `backdrop-blur-*` continuam sendo gerados (namespaces fora dos
   resets); revisar se devem ser fechados.
+
+### Correção da gaveta (6.6.1)
+
+- **Fechar ao navegar, por contexto interno:** `AppShell` provê um
+  `DrawerContext` (`src/internal/drawer-context.ts`, não exportado pelo
+  pacote) **só em volta do conteúdo da gaveta**; o `SideNav` lê o contexto
+  (com valor padrão inerte fora do `AppShell`) e chama `closeDrawer` no
+  clique de cada item. Sem `cloneElement`, sem delegação de clique em `div`
+  e sem supressão de lint. Cliques que abrem outra aba ou janela (Ctrl, Cmd,
+  Shift, Alt ou botão que não seja o principal) **não** fecham a gaveta.
+- **`onClick` em `NavLinkProps`:** é a única mudança de API pública. O
+  consumidor deve repassá-lo ao elemento que o `renderLink` devolve; um
+  `renderLink` que não o repassa continua funcionando, mas a gaveta fica
+  aberta após navegar (contrato documentado no README e testado).
+- **Fechar ao cruzar `lg`:** `useMediaQuery` (`src/internal/use-media-query.ts`,
+  sobre `useSyncExternalStore`) observa `(min-width: 64rem)`; o `AppShell`
+  fecha a gaveta quando a consulta passa a corresponder (estado ajustado
+  durante a renderização, sem efeito). Uma gaveta aberta ao passar de `lg`
+  continuaria modal e invisível (`lg:hidden`); por isso o `matchMedia` foi
+  autorizado **apenas para este fim** e existe em **um único arquivo** de
+  `src` (o hook). Sem `window.matchMedia` (jsdom, servidor) o hook devolve
+  `false` e não assina nada; o listener é removido ao desmontar.
+- **Constante única:** `BREAKPOINT_LG = '64rem'`; um teste a compara com
+  `--breakpoint-lg` de `tokens.css`, para que não divirjam.
 
 **Interpretação do critério de aceite.** O critério da Fase 6 ("sem
 nenhum ajuste retroativo necessário em `libs/ui` motivado pelo
