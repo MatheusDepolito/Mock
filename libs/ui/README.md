@@ -112,6 +112,29 @@ prop, so the library never imports an icon catalog) and `TextInput` (`type` amon
 - **`Alert`**: `tone` (`info` | `success` | `danger`), optional `title`, `children`.
   `danger` is `role="alert"`; the others are `role="status"`.
 
+### Organisms and templates
+
+Generic layouts only: the library holds **no navigation data, no route, no persona and
+no interface text**. `apps/web` (Phase 7) assembles each area with its own data.
+
+- **`AppHeader`**: `<header>` (`banner`) with `brand`, an actions slot (`children`) and
+  an optional menu button (`onMenuClick` requires `menuLabel`, by type; `menuExpanded`
+  and `menuControls` are optional). The menu button only exists below `lg`.
+- **`SideNav`**: `<nav>` with a **required `label`** (name of the landmark) and a list of
+  `NavItem` (`{ id, label, href, icon?, current? }`). The `current` item gets
+  `aria-current="page"`. `renderLink` plugs a router link (`{ href, className,
+'aria-current'?, children }`); the default is a plain `<a>`, and the library never
+  imports `next/*`.
+- **`AppShell`**: skip link (**required `skipLinkLabel`**), header, optional sidebar and
+  `<main>`. With a `sidebar`, `menuLabel` and `closeLabel` are required and `header` is a
+  **render prop** that receives the menu props to spread on `AppHeader` (no
+  `cloneElement`). The sidebar is fixed from `lg`; below it, it becomes a **drawer**
+  (Headless UI dialog: focus trap, `Esc`, backdrop). The fixed sidebar is only in the DOM
+  while the drawer is closed, so there is never more than one `navigation` landmark and
+  no viewport logic in JS.
+- **`FormPageLayout`**: `title` (`headingLevel`, `h1` by default), optional `description`
+  and `actions`, children (the form) in a narrow centred column built on `Container`.
+
 ## Architecture guards
 
 `libs/ui` is isolated from the API, auth, data fetching, server-only code and

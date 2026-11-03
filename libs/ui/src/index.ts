@@ -30,3 +30,15 @@ export type {
 } from './molecules/FormField';
 export { Tabs } from './molecules/Tabs';
 export type { TabItem, TabsProps } from './molecules/Tabs';
+export { AppHeader } from './organisms/AppHeader';
+export type { AppHeaderMenuProps, AppHeaderProps } from './organisms/AppHeader';
+export type { NavItem, NavLinkProps, RenderLink } from './organisms/nav-types';
+export { SideNav } from './organisms/SideNav';
+export type { SideNavProps } from './organisms/SideNav';
+export { AppShell } from './templates/AppShell';
+export type { AppShellProps } from './templates/AppShell';
+export { FormPageLayout } from './templates/FormPageLayout';
+export type {
+  FormPageHeading,
+  FormPageLayoutProps,
+} from './templates/FormPageLayout';

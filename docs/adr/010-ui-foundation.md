@@ -247,6 +247,44 @@ ReactNode`, com `id`, `aria-describedby`, `aria-invalid` e `required`);
   a versão já resolvida pelo `jest-axe`), para que `jest-axe.d.ts` não
   dependa de hoisting; o `yarn.lock` só ganhou essa linha no workspace.
 
+### Organismos e templates (6.6)
+
+- **Navegação como dados:** `NavItem` (`{ id, label, href, icon?, current? }`)
+  e `RenderLink` (`{ href, className, 'aria-current'?, children }`) são tipos
+  da lib; **nenhum dado concreto de navegação, rota ou persona existe na
+  lib** (D10). O `renderLink` padrão é um `<a>`; o consumidor injeta o link
+  do roteador, e a lib **não importa `next/*`**.
+- **`AppHeader`:** `onMenuClick` exige `menuLabel` por tipo (união
+  discriminada); `menuExpanded` e `menuControls` são opcionais.
+- **`SideNav`:** `label` obrigatório (nome do landmark); o item `current`
+  recebe `aria-current="page"` e se distingue por cor (`primary` sobre
+  `surface`) e por peso, só com tokens existentes.
+- **`AppShell`:** `skipLinkLabel` obrigatório; com `sidebar`, `menuLabel` e
+  `closeLabel` passam a ser obrigatórios (união discriminada), e o `header`
+  é uma **render prop** que recebe as props do botão de menu (não há
+  `cloneElement`). A barra lateral é fixa a partir de `lg` e **vira gaveta**
+  abaixo dele, compondo o `Dialog` do próprio Headless UI (o `Dialog` da
+  6.5b é centralizado, e uma gaveta não é). **Estratégia de landmarks:** a
+  barra fixa só está no DOM enquanto a gaveta está fechada (abaixo de `lg`
+  ela já é `hidden` por CSS, e a gaveta só abre ali), então nunca há mais
+  de um `navigation` no DOM, **sem lógica de viewport em JS**. Limitação
+  conhecida: a gaveta não fecha sozinha ao seguir um link; a Fase 7 pode
+  precisar de um controle do estado da gaveta pelo consumidor.
+- **`FormPageLayout`:** `title` com `headingLevel` (padrão `h1`),
+  `description` e `actions` opcionais, sobre o `Container`.
+- **Contraste:** nenhum par novo foi necessário; todos os estados (item
+  atual, hover, foco, cabeçalho, gaveta, link de salto) reutilizam pares já
+  cobertos pelo `tokens.spec.ts`.
+
+**Riscos registrados para a 6.8 (com o Figma):**
+
+- O token `border` dá **1,43:1** sobre `surface-raised` (1,36:1 sobre
+  `surface`): serve como divisor decorativo, **não** como limite de
+  controle (não-texto exige 3:1). Os limites de controle usam
+  `content-muted`. Decidir o valor do token com o Figma.
+- `blur-*` e `backdrop-blur-*` continuam sendo gerados (namespaces fora dos
+  resets); revisar se devem ser fechados.
+
 **Interpretação do critério de aceite.** O critério da Fase 6 ("sem
 nenhum ajuste retroativo necessário em `libs/ui` motivado pelo
 frontend") **não** considera "ajuste retroativo" a **troca de valores de

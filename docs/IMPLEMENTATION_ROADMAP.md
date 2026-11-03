@@ -52,7 +52,7 @@ seção, abaixo.
 | [3 — Docker, PostGIS, Redis e Prisma](#fase-3--docker-postgis-redis-e-prisma) | `Completed`   | Tarefas 3.0 a 3.6; ADR 006/007/008 `Accepted`; readiness real; Dockerfile da API.                                                              |
 | [4 — Worker e BullMQ](#fase-4--worker-e-bullmq)                               | `Completed`   | Subtarefas 4.1 a 4.7; `libs/queue`, `apps/worker`, Dockerfile do worker.                                                                       |
 | [5 — OpenAPI e api-client](#fase-5--openapi-e-api-client)                     | `Completed`   | Subtarefas 5.0 a 5.13 (incl. 5.10-B); contrato OpenAPI versionado, `libs/api-client`, `contract:check` no `yarn validate`; ADR 009 `Accepted`. |
-| [6 — Tailwind, `libs/ui` e Storybook](#fase-6--tailwind-libsui-e-storybook)   | `In Progress` | 6.0 a 6.5 `Completed`; 6.6 a 6.9 `Pending`; ADR 010 `Proposed`.                                                                                |
+| [6 — Tailwind, `libs/ui` e Storybook](#fase-6--tailwind-libsui-e-storybook)   | `In Progress` | 6.0 a 6.6 `Completed`; 6.7 a 6.9 `Pending`; ADR 010 `Proposed`.                                                                                |
 | 7 — App Next.js e áreas por persona                                           | `Pending`     | —                                                                                                                                              |
 | 8 — Adapters Stripe e Mapbox em sandbox                                       | `Pending`     | —                                                                                                                                              |
 | 9 — Validação integrada do skeleton                                           | `Pending`     | —                                                                                                                                              |
@@ -1792,8 +1792,9 @@ estritamente separados; `contract:check` começa com `cache: false`. O
 
 **Status**: In Progress. As subtarefas 6.0 (abertura documental e
 branch), 6.1 (spike), 6.2 (scaffold), 6.3 (tokens e pipeline) e 6.4
-(guardas), 6.5a (convenções e átomos simples) e 6.5b (`TextInput` e
-moléculas) estão `Completed`; as subtarefas 6.6 a 6.9 estão `Pending`. Cada
+(guardas), 6.5a (convenções e átomos simples), 6.5b (`TextInput` e
+moléculas) e 6.6 (organismos e templates) estão `Completed`; as subtarefas
+6.7 a 6.9 estão `Pending`. Cada
 subtarefa exige autorização explícita e individual, e nenhuma delas
 autoriza commit, branch ou push. O registro das decisões está na
 [ADR 010](adr/010-ui-foundation.md) (`Proposed`; complementa a
@@ -1949,8 +1950,26 @@ frontend e design system).
   SHA-256 igual em duas compilações. `ui:test`: 253 → 344 testes. Sem
   token novo, sem pacote novo além de `axe-core` e sem mudança na tabela
   de decisões.
-- **6.6 — Organisms e templates**: `Pending`. `AppHeader`, `SideNav`,
-  `AppShell` e `FormPageLayout`, genéricos (D10, D11).
+- **6.6 — Organisms e templates**: `Completed`. `AppHeader`, `SideNav`,
+  `AppShell` e `FormPageLayout`, genéricos (D10, D11): navegação como
+  dados (`NavItem`, `RenderLink`, sem `next/*` e sem dados concretos),
+  rótulos obrigatórios por tipo (`menuLabel`, `label`, `skipLinkLabel` e,
+  com `sidebar`, `closeLabel`), `header` do `AppShell` como render prop
+  (sem `cloneElement`) e barra lateral fixa a partir de `lg`, gaveta
+  (Headless UI) abaixo dele. A barra fixa só existe no DOM com a gaveta
+  fechada, então nunca há dois `navigation` e não há lógica de viewport em
+  JS. Specs de landmarks, `aria-current`, `renderLink`, link de salto
+  (foco no `main`), gaveta (abrir, foco, `Esc`, retorno de foco, fundo,
+  botão de fechar) e `axe` em cada variante, com controles negativos
+  (`landmark-unique`, `landmark-no-duplicate-main`). Nenhum par de
+  contraste novo (todos reutilizados e já cobertos). Varredura real das
+  guardas limpa (39 arquivos não-spec); CSS com as classes emitidas
+  (inclusive `lg:` e `focus:`), sem seletor de paleta padrão e SHA-256
+  igual em duas compilações. `ui:test`: 344 → 396 testes. Sem pacote
+  novo, sem token novo, `yarn.lock` e `package.json` inalterados.
+  Registrados para a 6.8: o token `border` com 1,43:1 sobre
+  `surface-raised` (a decidir com o Figma) e `blur-*`/`backdrop-blur-*`
+  ainda gerados. Limitação: a gaveta não fecha ao seguir um link (Fase 7).
 - **6.7 — Storybook**: `Pending`. Build cacheável, página "Tokens"
   (D4), addon a11y (D8), medição da duração para reavaliar D13.
 - **6.8 — Validação integrada**: `Pending`. `yarn validate` sem cache,
