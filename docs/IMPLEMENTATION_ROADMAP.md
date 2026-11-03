@@ -52,7 +52,7 @@ seção, abaixo.
 | [3 — Docker, PostGIS, Redis e Prisma](#fase-3--docker-postgis-redis-e-prisma) | `Completed`   | Tarefas 3.0 a 3.6; ADR 006/007/008 `Accepted`; readiness real; Dockerfile da API.                                                              |
 | [4 — Worker e BullMQ](#fase-4--worker-e-bullmq)                               | `Completed`   | Subtarefas 4.1 a 4.7; `libs/queue`, `apps/worker`, Dockerfile do worker.                                                                       |
 | [5 — OpenAPI e api-client](#fase-5--openapi-e-api-client)                     | `Completed`   | Subtarefas 5.0 a 5.13 (incl. 5.10-B); contrato OpenAPI versionado, `libs/api-client`, `contract:check` no `yarn validate`; ADR 009 `Accepted`. |
-| [6 — Tailwind, `libs/ui` e Storybook](#fase-6--tailwind-libsui-e-storybook)   | `In Progress` | 6.0 a 6.4 e 6.5a `Completed`; 6.5b a 6.9 `Pending`; ADR 010 `Proposed`.                                                                        |
+| [6 — Tailwind, `libs/ui` e Storybook](#fase-6--tailwind-libsui-e-storybook)   | `In Progress` | 6.0 a 6.5 `Completed`; 6.6 a 6.9 `Pending`; ADR 010 `Proposed`.                                                                                |
 | 7 — App Next.js e áreas por persona                                           | `Pending`     | —                                                                                                                                              |
 | 8 — Adapters Stripe e Mapbox em sandbox                                       | `Pending`     | —                                                                                                                                              |
 | 9 — Validação integrada do skeleton                                           | `Pending`     | —                                                                                                                                              |
@@ -1792,8 +1792,8 @@ estritamente separados; `contract:check` começa com `cache: false`. O
 
 **Status**: In Progress. As subtarefas 6.0 (abertura documental e
 branch), 6.1 (spike), 6.2 (scaffold), 6.3 (tokens e pipeline) e 6.4
-(guardas) e 6.5a (convenções e átomos simples) estão `Completed`; as
-subtarefas 6.5b a 6.9 estão `Pending`. Cada
+(guardas), 6.5a (convenções e átomos simples) e 6.5b (`TextInput` e
+moléculas) estão `Completed`; as subtarefas 6.6 a 6.9 estão `Pending`. Cada
 subtarefa exige autorização explícita e individual, e nenhuma delas
 autoriza commit, branch ou push. O registro das decisões está na
 [ADR 010](adr/010-ui-foundation.md) (`Proposed`; complementa a
@@ -1931,9 +1931,24 @@ frontend e design system).
   nenhum seletor da paleta padrão aparece. `ui:test`: 121 → 253 testes.
   Fora: molecules (`TextInput`, `FormField`, `Dialog`, `Tabs`,
   `EmptyState`, `Alert`), organismos, templates, stories e Storybook.
-- **6.5b — Átomo `TextInput` e molecules**: `Pending`. `TextInput`,
-  `FormField`, `Dialog` (Headless UI), `Tabs`, `EmptyState` e `Alert`,
-  conforme o conjunto mínimo (D9), seguindo as convenções da 6.5a.
+- **6.5b — Átomo `TextInput` e molecules**: `Completed`. `TextInput` e
+  as moléculas `FormField` (ids por `useId`, entregues ao controle por
+  render prop, sem `cloneElement`), `Dialog` e `Tabs` (Headless UI,
+  `closeLabel` e `label` obrigatórios), `EmptyState` e `Alert` (tons
+  `info`, `success` e `danger`, só com tokens existentes), seguindo as
+  convenções da 6.5a, com specs de interação (foco, `Esc`, fundo,
+  setas/`Home`/`End`, `aria-describedby` em quatro combinações) e `axe`
+  em cada variante relevante, com controles negativos. `axe-core` 4.12.1
+  declarado como `devDependency` exata de `libs/ui` (o `yarn.lock` só
+  ganhou essa linha no workspace). O `tokens.spec.ts` passou a cobrir os
+  pares novos de contraste (texto ≥ 4,5:1 e não-texto ≥ 3:1); a borda do
+  `TextInput` usa `content-muted`, pois o token `border` dá 1,43:1 sobre
+  `surface-raised`. Varredura real das guardas limpa (29 arquivos
+  não-spec); CSS compilado a partir do `styles.css` com as classes dos
+  novos componentes emitidas, sem seletor de paleta padrão e com
+  SHA-256 igual em duas compilações. `ui:test`: 253 → 344 testes. Sem
+  token novo, sem pacote novo além de `axe-core` e sem mudança na tabela
+  de decisões.
 - **6.6 — Organisms e templates**: `Pending`. `AppHeader`, `SideNav`,
   `AppShell` e `FormPageLayout`, genéricos (D10, D11).
 - **6.7 — Storybook**: `Pending`. Build cacheável, página "Tokens"

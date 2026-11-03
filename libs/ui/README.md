@@ -89,8 +89,28 @@ itself and add its own `@source` for the library, because Tailwind does not scan
 
 `Button` (`variant`, `size`, `loading` + `loadingLabel`), `Badge` (`tone`), `Container`
 (`as`: `div` | `main` | `section`), `Spinner` (`label`), `Label` (`required`),
-`FieldError` (`id`, `announce`) and `Icon` (the icon component comes in the `icon`
-prop, so the library never imports an icon catalog).
+`FieldError` (`id`, `announce`), `Icon` (the icon component comes in the `icon`
+prop, so the library never imports an icon catalog) and `TextInput` (`type` among
+`text | email | password | search | tel | url | number`, `invalid`).
+
+### Molecules
+
+- **`FormField`** composes `Label`, the control, an optional `hint` and an optional
+  `error`. It generates the ids with `useId` and hands them to the control through a
+  **render prop** (`children: (control) => ReactNode`; spread `control` on any control:
+  `id`, `aria-describedby`, `aria-invalid`, `required`). There is no `cloneElement` and
+  the child does not have to be a `TextInput`.
+- **`Dialog`** (Headless UI): `open`, `onClose`, `title` (its accessible name),
+  optional `description`, **required `closeLabel`** (name of the close button),
+  `children` and optional `actions`. Focus is trapped; `Esc` and a click on the
+  backdrop close it.
+- **`Tabs`** (Headless UI): declarative `tabs: { id, label, content }[]`, **required
+  `label`** (name of the tab list), `defaultIndex`, or `selectedIndex` + `onChange`.
+  Arrow keys, `Home` and `End` move and select the tab.
+- **`EmptyState`**: `icon` (decorative), `title`, optional `description` and `action`,
+  `headingLevel` (`h2` | `h3` | `h4`).
+- **`Alert`**: `tone` (`info` | `success` | `danger`), optional `title`, `children`.
+  `danger` is `role="alert"`; the others are `role="status"`.
 
 ## Architecture guards
 

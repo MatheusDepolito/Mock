@@ -18,6 +18,7 @@ const SEMANTIC_COLORS = [
 
 const WHITE = 'hsl(0 0% 100%)';
 const MIN_CONTRAST = 4.5;
+const MIN_NON_TEXT_CONTRAST = 3;
 
 const css = tokensCss.replace(/\/\*[\s\S]*?\*\//g, '');
 
@@ -155,8 +156,9 @@ describe('tokens.css — contract of semantic names (D2, D2b, D3, D4)', () => {
   });
 });
 
-describe('tokens.css — WCAG AA contrast (>= 4.5:1) of the provisional values', () => {
+describe('tokens.css — WCAG AA contrast of the text pairs (>= 4.5:1)', () => {
   it.each([
+    // Pairs used by the atoms (6.5a)
     ['--color-content', '--color-surface'],
     ['--color-content', '--color-surface-raised'],
     ['--color-content-muted', '--color-surface'],
@@ -164,9 +166,33 @@ describe('tokens.css — WCAG AA contrast (>= 4.5:1) of the provisional values',
     ['--color-danger', '--color-surface'],
     ['--color-success', '--color-surface'],
     ['--color-success', '--color-surface-raised'],
+    // Pairs used by the components of 6.5b and by the `danger`/`success` variants
+    ['--color-primary-foreground', '--color-danger'],
+    ['--color-primary-foreground', '--color-success'],
+    ['--color-content-muted', '--color-surface-raised'],
+    ['--color-danger', '--color-surface-raised'],
+    ['--color-primary', '--color-surface'],
+    ['--color-primary', '--color-surface-raised'],
   ])('%s on %s', (foreground, background) => {
     expect(contrast(foreground, background)).toBeGreaterThanOrEqual(
       MIN_CONTRAST,
+    );
+  });
+});
+
+describe('tokens.css — non-text contrast of interface components (>= 3:1)', () => {
+  // Control boundaries (TextInput border, Dialog close icon), focus outlines and
+  // tone bars. The decorative `--color-border` is not used for any of these.
+  it.each([
+    ['--color-content-muted', '--color-surface-raised'],
+    ['--color-primary', '--color-surface'],
+    ['--color-primary', '--color-surface-raised'],
+    ['--color-danger', '--color-surface'],
+    ['--color-danger', '--color-surface-raised'],
+    ['--color-success', '--color-surface'],
+  ])('%s on %s', (foreground, background) => {
+    expect(contrast(foreground, background)).toBeGreaterThanOrEqual(
+      MIN_NON_TEXT_CONTRAST,
     );
   });
 });

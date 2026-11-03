@@ -217,6 +217,36 @@ Componente.spec.tsx, index.ts}`, com as camadas `atoms`, `molecules`,
   de sair; já `inset-shadow-*`, `drop-shadow-*` e `text-shadow-*` **eram**
   gerados por padrão e passaram a ser fechados em `tokens.css`.
 
+### Moléculas e `TextInput` (6.5b)
+
+- **`TextInput`:** `type` restrito a `text | email | password | search | tel |
+url | number`; `invalid` (ou `aria-invalid` vindo de fora) aplica
+  `aria-invalid` e o estilo `danger`. A borda do controle usa
+  `content-muted` (contraste de não-texto 5,87:1), e não o token decorativo
+  `border` (1,43:1 sobre `surface-raised`), sem criar token novo.
+- **`FormField`:** os **ids são gerados com `useId`** pelo próprio componente
+  e entregues ao controle por **render prop** (`children: (control) =>
+ReactNode`, com `id`, `aria-describedby`, `aria-invalid` e `required`);
+  **sem `cloneElement`** e sem exigir que o filho seja o `TextInput`.
+  `aria-describedby` lista o hint e depois o erro, só os presentes.
+- **`Dialog`:** sobre `@headlessui/react`; `title` é o nome acessível e
+  `closeLabel` é **obrigatório** (nome do botão de fechar), sem texto
+  fixo. O fundo usa `bg-content/50` (token existente com opacidade).
+- **`Tabs`:** sobre `@headlessui/react`, API por dados; `label` é
+  **obrigatório** (nome da `tablist`).
+- **`EmptyState`** e **`Alert`:** tudo por props. O `Alert` usa só tokens
+  existentes (`info` = barra `primary`), com texto sempre `content` sobre
+  `surface`; `danger` é `role="alert"` e os demais `role="status"`, sem
+  ícone fixo.
+- **Contraste:** o `tokens.spec.ts` passou a cobrir também os pares
+  novos: texto ≥ 4,5:1 (`primary-foreground` sobre `danger` e `success`,
+  `content-muted` e `danger` sobre `surface-raised`, `primary` sobre
+  `surface` e `surface-raised`) e não-texto ≥ 3:1 (bordas de controle,
+  contornos de foco e barras de tom).
+- **`axe-core`** passou a ser `devDependency` exata de `libs/ui` (4.12.1,
+  a versão já resolvida pelo `jest-axe`), para que `jest-axe.d.ts` não
+  dependa de hoisting; o `yarn.lock` só ganhou essa linha no workspace.
+
 **Interpretação do critério de aceite.** O critério da Fase 6 ("sem
 nenhum ajuste retroativo necessário em `libs/ui` motivado pelo
 frontend") **não** considera "ajuste retroativo" a **troca de valores de
