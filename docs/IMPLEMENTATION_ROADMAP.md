@@ -52,7 +52,7 @@ seção, abaixo.
 | [3 — Docker, PostGIS, Redis e Prisma](#fase-3--docker-postgis-redis-e-prisma) | `Completed`   | Tarefas 3.0 a 3.6; ADR 006/007/008 `Accepted`; readiness real; Dockerfile da API.                                                              |
 | [4 — Worker e BullMQ](#fase-4--worker-e-bullmq)                               | `Completed`   | Subtarefas 4.1 a 4.7; `libs/queue`, `apps/worker`, Dockerfile do worker.                                                                       |
 | [5 — OpenAPI e api-client](#fase-5--openapi-e-api-client)                     | `Completed`   | Subtarefas 5.0 a 5.13 (incl. 5.10-B); contrato OpenAPI versionado, `libs/api-client`, `contract:check` no `yarn validate`; ADR 009 `Accepted`. |
-| [6 — Tailwind, `libs/ui` e Storybook](#fase-6--tailwind-libsui-e-storybook)   | `In Progress` | 6.0 a 6.3 `Completed`; 6.4 a 6.9 `Pending`; ADR 010 `Proposed`.                                                                                |
+| [6 — Tailwind, `libs/ui` e Storybook](#fase-6--tailwind-libsui-e-storybook)   | `In Progress` | 6.0 a 6.4 `Completed`; 6.5 a 6.9 `Pending`; ADR 010 `Proposed`.                                                                                |
 | 7 — App Next.js e áreas por persona                                           | `Pending`     | —                                                                                                                                              |
 | 8 — Adapters Stripe e Mapbox em sandbox                                       | `Pending`     | —                                                                                                                                              |
 | 9 — Validação integrada do skeleton                                           | `Pending`     | —                                                                                                                                              |
@@ -1791,8 +1791,8 @@ estritamente separados; `contract:check` começa com `cache: false`. O
 ## Fase 6 — Tailwind, libs/ui e Storybook
 
 **Status**: In Progress. As subtarefas 6.0 (abertura documental e
-branch), 6.1 (spike), 6.2 (scaffold) e 6.3 (tokens e pipeline) estão
-`Completed`; as subtarefas 6.4 a 6.9 estão `Pending`. Cada
+branch), 6.1 (spike), 6.2 (scaffold), 6.3 (tokens e pipeline) e 6.4
+(guardas) estão `Completed`; as subtarefas 6.5 a 6.9 estão `Pending`. Cada
 subtarefa exige autorização explícita e individual, e nenhuma delas
 autoriza commit, branch ou push. O registro das decisões está na
 [ADR 010](adr/010-ui-foundation.md) (`Proposed`; complementa a
@@ -1887,10 +1887,23 @@ frontend e design system).
   inicial de `success` (32%) deu 4,43:1 e foi ajustado para 30% por
   decisão do responsável. Sem componentes, Storybook nem dependências
   novas; `yarn.lock` inalterado.
-- **6.4 — Guardas de arquitetura**: `Pending`. ESLint
-  (`no-restricted-imports`) e teste permanente de isolamento de
-  `libs/ui` (D12), mais os plugins de ESLint se o spike os confirmar
-  (D15).
+- **6.4 — Guardas de arquitetura**: `Completed`. Fonte única das regras
+  em `libs/ui/architecture/rules.mjs` (módulo puro, fora de `src/`),
+  usada pelo `eslint.config.mjs` (`no-restricted-imports` em
+  `src/**/*.{ts,tsx}`, com relativos verificados por profundidade, até 8
+  níveis; `jsx-a11y` e `react-hooks` mantidos, D15) e pelo teste
+  permanente `architecture/architecture.spec.mjs` (108 testes, no
+  `include` do Vitest da lib): imports e dependências proibidos,
+  `import()` e `require()` (que o `no-restricted-imports` não enxerga),
+  cores fixas só em `tokens.css` e specs, e varredura real que prova a
+  ausência de marcadores de token e de `tailwind.config.*` em
+  `libs/config`, `libs/api-client`, `libs/queue` e `apps/*/src` (96
+  arquivos varridos) e de violações em `libs/ui/src`; teste estático de
+  que as guardas só leem o disco. `tokens.css` ganhou `--font-*: initial`
+  (o quinto reset): `font-serif` e `font-mono` deixam de ser gerados; os
+  tamanhos de texto permanecem os padrões do Tailwind, provisórios e
+  fora do contrato. `ui:test` passou de 13 para 121 testes. Sem
+  dependência nova e sem mudança no `yarn.lock`.
 - **6.5 — Atoms e molecules**: `Pending`. Conforme o conjunto mínimo
   (D9).
 - **6.6 — Organisms e templates**: `Pending`. `AppHeader`, `SideNav`,

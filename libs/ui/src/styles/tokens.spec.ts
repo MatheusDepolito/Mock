@@ -137,15 +137,18 @@ describe('tokens.css — contract of semantic names (D2, D2b, D3, D4)', () => {
       '--radius-*',
       '--shadow-*',
       '--breakpoint-*',
+      '--font-*',
     ]) {
       expect(theme.get(reset), reset).toBe('initial');
     }
   });
 
   it('defines only --font-sans as the font token (D18)', () => {
-    expect([...theme.keys()].filter((n) => n.startsWith('--font-'))).toEqual([
-      '--font-sans',
-    ]);
+    expect(
+      [...theme.keys()].filter(
+        (name) => name.startsWith('--font-') && name !== '--font-*',
+      ),
+    ).toEqual(['--font-sans']);
   });
 });
 

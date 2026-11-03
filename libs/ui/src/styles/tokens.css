@@ -63,11 +63,12 @@
 }
 
 @theme {
-  /* Closed list: drop Tailwind's default palette, radii, shadows, breakpoints. */
+  /* Closed list: drop Tailwind's default palette, radii, shadows, breakpoints and fonts. */
   --color-*: initial;
   --radius-*: initial;
   --shadow-*: initial;
   --breakpoint-*: initial;
+  --font-*: initial;
 
   /* Semantic colors */
   --color-primary: var(--scale-brand-600);

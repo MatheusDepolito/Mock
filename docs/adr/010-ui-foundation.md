@@ -134,9 +134,12 @@ arquivo).
   `--breakpoint-sm|md|lg` (`40rem`, `48rem`, `64rem`); e só `--font-sans`
   (D18). `--color-border` foi acrescentada na 6.3 ao conjunto citado na
   D3.
-- **Lista fechada:** `--color-*`, `--radius-*`, `--shadow-*` e
-  `--breakpoint-*` são zerados com `initial` antes da definição, então só
-  existem utilitários dos tokens do contrato (sem `bg-blue-500`).
+- **Lista fechada:** `--color-*`, `--radius-*`, `--shadow-*`,
+  `--breakpoint-*` e (desde a 6.4) `--font-*` são zerados com `initial`
+  antes da definição, então só existem utilitários dos tokens do contrato
+  (sem `bg-blue-500`, `font-serif` nem `font-mono`). Os **tamanhos de
+  texto** (`text-sm`, `text-lg`…) permanecem os padrões do Tailwind,
+  provisórios e fora do contrato até o Figma definir a tipografia.
 
 Valores provisórios (D3): `primary hsl(210 80% 42%)`, `primary-foreground`
 branco, `surface hsl(210 20% 98%)`, `surface-raised` branco, `content
@@ -146,6 +149,30 @@ originalmente proposto para `success` (32%) foi ajustado para 30% por não
 atingir 4,5:1 sobre `surface` (4,43:1; o valor final dá 4,92:1). Um teste
 permanente (`tokens.spec.ts`) fixa o conjunto de nomes e o contraste AA
 dos pares de texto.
+
+### Guardas de arquitetura (6.4)
+
+O isolamento de `libs/ui` (D4, D12) é regra automática, com **uma única
+fonte** das listas, `libs/ui/architecture/rules.mjs` (módulo puro, fora
+de `src/`, nunca parte da superfície do pacote), usada pela configuração
+do ESLint e pelos testes:
+
+- **ESLint** (`no-restricted-imports`, em `src/**/*.{ts,tsx}`): proíbe
+  todo `@mockp/*` exceto `@mockp/ui`, `@tanstack/*`, `next` e `next/*`,
+  `next-auth` e `next-auth/*`, `@auth/*`, `@apollo/*`, `graphql`,
+  `@mui/*`, `@emotion/*`, `@prisma/*`, `@nestjs/*`, `ioredis`, `bullmq`,
+  `pg`, qualquer caminho `/apps/` e imports relativos que saiam da lib
+  (verificados por profundidade do arquivo, até 8 níveis sob `src`).
+- **Testes permanentes** (`architecture.spec.mjs`, no `yarn validate`):
+  as mesmas regras com fixtures positivas e negativas, inclusive
+  `import()` dinâmico e `require()`, que o `no-restricted-imports` não
+  enxerga; varredura real de `src` (imports proibidos e cores fixas —
+  hex, `rgb()`, `hsl()`, `oklch()` e cores arbitrárias do Tailwind, só
+  permitidas em `tokens.css` e nos specs); verificação das dependências
+  do `package.json`; e varredura que prova que nenhum marcador de
+  definição de token nem `tailwind.config.*` existe em `libs/config`,
+  `libs/api-client`, `libs/queue` e `apps/*/src`; mais um teste estático
+  de que os módulos das guardas só leem o sistema de arquivos.
 
 **Interpretação do critério de aceite.** O critério da Fase 6 ("sem
 nenhum ajuste retroativo necessário em `libs/ui` motivado pelo
