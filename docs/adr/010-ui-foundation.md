@@ -117,6 +117,36 @@ da lib por `@source` no seu CSS ou importando um `styles.css` exportado
 pela lib (com `@import "tailwindcss"` e `@source` relativo ao próprio
 arquivo).
 
+**Tokens da 6.3** (`libs/ui/src/styles/tokens.css`; `styles.css` e os
+`exports` `./tokens.css` e `./styles.css`). Duas camadas:
+
+- **Escalas internas** (`--scale-brand-*`, `--scale-neutral-*`,
+  `--scale-green-*`, `--scale-red-*`): variáveis em `:root`, **fora do
+  `@theme`**, portanto sem utilitários; seus nomes **não** são contrato
+  com o Figma.
+- **Camada semântica no `@theme`** (o contrato; o valor muda, o nome
+  não): cores `--color-primary`, `--color-primary-foreground`,
+  `--color-surface`, `--color-surface-raised`, `--color-content`,
+  `--color-content-muted`, `--color-border`, `--color-danger` e
+  `--color-success`, cada uma referenciando uma escala por `var()` (ou
+  branco literal em `primary-foreground` e `surface-raised`); `--spacing`
+  (base `0.25rem`); `--radius-none|sm|md`; `--shadow-card`;
+  `--breakpoint-sm|md|lg` (`40rem`, `48rem`, `64rem`); e só `--font-sans`
+  (D18). `--color-border` foi acrescentada na 6.3 ao conjunto citado na
+  D3.
+- **Lista fechada:** `--color-*`, `--radius-*`, `--shadow-*` e
+  `--breakpoint-*` são zerados com `initial` antes da definição, então só
+  existem utilitários dos tokens do contrato (sem `bg-blue-500`).
+
+Valores provisórios (D3): `primary hsl(210 80% 42%)`, `primary-foreground`
+branco, `surface hsl(210 20% 98%)`, `surface-raised` branco, `content
+hsl(210 25% 12%)`, `content-muted hsl(210 12% 40%)`, `border hsl(210 16%
+85%)`, `danger hsl(0 72% 45%)` e `success hsl(142 64% 30%)`. O valor
+originalmente proposto para `success` (32%) foi ajustado para 30% por não
+atingir 4,5:1 sobre `surface` (4,43:1; o valor final dá 4,92:1). Um teste
+permanente (`tokens.spec.ts`) fixa o conjunto de nomes e o contraste AA
+dos pares de texto.
+
 **Interpretação do critério de aceite.** O critério da Fase 6 ("sem
 nenhum ajuste retroativo necessário em `libs/ui` motivado pelo
 frontend") **não** considera "ajuste retroativo" a **troca de valores de

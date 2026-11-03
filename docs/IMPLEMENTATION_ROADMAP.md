@@ -52,7 +52,7 @@ seção, abaixo.
 | [3 — Docker, PostGIS, Redis e Prisma](#fase-3--docker-postgis-redis-e-prisma) | `Completed`   | Tarefas 3.0 a 3.6; ADR 006/007/008 `Accepted`; readiness real; Dockerfile da API.                                                              |
 | [4 — Worker e BullMQ](#fase-4--worker-e-bullmq)                               | `Completed`   | Subtarefas 4.1 a 4.7; `libs/queue`, `apps/worker`, Dockerfile do worker.                                                                       |
 | [5 — OpenAPI e api-client](#fase-5--openapi-e-api-client)                     | `Completed`   | Subtarefas 5.0 a 5.13 (incl. 5.10-B); contrato OpenAPI versionado, `libs/api-client`, `contract:check` no `yarn validate`; ADR 009 `Accepted`. |
-| [6 — Tailwind, `libs/ui` e Storybook](#fase-6--tailwind-libsui-e-storybook)   | `In Progress` | 6.0 a 6.2 `Completed`; 6.3 a 6.9 `Pending`; ADR 010 `Proposed`.                                                                                |
+| [6 — Tailwind, `libs/ui` e Storybook](#fase-6--tailwind-libsui-e-storybook)   | `In Progress` | 6.0 a 6.3 `Completed`; 6.4 a 6.9 `Pending`; ADR 010 `Proposed`.                                                                                |
 | 7 — App Next.js e áreas por persona                                           | `Pending`     | —                                                                                                                                              |
 | 8 — Adapters Stripe e Mapbox em sandbox                                       | `Pending`     | —                                                                                                                                              |
 | 9 — Validação integrada do skeleton                                           | `Pending`     | —                                                                                                                                              |
@@ -1791,8 +1791,8 @@ estritamente separados; `contract:check` começa com `cache: false`. O
 ## Fase 6 — Tailwind, libs/ui e Storybook
 
 **Status**: In Progress. As subtarefas 6.0 (abertura documental e
-branch), 6.1 (spike) e 6.2 (scaffold) estão `Completed`; as subtarefas
-6.3 a 6.9 estão `Pending`. Cada
+branch), 6.1 (spike), 6.2 (scaffold) e 6.3 (tokens e pipeline) estão
+`Completed`; as subtarefas 6.4 a 6.9 estão `Pending`. Cada
 subtarefa exige autorização explícita e individual, e nenhuma delas
 autoriza commit, branch ou push. O registro das decisões está na
 [ADR 010](adr/010-ui-foundation.md) (`Proposed`; complementa a
@@ -1861,8 +1861,32 @@ frontend e design system).
   container com consumo de `system.ping` (mesmo `requestId`) e `SIGTERM`
   em 476 ms com `ExitCode=0`, sem `--init` e sem `SIGKILL`; `postgres` e
   `redis` saudáveis e inalterados.
-- **6.3 — Tokens e pipeline Tailwind**: `Pending`. Tokens semânticos
-  sobre escalas (D3) e o pipeline Tailwind que os exporta.
+- **6.3 — Tokens e pipeline Tailwind**: `Completed`. Em `libs/ui`:
+  `src/styles/tokens.css` (Tailwind 4.3.3) em duas camadas — 40 variáveis
+  de **escalas internas** (`--scale-brand|neutral|green|red-50…900`) em
+  `:root`, fora do `@theme` e sem utilitários, e 18 **tokens semânticos**
+  no `@theme` (9 cores, `--spacing`, 3 `--radius-*`, `--shadow-card`, 3
+  `--breakpoint-*`, `--font-sans`), com os padrões do Tailwind zerados
+  (`--color-*`, `--radius-*`, `--shadow-*`, `--breakpoint-*`: lista
+  fechada); `src/styles/styles.css` (`@import 'tailwindcss'`, tokens e
+  `@source` relativo); `exports` `./tokens.css` e `./styles.css`; teste
+  permanente `tokens.spec.ts` (13 testes: contrato de nomes, escalas fora
+  do `@theme`, resets, só `--font-sans` e contraste AA calculado);
+  README da lib com o contrato de nomes. Provas num fixture fora do
+  repositório (Vite 8 + `@tailwindcss/vite` instalados, sem instalar
+  nada): saem `bg-primary`, `text-content`, `text-content-muted`,
+  `border-border`, `bg-danger`, `bg-success`, `shadow-card`,
+  `rounded-md`, `font-sans` e os `@media` de 40, 48 e 64 rem; **não** saem
+  `bg-blue-500`, `bg-brand-600`, `bg-neutral-100` nem `shadow-md`; CSS de
+  10.482 B (8.397 B minificado), idêntico em duas compilações; as classes
+  da lib entram pelo `@source` relativo do `styles.css` e não entram sem
+  ele. Contraste (WCAG): `content`/`surface` 15,98:1,
+  `content`/`surface-raised` 16,71:1, `content-muted`/`surface` 5,61:1,
+  `primary-foreground`/`primary` 5,37:1, `danger`/`surface` 5,56:1,
+  `success`/`surface` 4,92:1 e `success`/`surface-raised` 5,15:1; o valor
+  inicial de `success` (32%) deu 4,43:1 e foi ajustado para 30% por
+  decisão do responsável. Sem componentes, Storybook nem dependências
+  novas; `yarn.lock` inalterado.
 - **6.4 — Guardas de arquitetura**: `Pending`. ESLint
   (`no-restricted-imports`) e teste permanente de isolamento de
   `libs/ui` (D12), mais os plugins de ESLint se o spike os confirmar

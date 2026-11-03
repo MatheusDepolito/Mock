@@ -1,0 +1,104 @@
+/*
+ * Design tokens of @mockp/ui — the only place they are defined.
+ *
+ * Two layers:
+ *  1. Internal scales (`--scale-*`), plain custom properties on :root. They
+ *     live OUTSIDE `@theme`, so they generate no Tailwind utilities, and
+ *     their names are NOT part of the contract with Figma.
+ *  2. Semantic tokens inside `@theme` — this is the contract: the value may
+ *     change (the values below are provisional), the name does not.
+ *
+ * The `*: initial` resets make the theme a closed list: only utilities for
+ * the tokens below exist (no `bg-blue-500`).
+ */
+
+:root {
+  /* Brand — hue 210 */
+  --scale-brand-50: hsl(210 100% 97%);
+  --scale-brand-100: hsl(210 90% 93%);
+  --scale-brand-200: hsl(210 85% 85%);
+  --scale-brand-300: hsl(210 80% 74%);
+  --scale-brand-400: hsl(210 78% 60%);
+  --scale-brand-500: hsl(210 78% 50%);
+  --scale-brand-600: hsl(210 80% 42%);
+  --scale-brand-700: hsl(210 82% 34%);
+  --scale-brand-800: hsl(210 84% 27%);
+  --scale-brand-900: hsl(210 86% 20%);
+
+  /* Neutral — hue 210, low saturation */
+  --scale-neutral-50: hsl(210 20% 98%);
+  --scale-neutral-100: hsl(210 20% 95%);
+  --scale-neutral-200: hsl(210 18% 90%);
+  --scale-neutral-300: hsl(210 16% 85%);
+  --scale-neutral-400: hsl(210 13% 65%);
+  --scale-neutral-500: hsl(210 12% 52%);
+  --scale-neutral-600: hsl(210 12% 40%);
+  --scale-neutral-700: hsl(210 15% 29%);
+  --scale-neutral-800: hsl(210 20% 20%);
+  --scale-neutral-900: hsl(210 25% 12%);
+
+  /* Green */
+  --scale-green-50: hsl(142 60% 96%);
+  --scale-green-100: hsl(142 55% 90%);
+  --scale-green-200: hsl(142 55% 80%);
+  --scale-green-300: hsl(142 55% 68%);
+  --scale-green-400: hsl(142 60% 52%);
+  --scale-green-500: hsl(142 64% 42%);
+  --scale-green-600: hsl(142 64% 36%);
+  --scale-green-700: hsl(142 64% 30%);
+  --scale-green-800: hsl(142 66% 25%);
+  --scale-green-900: hsl(142 68% 19%);
+
+  /* Red */
+  --scale-red-50: hsl(0 86% 97%);
+  --scale-red-100: hsl(0 90% 94%);
+  --scale-red-200: hsl(0 90% 88%);
+  --scale-red-300: hsl(0 85% 78%);
+  --scale-red-400: hsl(0 78% 66%);
+  --scale-red-500: hsl(0 75% 55%);
+  --scale-red-600: hsl(0 72% 45%);
+  --scale-red-700: hsl(0 74% 38%);
+  --scale-red-800: hsl(0 76% 31%);
+  --scale-red-900: hsl(0 78% 24%);
+}
+
+@theme {
+  /* Closed list: drop Tailwind's default palette, radii, shadows, breakpoints. */
+  --color-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+  --breakpoint-*: initial;
+
+  /* Semantic colors */
+  --color-primary: var(--scale-brand-600);
+  --color-primary-foreground: hsl(0 0% 100%);
+  --color-surface: var(--scale-neutral-50);
+  --color-surface-raised: hsl(0 0% 100%);
+  --color-content: var(--scale-neutral-900);
+  --color-content-muted: var(--scale-neutral-600);
+  --color-border: var(--scale-neutral-300);
+  --color-danger: var(--scale-red-600);
+  --color-success: var(--scale-green-700);
+
+  /* Spacing base */
+  --spacing: 0.25rem;
+
+  /* Radius */
+  --radius-none: 0;
+  --radius-sm: 0.125rem;
+  --radius-md: 0.25rem;
+
+  /* Shadow */
+  --shadow-card:
+    0 1px 2px 0 hsl(210 25% 12% / 0.08), 0 1px 3px 0 hsl(210 25% 12% / 0.12);
+
+  /* Breakpoints */
+  --breakpoint-sm: 40rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+
+  /* Font: token only, with a fallback stack; loading the font is the consumer's job. */
+  --font-sans:
+    Inter, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+    'Segoe UI Emoji';
+}

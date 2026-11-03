@@ -13,5 +13,50 @@ Headless UI and Tabler Icons, documented in Storybook.
 - Isolated from the API, Auth.js, TanStack Query, server-only configuration,
   `next/*` and domain types.
 
-Decisions: [ADR 010](../../docs/adr/010-ui-foundation.md). This workspace is
-only the scaffold; components, tokens and Storybook arrive in later subtasks.
+Decisions: [ADR 010](../../docs/adr/010-ui-foundation.md). Components and
+Storybook arrive in later subtasks.
+
+## Design tokens
+
+Tokens are CSS, in the Tailwind `@theme` of `src/styles/tokens.css`. **Only the
+semantic names below are the contract with Figma** (Figma variables use the same
+names): the value may change, the name does not. The values are **provisional**.
+
+| Token                                                   | Tailwind utilities                             | Role                                                                          |
+| ------------------------------------------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------- |
+| `--color-primary`                                       | `bg-primary`, `text-primary`, `border-primary` | Brand / main action                                                           |
+| `--color-primary-foreground`                            | `text-primary-foreground`                      | Text and icons on `primary`                                                   |
+| `--color-surface`                                       | `bg-surface`                                   | Page background                                                               |
+| `--color-surface-raised`                                | `bg-surface-raised`                            | Cards, dialogs, raised areas                                                  |
+| `--color-content`                                       | `text-content`                                 | Main text                                                                     |
+| `--color-content-muted`                                 | `text-content-muted`                           | Secondary text                                                                |
+| `--color-border`                                        | `border-border`                                | Borders and dividers                                                          |
+| `--color-danger`                                        | `bg-danger`, `text-danger`                     | Errors, destructive actions                                                   |
+| `--color-success`                                       | `bg-success`, `text-success`                   | Success feedback                                                              |
+| `--spacing`                                             | `p-4`, `m-2`, `gap-3`…                         | Spacing base (`0.25rem`)                                                      |
+| `--radius-none`, `--radius-sm`, `--radius-md`           | `rounded-none`, `rounded-sm`, `rounded-md`     | Corner radius                                                                 |
+| `--shadow-card`                                         | `shadow-card`                                  | Card elevation                                                                |
+| `--breakpoint-sm`, `--breakpoint-md`, `--breakpoint-lg` | `sm:`, `md:`, `lg:`                            | `40rem`, `48rem`, `64rem`                                                     |
+| `--font-sans`                                           | `font-sans`                                    | Font stack (token and fallbacks only; loading the font is the consumer's job) |
+
+- **The scales are internal.** `--scale-brand-*`, `--scale-neutral-*`,
+  `--scale-green-*` and `--scale-red-*` live on `:root`, outside `@theme`: they
+  generate no utilities and their names are **not** part of the contract.
+- **Closed list.** Tailwind's default palette, radii, shadows and breakpoints are
+  reset, so only utilities for the tokens above exist (no `bg-blue-500`).
+- **Contrast.** The provisional values meet WCAG AA (≥ 4.5:1) for the text pairs
+  checked in `src/styles/tokens.spec.ts`. `--color-success` is `hsl(142 64% 30%)`
+  (provisional); the first proposal (32%) was adjusted because it did not reach
+  4.5:1 on `surface`.
+
+### Using the tokens
+
+```css
+/* Simplest: tokens, Tailwind and the library sources in one import. */
+@import '@mockp/ui/styles.css';
+```
+
+`styles.css` carries `@import 'tailwindcss'` and an `@source` relative to its own
+file. A consumer that imports only `@mockp/ui/tokens.css` must import Tailwind
+itself and add its own `@source` for the library, because Tailwind does not scan
+`node_modules`.

@@ -8,7 +8,9 @@
       "types": "./src/index.ts",
       "development": "./src/index.ts",
       "default": "./src/index.ts"
-    }
+    },
+    "./tokens.css": "./src/styles/tokens.css",
+    "./styles.css": "./src/styles/styles.css"
   },
   "nx": {
     "name": "ui",
