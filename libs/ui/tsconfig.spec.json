@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../../dist/out-tsc/libs/ui/spec",
+    "tsBuildInfoFile": "../../dist/out-tsc/libs/ui/spec/spec.tsbuildinfo",
+    "types": ["vitest/globals", "@testing-library/jest-dom", "vite/client"]
+  },
+  "references": [{ "path": "./tsconfig.lib.json" }],
+  "include": [
+    "vitest.setup.ts",
+    "src/**/*.test.ts",
+    "src/**/*.spec.ts",
+    "src/**/*.test.tsx",
+    "src/**/*.spec.tsx",
+    "src/**/*.d.ts"
+  ]
+}

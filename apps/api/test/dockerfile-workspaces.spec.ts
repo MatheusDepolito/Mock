@@ -76,6 +76,7 @@ describe('workspace discovery', () => {
       'libs/api-client',
       'libs/config',
       'libs/queue',
+      'libs/ui',
     ]);
   });
 });

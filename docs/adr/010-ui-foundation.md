@@ -54,7 +54,8 @@ Cada decisão carrega o estado atual: **aprovada**, **aprovada e
 confirmada pelo spike 6.1**, **decidida pelo spike 6.1 e aprovada**,
 **aprovada, a reavaliar com dado medido** ou **regra mantida**. A D2b e a
 D6b nasceram do spike 6.1. Os números de versão citados são os
-encontrados no spike; os **definitivos são aprovados na 6.2**.
+encontrados no spike; os **definitivos foram aprovados na 6.2** (seção
+[Versões definitivas (6.2)](#versões-definitivas-62)).
 
 | ID  | Pergunta                                 | Alternativas                                                                                          | Decisão aprovada                                                                                                                                                                                                                                                                         | Consequência                                                                                                                                                  | Estado                                                                                                                         |
 | --- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
@@ -63,7 +64,7 @@ encontrados no spike; os **definitivos são aprovados na 6.2**.
 | D2b | Nome da cor de texto semântica           | `--color-text` (`text-text`); `--color-content` (`text-content`)                                      | `--color-content` (utilitário `text-content`), não `--color-text`                                                                                                                                                                                                                        | Evita o utilitário `text-text`; refina o nome `text` citado na D3                                                                                             | Aprovada                                                                                                                       |
 | D3  | Paleta e nomes                           | escalas numeradas; camada semântica (`primary`, `surface`, `text`, `danger`, `success`) sobre escalas | Camada semântica sobre escalas, com valores provisórios derivados da paleta do front antigo                                                                                                                                                                                              | Componentes usam só nomes semânticos; o Figma mapeia nome a nome                                                                                              | Aprovada                                                                                                                       |
 | D4  | Contrato de nomes com o Figma            | só o README; README + página no Storybook                                                             | README da lib + página "Tokens" no Storybook                                                                                                                                                                                                                                             | O Figma usa variáveis com os mesmos nomes; o valor muda, o nome não                                                                                           | Aprovada                                                                                                                       |
-| D5  | Versão e integração do Tailwind          | fixar agora; decidir após o spike                                                                     | Tailwind **4.3.3**, versão exata, com `@tailwindcss/vite` (e `@tailwindcss/postcss` para o Next na Fase 7)                                                                                                                                                                               | Funcionou com Vite 8, Node 24 e Next 16.4.2; os números definitivos são aprovados na 6.2                                                                      | Decidida pelo spike 6.1; aprovada                                                                                              |
+| D5  | Versão e integração do Tailwind          | fixar agora; decidir após o spike                                                                     | Tailwind **4.3.3**, versão exata, com `@tailwindcss/vite` (e `@tailwindcss/postcss` para o Next na Fase 7)                                                                                                                                                                               | Funcionou com Vite 8, Node 24 e Next 16.4.2; os números definitivos estão em "Versões definitivas (6.2)" da ADR 010                                           | Decidida pelo spike 6.1; aprovada                                                                                              |
 | D6  | Como `apps/web` consome `libs/ui`        | fonte TS/TSX; `dist` compilado                                                                        | `apps/web` consome `libs/ui` como **fonte TS/TSX** (`exports` apontando para `src`), sem `dist`; `transpilePackages` explícito na Fase 7, mesmo que o spike o tenha dispensado                                                                                                           | A Fase 7 configura `transpilePackages`; o Tailwind do consumidor precisa de `@source` ou do `styles.css` exportado pela lib                                   | Decidida pelo spike 6.1; aprovada                                                                                              |
 | D6b | Formato de módulo de `libs/ui`           | ESM; CommonJS (como as libs de backend)                                                               | **ESM**: `"type": "module"`, `module: ESNext`, `moduleResolution: bundler`, `jsx: react-jsx`, `lib` com DOM                                                                                                                                                                              | Difere das libs de backend (CommonJS). A lib é consumida só por bundlers (Vite, Storybook, Next); imports relativos sem extensão não funcionam no Node nativo | Aprovada (nova; motivada pelo spike 6.1: CJS falha no Next com `createContext is not a function` e perde tree-shaking no Vite) |
 | D7  | Storybook                                | `@storybook/react-vite`; framework Next                                                               | `storybook` e `@storybook/react-vite` **10.6.3**, executados por **`nx:run-commands`** com `cache: true` e `outputs` em `storybook-static`; **sem** `@nx/storybook` (+227 pacotes ao lockfile)                                                                                           | `libs/ui` não depende do Next; o build mediu ~3,2 s com 5 stories                                                                                             | Decidida pelo spike 6.1; aprovada                                                                                              |
@@ -141,6 +142,34 @@ TypeScript 6, ou se o workspace mudar de major do TypeScript. Qualquer
 exceção de peer exigiria decisão explícita do responsável, registrada
 aqui; sem essa decisão, vale D16.
 
+### Versões definitivas (6.2)
+
+Aprovadas e instaladas na 6.2 com versões **exatas** (sem `^` nem `~`) em
+`libs/ui/package.json`; `vite`, `vitest` e `typescript` continuam os da
+raiz. Nenhum `YN0060` e nenhum peer virou erro; `react` e `react-dom`
+têm uma única versão resolvida.
+
+| Pacote                               | Versão                               | Onde                                                 |
+| ------------------------------------ | ------------------------------------ | ---------------------------------------------------- |
+| `tailwindcss`, `@tailwindcss/vite`   | 4.3.3                                | `devDependencies`                                    |
+| `storybook`, `@storybook/react-vite` | 10.6.3                               | `devDependencies`                                    |
+| `@storybook/addon-a11y`              | 10.6.3 (acompanha o Storybook)       | `devDependencies`                                    |
+| `react`, `react-dom`                 | 19.3.1                               | `devDependencies`; `peerDependencies` `>=19.0.0 <20` |
+| `@types/react`                       | 19.3.0                               | `devDependencies`                                    |
+| `@types/react-dom`                   | 19.3.0 (peer `@types/react ^19.3.0`) | `devDependencies`                                    |
+| `@headlessui/react`                  | 2.2.10                               | `dependencies`                                       |
+| `@tabler/icons-react`                | 3.49.0                               | `dependencies`                                       |
+| `jsdom`                              | 30.1.3                               | `devDependencies`                                    |
+| `@testing-library/react`             | 16.3.3                               | `devDependencies`                                    |
+| `@testing-library/user-event`        | 14.6.8                               | `devDependencies`                                    |
+| `@testing-library/jest-dom`          | 7.0.1                                | `devDependencies`                                    |
+| `@testing-library/dom`               | 10.4.2                               | `devDependencies`                                    |
+| `eslint-plugin-react-hooks`          | 7.1.1                                | `devDependencies`                                    |
+| `eslint-plugin-jsx-a11y`             | 6.10.2                               | `devDependencies`                                    |
+
+`@storybook/addon-a11y` e `@types/react-dom` eram os dois pacotes sem
+número no spike; não foi necessário nenhum outro acessório de tipos.
+
 ### Resultados do spike 6.1
 
 Spike executado fora do repositório (diretório temporário já removido),
@@ -148,7 +177,8 @@ com Yarn 4.12.0, TypeScript 6.0.3, Vite 8 e Node 24, sem override, sem
 `resolutions` e sem `--legacy-peer-deps`. O repositório permaneceu
 idêntico. Nenhuma condição de parada disparou.
 
-- **Versões encontradas** (os números definitivos são aprovados na 6.2):
+- **Versões encontradas** (as definitivas estão em
+  [Versões definitivas (6.2)](#versões-definitivas-62)):
   Tailwind, `@tailwindcss/vite`, `@tailwindcss/postcss` e
   `@tailwindcss/cli` 4.3.3; `storybook` e `@storybook/react-vite`
   10.6.3; React e `react-dom` 19.3.1; `@types/react` 19.3.0; Next

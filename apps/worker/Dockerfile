@@ -20,15 +20,16 @@ WORKDIR /app
 
 # Workspace graph metadata only, for a cache-friendly install layer —
 # `yarn install --immutable` needs every workspace recorded in yarn.lock
-# (apps/api, apps/worker, libs/api-client, libs/config, libs/queue), not
-# just the ones the worker uses; a missing one fails the install or would
-# modify the lockfile.
+# (apps/api, apps/worker, libs/api-client, libs/config, libs/queue,
+# libs/ui), not just the ones the worker uses; a missing one fails the
+# install or would modify the lockfile.
 COPY package.json yarn.lock .yarnrc.yml ./
 COPY apps/api/package.json ./apps/api/package.json
 COPY apps/worker/package.json ./apps/worker/package.json
 COPY libs/api-client/package.json ./libs/api-client/package.json
 COPY libs/config/package.json ./libs/config/package.json
 COPY libs/queue/package.json ./libs/queue/package.json
+COPY libs/ui/package.json ./libs/ui/package.json
 
 RUN HUSKY=0 yarn install --immutable
 
@@ -66,6 +67,7 @@ COPY --from=build --chown=node:node /app/apps/worker/package.json ./apps/worker/
 COPY --from=build --chown=node:node /app/libs/api-client/package.json ./libs/api-client/package.json
 COPY --from=build --chown=node:node /app/libs/config/package.json ./libs/config/package.json
 COPY --from=build --chown=node:node /app/libs/queue/package.json ./libs/queue/package.json
+COPY --from=build --chown=node:node /app/libs/ui/package.json ./libs/ui/package.json
 
 # Full node_modules from the build stage, including the workspace
 # symlinks for @mockp/config and @mockp/queue (resolved to ./libs/*).

@@ -20,7 +20,7 @@ WORKDIR /app
 # Yarn Berry needs every workspace's package.json to resolve
 # `yarn install --immutable` correctly, not just the root's. That means
 # the *whole* workspace graph recorded in yarn.lock (apps/api,
-# apps/worker, libs/api-client, libs/config, libs/queue): a missing
+# apps/worker, libs/api-client, libs/config, libs/queue, libs/ui): a missing
 # workspace fails the install (`@mockp/queue` not found) or would modify
 # the lockfile.
 COPY package.json yarn.lock .yarnrc.yml ./
@@ -29,6 +29,7 @@ COPY apps/worker/package.json ./apps/worker/package.json
 COPY libs/api-client/package.json ./libs/api-client/package.json
 COPY libs/config/package.json ./libs/config/package.json
 COPY libs/queue/package.json ./libs/queue/package.json
+COPY libs/ui/package.json ./libs/ui/package.json
 
 RUN HUSKY=0 yarn install --immutable
 
@@ -77,6 +78,7 @@ COPY --from=build --chown=node:node /app/apps/worker/package.json ./apps/worker/
 COPY --from=build --chown=node:node /app/libs/api-client/package.json ./libs/api-client/package.json
 COPY --from=build --chown=node:node /app/libs/config/package.json ./libs/config/package.json
 COPY --from=build --chown=node:node /app/libs/queue/package.json ./libs/queue/package.json
+COPY --from=build --chown=node:node /app/libs/ui/package.json ./libs/ui/package.json
 
 # Full node_modules from the build stage — already includes the
 # `prisma` CLI (a runtime `dependency` of apps/api, not a devDependency,
