@@ -52,7 +52,7 @@ seção, abaixo.
 | [3 — Docker, PostGIS, Redis e Prisma](#fase-3--docker-postgis-redis-e-prisma) | `Completed`   | Tarefas 3.0 a 3.6; ADR 006/007/008 `Accepted`; readiness real; Dockerfile da API.                                                              |
 | [4 — Worker e BullMQ](#fase-4--worker-e-bullmq)                               | `Completed`   | Subtarefas 4.1 a 4.7; `libs/queue`, `apps/worker`, Dockerfile do worker.                                                                       |
 | [5 — OpenAPI e api-client](#fase-5--openapi-e-api-client)                     | `Completed`   | Subtarefas 5.0 a 5.13 (incl. 5.10-B); contrato OpenAPI versionado, `libs/api-client`, `contract:check` no `yarn validate`; ADR 009 `Accepted`. |
-| [6 — Tailwind, `libs/ui` e Storybook](#fase-6--tailwind-libsui-e-storybook)   | `In Progress` | 6.0 a 6.7 (inclui 6.5a, 6.5b e 6.6.1) `Completed`; 6.8 e 6.9 `Pending`; ADR 010 `Proposed`.                                                    |
+| [6 — Tailwind, `libs/ui` e Storybook](#fase-6--tailwind-libsui-e-storybook)   | `In Progress` | 6.0 a 6.8 (inclui 6.5a, 6.5b e 6.6.1) `Completed`; 6.9 `Pending`; ADR 010 `Proposed`.                                                          |
 | 7 — App Next.js e áreas por persona                                           | `Pending`     | —                                                                                                                                              |
 | 8 — Adapters Stripe e Mapbox em sandbox                                       | `Pending`     | —                                                                                                                                              |
 | 9 — Validação integrada do skeleton                                           | `Pending`     | —                                                                                                                                              |
@@ -1794,7 +1794,8 @@ estritamente separados; `contract:check` começa com `cache: false`. O
 branch), 6.1 (spike), 6.2 (scaffold), 6.3 (tokens e pipeline) e 6.4
 (guardas), 6.5a (convenções e átomos simples), 6.5b (`TextInput` e
 moléculas), 6.6 (organismos e templates), 6.6.1 (correção da gaveta) e 6.7
-(Storybook) estão `Completed`; as subtarefas 6.8 e 6.9 estão `Pending`. Cada
+(Storybook) e 6.8 (validação integrada) estão `Completed`; a subtarefa 6.9
+está `Pending`. Cada
 subtarefa exige autorização explícita e individual, e nenhuma delas
 autoriza commit, branch ou push. O registro das decisões está na
 [ADR 010](adr/010-ui-foundation.md) (`Proposed`; complementa a
@@ -2013,8 +2014,94 @@ frontend e design system).
   encerrado. Medições da D13 na linha de risco correspondente e na ADR 010.
   Sem pacote novo e `yarn.lock` inalterado; a D13 da tabela de decisões não
   mudou.
-- **6.8 — Validação integrada**: `Pending`. `yarn validate` sem cache,
-  `yarn validate:infra`, imagens, simulação de consumo e greps.
+- **6.8 — Validação integrada**: `Completed`. Validação da Fase 6 de
+  ponta a ponta com **evidência nova**; nenhum código, configuração,
+  dependência, `yarn.lock`, Dockerfile, teste ou story mudou. **Estado**:
+  HEAD `49b2d6e`, branch `feat/phase-6-ui`, árvore limpa antes e depois;
+  `postgres` e `redis` do Compose `healthy` (subidos pelo responsável) e
+  nunca parados, reiniciados ou recriados. (1) **`yarn validate` sem
+  cache**: exit 0 em 47,5 s, e `git status --short` **vazio** depois
+  (`storybook-static` ignorado); `yarn.lock` `15be45d9…`, `openapi.json`
+  `a40f983a…` e `schema.d.ts` `565cf1f0…` inalterados. (2) **`yarn
+validate:infra`**: exit 0 em 41,7 s; `migrate deploy` sem pendências,
+  seed idempotente, API **55** testes/13 arquivos e worker **2**
+  testes/2 arquivos, **idênticos à 5.11** (55/13 e 2/2), assim como a
+  integração sem infraestrutura (84/17); nenhuma divergência. (3)
+  **Imagens `6.8-test`** (as anteriores preservadas): API 1.695.053.043 B
+  e worker 1.694.373.097 B (~1,69 GB: +~8,5 MB sobre a `6.2-test` e
+  +~358 MB sobre a `5.11-test`); build da API em 1 min 51 s, com `yarn
+install --immutable` de 27,2 s. API em container (`host.docker.internal`,
+  banco `mockp_test`): `live` e `ready` `200`, `whoami` = `node`,
+  `/proc/1/cmdline` = `node dist/apps/api/src/main.js`, nenhuma menção a
+  migration nos logs, `yarn workspaces list` com 6 workspaces. Worker:
+  preflight fail-closed somente leitura (mesmo `run_id` do Redis pelo host
+  e pelo container, banco lógico `1`, fila `system` zerada e só chaves de
+  infraestrutura), `Worker started`, `node`, `node
+dist/apps/worker/src/main.js`, job `20` publicado do host e processado
+  com o mesmo `requestId`, `completed`, `SIGTERM` real com `docker stop
+--time 10` em 520 ms, `ExitCode=0`, `OOMKilled=false`, sem `--init`,
+  sem `SIGKILL`; job removido só após conferir o `requestId`; contêineres
+  temporários removidos. (4) **Simulação de consumo** em fixtures
+  descartáveis **fora** do repositório (workspace npm com a lib copiada
+  byte a byte e instalada por link de workspace, versões exatas: Next
+  16.4.2, Vite 8.2.2, Tailwind e `@tailwindcss/postcss` 4.3.3, React
+  19.3.1, Headless UI 2.2.10, Tabler 3.49.0, TypeScript 6.0.3; removidos ao
+  final): **Vite** — `tsc` estrito do consumidor sem erros, renderização
+  no servidor (`react-dom/server`) dos **17/17** componentes exportados
+  sem erro, `vite build` em 1,5 a 1,8 s, CSS de 16.994 B com SHA-256 igual
+  em duas compilações, 26/26 classes amostradas e 157 seletores sem
+  paleta/sombra/raio padrão (único aviso: a diretiva `"use client"` do
+  Headless UI, inofensiva); **Next 16.4.2** com `@tailwindcss/postcss` e
+  `transpilePackages` explícito — `next build` com Turbopack em 6,7 a
+  7,7 s e com `--webpack` em 19,9 s, página que usa os 17 componentes
+  (inclusive `Dialog` e `AppShell`) pré-renderizada, CSS de 16.943 B
+  (Turbopack, SHA-256 igual em duas compilações) e 16.777 B (webpack),
+  26/26 classes e nenhum seletor de paleta padrão, **sem** o erro
+  `createContext is not a function`. (5) **Greps de higiene**: zero
+  ocorrências não justificadas (as menções a `next/` e aos pacotes
+  proibidos estão só nas listas e fixtures das próprias guardas e no
+  README; as cores fixas estão só em specs e `tokens.css`; nenhum segredo
+  versionado — o `.env.example` traz só padrões de desenvolvimento local e
+  o `.env` não é versionado; nenhuma definição de token nem
+  `tailwind.config.*` fora de `libs/ui`; zero `cloneElement`, `any`,
+  `@ts-ignore`, `@ts-expect-error`, `eslint-disable`, `TODO`, `FIXME` e
+  `console.log`). (6) **Regressão**: `api:test:integration` 84 testes
+  (guarda dos Dockerfiles com 14 verdes), `contract:check` com hashes
+  inalterados, `ui` sem arestas no grafo, `ui:test` 504 testes em 26
+  arquivos e `ui:storybook:build` com acerto de cache (55 ms no Nx).
+  (7) **Pontos abertos para a 6.9** (levantados, **nenhum decidido**):
+  (a) **token `border`** (1,43:1 sobre `surface-raised`, 1,36:1 sobre
+  `surface`): 6 usos em componentes — `Badge` neutro, `Alert`, divisor da
+  `Tabs`, `AppHeader` e barra lateral do `AppShell` são divisores/limites
+  decorativos; o botão `secondary` é o único **limite de controle** que
+  ainda o usa (o `TextInput` já usa `content-muted`, 5,87:1). Opções:
+  (A) criar `--color-border-strong` (por exemplo `neutral-500`, 3,80:1
+  sobre `surface-raised`): nome novo no contrato com o Figma e no teste de
+  nomes, `border` continua decorativo e o `TextInput` e o botão migram
+  para ele; (B) manter `content-muted` nos controles e passar o botão
+  `secondary` a `border-content-muted`: sem token novo, mas a borda
+  acompanha o token de texto; (C) escurecer o próprio `border` para ≥ 3:1
+  (`neutral-500`): só muda o valor (o nome fica), porém todos os divisores
+  ficam mais pesados. (b) **`blur-*` e `backdrop-blur-*`** continuam
+  gerados (confirmado por compilação): `--blur-*: initial` e
+  `--backdrop-blur-*: initial` no `@theme` os removem, mantêm `blur-none`
+  e não afetam nenhuma classe do contrato nem componente (nenhum usa
+  `blur`); cuidado: `animate-spin`, `max-w-md` e `font-medium` dependem de
+  namespaces padrão (`--animate-*`, `--container-*`, `--font-weight-*`),
+  que **não** podem ser fechados sem substituí-los. (c) **Server
+  Components**: um Server Component que importe o barril `@mockp/ui`
+  falha no `next build` (`createContext` em `internal/drawer-context.ts`,
+  via `SideNav`; as demais peças com hooks também exigem fronteira de
+  cliente); o consumo por componente cliente funciona; a Fase 7 precisa de
+  `"use client"` no consumidor ou a lib de diretivas/exports separados
+  (decisão e mudança de código fora desta subtarefa). (d) Avisos e
+  observações: diretiva `"use client"` do Headless UI no build do Vite;
+  avisos de chunk > 500 kB no Storybook (`iframe` 1,15 MB, `axe` 660 kB);
+  variância do `yarn validate` (38,9 a 47,5 s); 8 avisos `YN0002`
+  preexistentes; versões mais novas no registro, apenas listadas: Tailwind
+  e `@tailwindcss/vite` 4.3.4, Storybook (3 pacotes) 10.6.5,
+  `@tabler/icons-react` 3.50.0, Vite 8.3.5, `axe-core` 4.14.0, Vitest
+  5.1.0 e TypeScript 7.0.2 (majors, fora da D16).
 - **6.9 — Limpeza e fechamento**: `Pending`. Roadmap `Completed`, ADR
   010 `Accepted`, `TARGET_ARCHITECTURE.md` seções 5 e 13; README e
   AGENTS só com a linha de status.
